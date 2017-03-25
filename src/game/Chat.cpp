@@ -713,7 +713,13 @@ ChatCommand* ChatHandler::getCommandTable()
         { "commands",       SEC_PLAYER,         true,  &ChatHandler::HandleCommandsCommand,            "", nullptr },
         { "demorph",        SEC_GAMEMASTER,     false, &ChatHandler::HandleDeMorphCommand,             "", nullptr },
         { "die",            SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDieCommand,                 "", nullptr },
-        { "revive",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReviveCommand,              "", nullptr },
+        
+
+		//RICHARD : commande .killrichard  :  sert juste a sauvegarder une instance
+		{ "killrichard",            SEC_PLAYER,  false, &ChatHandler::HandleDieCommand,                 "", nullptr },
+
+		
+		{ "revive",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReviveCommand,              "", nullptr },
         { "dismount",       SEC_PLAYER,         false, &ChatHandler::HandleDismountCommand,            "", nullptr },
         { "gps",            SEC_MODERATOR,      false, &ChatHandler::HandleGPSCommand,                 "", nullptr },
         { "guid",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGUIDCommand,                "", nullptr },
@@ -762,6 +768,18 @@ ChatCommand* ChatHandler::getCommandTable()
         { "waterwalk",      SEC_GAMEMASTER,     false, &ChatHandler::HandleWaterwalkCommand,           "", nullptr },
         { "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", nullptr },
         { "mmap",           SEC_GAMEMASTER,     false, nullptr,                                        "", mmapCommandTable },
+
+
+
+		//custom command richard :  
+		// sto = stop = arreter le serveur
+		{ "sto",           SEC_ADMINISTRATOR,     true, &ChatHandler::HandleRichardCommand_Quit,                                        "", nullptr },
+		// exi = exit = arreter le serveur
+		{ "exi",           SEC_ADMINISTRATOR,     true, &ChatHandler::HandleRichardCommand_Quit,                                        "", nullptr },
+
+
+
+
 
         { nullptr,          0,                  false, nullptr,                                        "", nullptr }
     };

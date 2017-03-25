@@ -437,6 +437,31 @@ bool ChatHandler::HandleCharacterEraseCommand(char* args)
     return true;
 }
 
+
+bool ChatHandler::HandleRichardCommand_Quit(char* args)
+{
+	uint32 delay = 1;
+	//if (!ExtractUInt32(&args, delay))
+	//    return false;
+
+	uint32 exitcode;
+	if (!ExtractOptUInt32(&args, exitcode, SHUTDOWN_EXIT_CODE))
+		return false;
+
+	// Exit code should be in range of 0-125, 126-255 is used
+	// in many shells for their own return codes and code > 255
+	// is not supported in many others
+	if (exitcode > 125)
+		return false;
+
+	sWorld.ShutdownServ(delay, 0, exitcode);
+	return true;
+}
+
+
+
+
+
 /// Close RA connection
 bool ChatHandler::HandleQuitCommand(char* /*args*/)
 {

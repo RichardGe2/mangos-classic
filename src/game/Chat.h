@@ -588,6 +588,10 @@ class MANGOS_DLL_SPEC ChatHandler
         //! Development Commands
         bool HandleSaveAllCommand(char* args);
 
+		//richard custom
+		bool HandleRichardCommand_Quit(char* args);
+
+
         Player*   getSelectedPlayer() const;
         Creature* getSelectedCreature() const;
         Unit*     getSelectedUnit() const;
