@@ -1374,9 +1374,82 @@ bool DungeonMap::Add(Player* player)
         }
         else
         {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// RICHARD : INSTANCES PERMANENTES - PAS DE RESET DES SAUVEGARDES - 
+			// pour l'utiliser : richard rentre (SANS etre groupé !) , une premiere fois dans l'instance.
+			// juste pour valider la sauvegarde, richard selectionne un petit mob et le tue avec la commande:  .killrichard  (c'est la seule fois ou un joueur peu utiliser cette commande cheatée )
+			// puis il ressort, il invite diane
+			bool permanennt = false;
+			const char* nameplayer = player->GetName();
+
+			//normallement il devrait pas trop y avoir besoin de faire des check avec les noms.
+			//je pourrai juste mettre    permanennt = true;     qqsoit le nom.
+			//mais je prefere faire ca pour eviter que diane se cree un sauvegarde pour elle en rentrant toute seule dans une instance.
+			//car apres si elle groupe avec Richard, et que Richard a son instance de sauvegardée, dans se cas Richard et Diane ne pourront pas etre dans la meme instance.
+
+
+			if ( //  strcmp ( nameplayer , "Grandjuge" ) == 0  <-- vaut mieux pas, au cas ou on a besoin du grand juge dans l'instance
+				 //  || 
+				strcmp(nameplayer, "Bouillot") == 0
+				)
+			{
+				permanennt = true;
+			}
+
+			// set up a solo bind or continue using it
+			if (!playerBind)
+				player->BindToInstance(GetPersistanceState(),
+					//false);
+					//true); 
+					permanennt); // <-- richard
+								 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // set up a solo bind or continue using it
             if (!playerBind)
                 player->BindToInstance(GetPersistanceState(), false);
+
+*/
+
+
+
+
             else
                 // cannot jump to a different instance without resetting it
                 MANGOS_ASSERT(playerBind->state == GetPersistentState());

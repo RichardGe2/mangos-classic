@@ -534,6 +534,152 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
 Player::~Player()
 {
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// richard : generation outfile :
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	char nameFile[2048];
+	const char* playerName = GetName();
+	sprintf(nameFile, "RICHARD/_ri_stat_%s_%d_%02d_%02d.txt",
+		playerName,
+		now->tm_year + 1900,
+		now->tm_mon,
+		now->tm_mday
+		);
+	FILE* fout = fopen(nameFile, "wb");
+
+	uint32 coinItemID = 30000; // id dans la base de donnée
+
+	char outt[2048];
+	sprintf(outt, "played,%d\r\n", GetTotalPlayedTime());
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "youhaicoin,%d\r\n", richard_countItem(coinItemID));
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "level,%d\r\n", getLevel());
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "nbGryphon,%d\r\n", m_taxi.m_TaxiDestinations.size());
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "queteList,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete = 0;
+	for (int i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
+	{
+		uint32 questid = GetQuestSlotQuestId(i);
+		sprintf(outt, "%d,", questid);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		if (questid != 0)
+		{
+			nbQuete++;
+		}
+	}
+	sprintf(outt, "\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "nbQuete,%d\r\n", nbQuete);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	for (PlayerSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+	{
+		//SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+		SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
+        if (!spellInfo)
+            continue;
+		
+		PlayerSpell const& playerSpell = itr->second;
+
+		//if ( HasSpell();
+		//S_GNOMISH
+
+		//if (playerSpell.state == PLAYERSPELL_REMOVED)
+		//    continue;
+
+		//if (!playerSpell.active || playerSpell.disabled)
+		//    continue;
+
+
+		std::string effectName = "";
+		for (int i = SPELL_EFFECT_NONE; i<TOTAL_SPELL_EFFECTS; i++)
+		{
+			bool eff = IsSpellHaveEffect(spellInfo, (SpellEffects)i);
+			if (eff)
+			{
+				if (false) {}
+				//else if ( i == SPELL_EFFECT_NONE ) { effectName = "SPELL_EFFECT_NONE"; }
+				else if (i == SPELL_EFFECT_INSTAKILL) { effectName += "SPELL_EFFECT_INSTAKILL "; }
+
+
+				else if (i == SPELL_EFFECT_LEARN_SPELL) { effectName += "SPELL_EFFECT_LEARN_SPELL "; }
+
+				else if (i == SPELL_EFFECT_DEFENSE) { effectName += "SPELL_EFFECT_DEFENSE "; }
+
+
+				else if (i == SPELL_EFFECT_ENCHANT_ITEM) { effectName += "SPELL_EFFECT_ENCHANT_ITEM "; }
+				else if (i == SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY) { effectName += "SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY "; }
+
+				//else if ( i == XXXX ) { effectName = "XXXX"; }
+				//break;
+			}
+		}
+
+
+		int loc = GetSession()->GetSessionDbcLocale();
+
+		//if (  strcmp(spellInfo->SpellName[loc], "Dragonscale Leatherworking") == 0 )
+		//{
+		//	int a=0;
+		//}
+
+
+		sprintf(outt, "%s,%d,0x%llx,%s\r\n",
+			spellInfo->SpellName[loc],
+			spellInfo->Category,
+			spellInfo->SpellFamilyFlags,
+			effectName.c_str()  // ...
+
+			);
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+	fclose(fout);
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     CleanupsBeforeDelete();
 
     // it must be unloaded already in PlayerLogout and accessed only for loggined player
@@ -7865,6 +8011,129 @@ bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
 }
 
 
+
+
+
+
+
+
+
+
+uint32 Player::richard_countItem(uint32 item) const
+{
+	bool inBankAlso = false; // count bank or not
+	bool inEquipmentAlso = false;
+	bool inKeyRingAlso = false;
+	bool inInventoryAlso = true;
+
+	uint32 tempcount = 0;
+
+	if (inEquipmentAlso)
+	{
+		for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+	}
+
+
+	if (inKeyRingAlso)
+	{
+		for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+	}
+
+	if (inInventoryAlso)
+	{
+		for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+				{
+
+					Item* pItem = GetItemByPos(i, j);
+
+					if (pItem)
+					{
+						//	BASIC_LOG("RICHARD: item = %d",pItem->GetEntry());
+					}
+					else
+					{
+						//	BASIC_LOG("RICHARD: item = nothing");
+					}
+
+					if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+					{
+						tempcount += pItem->GetCount();
+					}
+				}
+			}
+		}
+
+		for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i) // les 16 place du packback de default
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+	}
+
+	if (inBankAlso)
+	{
+		for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+		for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+				{
+					Item* pItem = GetItemByPos(i, j);
+					if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+					{
+						tempcount += pItem->GetCount();
+					}
+				}
+			}
+		}
+	}
+
+	BASIC_LOG("RICHARD: _ player has %d item id %d", tempcount, item);
+
+	return tempcount;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool Player::HasItemCount(uint32 item, uint32 count, bool inBankAlso) const
 {
     uint32 tempcount = 0;
@@ -11471,12 +11740,121 @@ bool Player::CanSeeStartQuest(Quest const* pQuest) const
 
 bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 {
-    return SatisfyQuestStatus(pQuest, msg) && SatisfyQuestExclusiveGroup(pQuest, msg) &&
+
+
+	////////
+	// DEBUG AREA RICHARD
+
+	if (
+		pQuest->GetQuestId() == 5283
+		|| pQuest->GetQuestId() == 5284
+		|| pQuest->GetQuestId() == 5301
+		|| pQuest->GetQuestId() == 5302
+		|| pQuest->GetQuestId() == 3638
+		|| pQuest->GetQuestId() == 3639
+
+		|| pQuest->GetQuestId() == 2760
+
+		|| pQuest->GetQuestId() == 3444
+
+		)
+	{
+		int a = 0;
+		int id = pQuest->GetQuestId();
+
+		bool b0 = SatisfyQuestStatus(pQuest, msg);
+		bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
+		bool b2 = SatisfyQuestClass(pQuest, msg);
+		bool b3 = SatisfyQuestRace(pQuest, msg);
+		bool b4 = SatisfyQuestLevel(pQuest, msg);
+		bool b5 = SatisfyQuestSkill(pQuest, msg);
+		bool b6 = SatisfyQuestReputation(pQuest, msg);
+		bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
+		bool b8 = SatisfyQuestTimed(pQuest, msg);
+		bool b9 = SatisfyQuestNextChain(pQuest, msg);
+		bool ba = SatisfyQuestPrevChain(pQuest, msg);
+		bool bb = pQuest->IsActive();
+
+		bool final__ = b0 & b1 & b2 & b3 & b4 & b5 & b6 & b7 & b8 & b9 & ba & bb;
+
+		int abnbn = 0;
+	}
+
+	//////////////////////////////////
+
+
+
+
+	bool retnum =
+     SatisfyQuestStatus(pQuest, msg) && SatisfyQuestExclusiveGroup(pQuest, msg) &&
            SatisfyQuestClass(pQuest, msg) && SatisfyQuestRace(pQuest, msg) && SatisfyQuestLevel(pQuest, msg) &&
            SatisfyQuestSkill(pQuest, msg) && SatisfyQuestCondition(pQuest, msg) && SatisfyQuestReputation(pQuest, msg) &&
            SatisfyQuestPreviousQuest(pQuest, msg) && SatisfyQuestTimed(pQuest, msg) &&
            SatisfyQuestNextChain(pQuest, msg) && SatisfyQuestPrevChain(pQuest, msg) &&
            pQuest->IsActive();
+
+
+
+
+
+	// RICHARD DEBUG INFO :
+	if (!retnum)
+	{
+		bool b0 = SatisfyQuestStatus(pQuest, msg);
+		bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
+		bool b2 = SatisfyQuestClass(pQuest, msg);
+		bool b3 = SatisfyQuestRace(pQuest, msg);
+		bool b4 = SatisfyQuestLevel(pQuest, msg);
+		bool b5 = SatisfyQuestSkill(pQuest, msg);
+		bool b6 = SatisfyQuestReputation(pQuest, msg);
+		bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
+		bool b8 = SatisfyQuestTimed(pQuest, msg);
+		bool b9 = SatisfyQuestNextChain(pQuest, msg);
+		bool ba = SatisfyQuestPrevChain(pQuest, msg);
+		bool bb = pQuest->IsActive();
+
+
+
+
+		BASIC_LOG("RICHARD: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
+		if (!b0) { BASIC_LOG("     b0 - SatisfyQuestStatus"); }
+		if (!b1) { BASIC_LOG("     b1 - SatisfyQuestExclusiveGroup"); }
+		if (!b2) { BASIC_LOG("     b2 - SatisfyQuestClass"); }
+		if (!b3) { BASIC_LOG("     b3 - SatisfyQuestRace"); }
+		if (!b4) { BASIC_LOG("     b4 - SatisfyQuestLevel"); }
+		if (!b5) { BASIC_LOG("     b5 - SatisfyQuestSkill"); }
+		if (!b6) { BASIC_LOG("     b6 - SatisfyQuestReputation"); }
+		if (!b7)
+		{
+			//BASIC_LOG("     b7 - SatisfyQuestPreviousQuest");
+
+			std::string fullmessage = "     b7 - SatisfyQuestPreviousQuest - list = ";
+
+
+			for (Quest::PrevQuests::const_iterator iter = pQuest->prevQuests.begin(); iter != pQuest->prevQuests.end(); ++iter)
+			{
+				uint32 prevId = abs(*iter);
+				fullmessage += std::to_string(prevId);
+				fullmessage += " ";
+
+			}
+
+			BASIC_LOG(fullmessage.c_str());
+
+		}
+		if (!b8) { BASIC_LOG("     b8 - SatisfyQuestTimed"); }
+		if (!b9) { BASIC_LOG("     b9 - SatisfyQuestNextChain"); }
+		if (!ba) { BASIC_LOG("     ba - SatisfyQuestPrevChain"); }
+		if (!bb) { BASIC_LOG("     bb - IsActive"); }
+	}
+
+
+
+	return retnum;
+
+
+
+
 }
 
 bool Player::CanAddQuest(Quest const* pQuest, bool msg) const
@@ -11859,6 +12237,121 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
             }
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////
+	//richard : add coin in quest reward
+	int32 questLevel = pQuest->GetQuestLevel();
+	int32 playerLevel = this->getLevel();
+	uint32 questType = pQuest->GetType();
+	bool questIsDungeon = questType & QUEST_TYPE_DUNGEON;
+	bool questIsElite = questType & QUEST_TYPE_ELITE;
+	bool questIsRaid = questType & QUEST_TYPE_RAID;
+	bool questIsLegendary = questType & QUEST_TYPE_LEGENDARY;
+	bool questIsEscort = questType & QUEST_TYPE_ESCORT;
+
+	bool questIsHarder = questIsDungeon | questIsElite | questIsRaid | questIsLegendary | questIsEscort;
+
+	//jaune, c'est tout le temps entre   lvlPlayer-2  et  lvlPlayer+2
+	//vert ca depend : pour un player 10, le vert va etre entre 5 et 7    pour un player lvl 50 le vert va etre entre 40 et 47... donc je vais considere que le vert sera entre  lvl-7 et lvl-3
+
+	char typeQuestChar[256];
+	strcpy(typeQuestChar, "ERROR");
+
+	int nbCoinToReceiveMax = 0;
+	if (!questIsHarder &&     questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est jaune 
+	{
+		strcpy(typeQuestChar, "easy-jaune");
+		nbCoinToReceiveMax = 1;
+	}
+	else if (!questIsHarder &&  questLevel >= playerLevel + 3)  // si la quete est orange ou plus
+	{
+		strcpy(typeQuestChar, "easy-orange");
+		nbCoinToReceiveMax = 2;
+	}
+	else if (questIsHarder &&     questLevel >= playerLevel - 7 && questLevel <= playerLevel - 3) // si la quete est dongeon et verte
+	{
+		strcpy(typeQuestChar, "hard-vert");
+		nbCoinToReceiveMax = 1;
+	}
+	else if (questIsHarder &&    questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est dongeon et jaune
+	{
+		strcpy(typeQuestChar, "hard-jaune");
+		nbCoinToReceiveMax = 2;
+	}
+	else if (questIsHarder &&    questLevel >= playerLevel + 3)  // si la quete est dongeon et orange ou plus
+	{
+		strcpy(typeQuestChar, "hard-orange");
+		nbCoinToReceiveMax = 3;
+	}
+	else
+	{
+		strcpy(typeQuestChar, "tooEasy");
+		nbCoinToReceiveMax = 0;
+	}
+
+	int nbCoinToReceiveReally = rand() % (nbCoinToReceiveMax + 1);     //  0 to nbCoinToReceive
+
+	BASIC_LOG("RICHARD:  add coin in quest reward - player=%d questLvl=%d quest=%s nbCoin=%d/%d",
+		playerLevel,
+		questLevel,
+		typeQuestChar,
+		nbCoinToReceiveReally, nbCoinToReceiveMax
+		);
+
+	uint32 coinItemID = 30000; // id dans la base de donnée
+
+	if (nbCoinToReceiveReally > 0)
+	{
+		ItemPosCountVec dest;
+		if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, coinItemID, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+		{
+			Item* item = StoreNewItem(dest, coinItemID, true, Item::GenerateItemRandomPropertyId(coinItemID));
+			SendNewItem(item, nbCoinToReceiveReally, true, false);
+		}
+
+		char messageOut[256];
+		sprintf(messageOut, "+%d/%d youhaicoin !", nbCoinToReceiveReally, nbCoinToReceiveMax);
+		Say(messageOut, LANG_UNIVERSAL);
+	}
+	else if (nbCoinToReceiveReally == 0 && nbCoinToReceiveMax > 0)
+	{
+		char messageOut[256];
+		sprintf(messageOut, "+%d/%d youhaicoin :(", nbCoinToReceiveReally, nbCoinToReceiveMax);
+		Say(messageOut, LANG_UNIVERSAL);
+	}
+
+
+	////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     RewardReputation(pQuest);
 
@@ -12885,6 +13378,73 @@ bool Player::HasQuestForItem(uint32 itemid) const
             if (!qinfo)
                 continue;
 
+
+			//////////////////////////////////////////////////////////////////////////////////////////////////////
+			//
+			//RICHARD:  on recompte les objets pour etre sur
+			//
+			const char* playerName = GetName();
+			bool richardForceGive = false;
+			//richard : debug
+			for (int j = 0; j < QUEST_ITEM_OBJECTIVES_COUNT; ++j)
+			{
+				if (itemid == qinfo->ReqItemId[j])
+				{
+					BASIC_LOG("RICHARD: DEBUG LOOT QUEST - quest[%d/%d]=%d itemIndex=%d/%d  player=%s objet:%d - joueur a quete: %s",
+						i, MAX_QUEST_LOG_SIZE, questid,
+						j, QUEST_ITEM_OBJECTIVES_COUNT,
+						playerName,
+						qinfo->ReqItemId[j],
+						qinfo->GetTitle().c_str()
+						);
+
+					uint32_t richardDoubleCheck = richard_countItem(qinfo->ReqItemId[j]);
+
+					if (q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
+					{
+						BASIC_LOG("     RICHARD: DEBUG LOOT QUEST - on lui donne car %d / %d - doubleCheckRichard=%d",
+							q_status.m_itemcount[j],
+							qinfo->ReqItemCount[j],
+							richardDoubleCheck
+							);
+					}
+					else
+					{
+
+
+						BASIC_LOG("     RICHARD: DEBUG LOOT QUEST - on lui donne PAS car %d / %d - doubleCheckRichard=%d",
+							q_status.m_itemcount[j],
+							qinfo->ReqItemCount[j],
+							richardDoubleCheck
+
+							);
+
+						//cela va corriger un bug qu'on a deja eu:
+						//le jeu va pas donner l'objet car  m_itemcount est arrivé au compte.
+						//cepandant quand je recompte dans l'inventaire avec richardDoubleCheck, je vois
+						//que en fait j'ai pas assez.
+						//donc dans ce cas special, on va forcer.
+						if (q_status.m_itemcount[j] > richardDoubleCheck // si le vrais recompte est plus petit que ce que le jeu pense
+							&&
+							richardDoubleCheck < qinfo->ReqItemCount[j] // si le vrai recompte d'objet est plus petit que le nombre d'objet demandé par la quete
+							)
+						{
+							BASIC_LOG("     RICHARD: WARNING : on va forcer le loot de l'objet");
+							richardForceGive = true;
+						}
+
+
+					}
+
+				}
+			}
+			//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
             // hide quest if player is in raid-group and quest is no raid quest
             if (GetGroup() && GetGroup()->isRaidGroup() && !qinfo->IsAllowedInRaid() && !InBattleGround())
                 continue;
@@ -12893,7 +13453,23 @@ bool Player::HasQuestForItem(uint32 itemid) const
             // This part for ReqItem drop
             for (int j = 0; j < QUEST_ITEM_OBJECTIVES_COUNT; ++j)
             {
-                if (itemid == qinfo->ReqItemId[j] && q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
+      //          if (itemid == qinfo->ReqItemId[j] && q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
+
+
+				if (
+					itemid == qinfo->ReqItemId[j] &&
+
+					(q_status.m_itemcount[j] < qinfo->ReqItemCount[j]
+						||
+						richardForceGive)
+
+					)
+
+
+
+
+
+
                     return true;
             }
             // This part - for ReqSource

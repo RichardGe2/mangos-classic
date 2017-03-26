@@ -1281,6 +1281,28 @@ void World::SetInitialWorldSettings()
     sLog.outString("---------------------------------------");
     sLog.outString();
 
+
+
+
+
+
+	////////////////////////////////////////////////////////
+	//richard - init message
+	BASIC_LOG("MODE RICHARD VERSION 11  ");
+	#ifdef NDEBUG
+	BASIC_LOG("(release)");
+	#else 
+	BASIC_LOG("!! NOT RELEASE !!");
+	#endif
+	////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
     uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());
     sLog.outString("SERVER STARTUP TIME: %i minutes %i seconds", uStartInterval / 60000, (uStartInterval % 60000) / 1000);
     sLog.outString();

@@ -5975,6 +5975,18 @@ int32 Unit::SpellBonusWithCoeffs(SpellEntry const* spellProto, int32 total, int3
             }
         }
 
+
+
+		BASIC_LOG("RICHARD: compute spell domage %d  +  %d*%f*%f   =  %d",
+			total,
+			benefit,
+			coeff,
+			LvlPenalty,
+			total + int32(benefit * coeff * LvlPenalty)
+			);
+
+
+
         total += int32(benefit * coeff * LvlPenalty);
     }
 
@@ -6102,6 +6114,59 @@ uint32 Unit::SpellDamageBonusTaken(Unit* pCaster, SpellEntry const* spellProto, 
     return tmpDamage > 0 ? uint32(tmpDamage) : 0;
 }
 
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//richard   add intellect, strengh.... all stats
+float Unit::GetStat(Stats stat) const
+{
+	float valueToReturn = float(GetUInt32Value(UNIT_FIELD_STAT0 + stat));
+
+
+	if (GetTypeId() == TYPEID_PLAYER)
+	{
+		const Player* play = dynamic_cast<const Player*>(this);
+		if (play)
+		{
+			if (stat == STAT_INTELLECT)
+			{
+				uint32 nb30002 = play->richard_countItem(30002);
+				float multipl = 1.0f + (float)nb30002*1.0f;
+				BASIC_LOG("RICHARD: intellect %f->%f", valueToReturn, valueToReturn*multipl);
+				valueToReturn *= multipl;
+			}
+
+
+		}
+		else
+		{
+			BASIC_LOG("RICHARD: error 4536");
+		}
+
+
+
+	}
+
+
+	return valueToReturn;
+
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
 int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 {
     int32 DoneAdvertisedBenefit = 0;
@@ -6129,6 +6194,31 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
                 DoneAdvertisedBenefit += int32(GetStat(usedStat) * (*i)->GetModifier()->m_amount / 100.0f);
             }
         }
+
+
+
+
+		//////////////////////////////////////////////////////////////////////////////////////////
+		//richard   add spell damage
+		Player* play = dynamic_cast<Player*>(this);
+		if (play)
+		{
+			uint32 nb30001 = play->richard_countItem(30001);
+			float multipl = 1.0f + (float)nb30001*1.0f;
+			float finalnum = (float)DoneAdvertisedBenefit * multipl;
+			BASIC_LOG("RICHARD: spell domage %d->%d", DoneAdvertisedBenefit, (int32)(finalnum));
+			DoneAdvertisedBenefit = (int32)(finalnum);
+		}
+		else
+		{
+			BASIC_LOG("RICHARD: error 4539");
+		}
+		//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
     }
     return DoneAdvertisedBenefit;
 }

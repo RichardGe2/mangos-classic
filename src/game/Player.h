@@ -746,6 +746,13 @@ class MANGOS_DLL_SPEC PlayerTaxi
         friend std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi);
     private:
         TaxiMask m_taximask;
+
+
+
+public: //richard : etait en private avant
+
+
+
         std::deque<uint32> m_TaxiDestinations;
 };
 
@@ -1014,6 +1021,13 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint8 GetBankBagSlotCount() const { return GetByteValue(PLAYER_BYTES_2, 2); }
         void SetBankBagSlotCount(uint8 count) { SetByteValue(PLAYER_BYTES_2, 2, count); }
         bool HasItemCount(uint32 item, uint32 count, bool inBankAlso = false) const;
+
+
+		uint32 richard_countItem(uint32 item) const;
+
+
+
+
         bool HasItemFitToSpellReqirements(SpellEntry const* spellInfo, Item const* ignoreItem = nullptr) const;
         bool CanNoReagentCast(SpellEntry const* spellInfo) const;
         bool HasItemWithIdEquipped(uint32 item, uint32 count, uint8 except_slot = NULL_SLOT) const;
@@ -2401,3 +2415,27 @@ template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T& bas
 }
 
 #endif
+
+
+
+//richard : check good config :
+#ifdef _M_AMD64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+#ifdef _M_IA64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+#ifdef _M_X64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+#ifdef _WIN64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+
+
+
+

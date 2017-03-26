@@ -843,7 +843,7 @@ void Loot::AddItem(uint32 itemid, uint32 count, uint32 randomSuffix, int32 rando
 }
 
 // Calls processor of corresponding LootTemplate (which handles everything including references)
-bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, bool personal, bool noEmptyError)
+bool Loot::FillLoot(  int32 richard01, int32 richard02,   uint32 loot_id, LootStore const& store, Player* lootOwner, bool personal, bool noEmptyError)
 {
     // Must be provided
     if (!lootOwner)
@@ -861,6 +861,138 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
     m_lootItems.reserve(MAX_NR_LOOT_ITEMS);
 
     tab->Process(*this, lootOwner, store, store.IsRatesAllowed()); // Processing is done there, callback via Loot::AddItem()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//richard : add coin on loot
+
+	// parametre richard01 est la source :  0=unknown   1=cadavre    2=coffre
+	//
+	// parametre richard02 :
+	// si cadavre alors correspond au niveau du cadavre  (Negatif si la creature est elite)
+	//
+
+	if (richard01 == 0)
+	{
+		BASIC_LOG("RICHARD: add coin on loot - NO because richard01=%d", richard01);
+	}
+	else if (richard01 == 1) // cadavre
+	{
+
+		//jaune, c'est tout le temps entre   lvlPlayer-2  et  lvlPlayer+2
+		//vert ca depend : pour un player 10, le vert va etre entre 5 et 7    pour un player lvl 50 le vert va etre entre 40 et 47... donc je vais considere que le vert sera entre  lvl-7 et lvl-3
+
+		char typeMobChar[256];
+		strcpy(typeMobChar, "ERROR");
+
+
+
+
+
+		int playerlevel = lootOwner->getLevel();
+		int cadavreLevel = abs(richard02);
+		bool cadavreElite = richard02 < 0 ? true : false;
+		int scoreRand = rand() % 100 + 1;     //  1 to 100
+		int scoreToReach = 0;
+		if (false) {}
+		else if (!cadavreElite &&    cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature non elite verte
+		{
+			strcpy(typeMobChar, "easy-vert");
+			scoreToReach = 5;
+		}
+		else if (!cadavreElite &&   cadavreLevel >= playerlevel - 2 && cadavreLevel <= playerlevel + 2) // creature non elite jaune
+		{
+			strcpy(typeMobChar, "easy-jaune");
+			scoreToReach = 10;
+		}
+		else if (!cadavreElite &&   cadavreLevel >= playerlevel + 3) // creature non elite orange ou plus
+		{
+			strcpy(typeMobChar, "easy-orange");
+			scoreToReach = 15;
+		}
+		else if (cadavreElite &&     cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature  elite verte
+		{
+			strcpy(typeMobChar, "elite-verte");
+			scoreToReach = 10;
+		}
+		else if (cadavreElite &&   cadavreLevel >= playerlevel - 2 && cadavreLevel <= playerlevel + 2) // creature  elite jaune
+		{
+			strcpy(typeMobChar, "elite-jaune");
+			scoreToReach = 15;
+		}
+		else if (cadavreElite &&     cadavreLevel >= playerlevel + 3) // creature  elite orange ou plus
+		{
+			strcpy(typeMobChar, "elite-orange");
+			scoreToReach = 20;
+		}
+		else
+		{
+			strcpy(typeMobChar, "tooEasy");
+			scoreToReach = 0;
+		}
+
+		BASIC_LOG("RICHARD: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s score=%d<%d",
+			playerlevel,
+			cadavreLevel,
+			typeMobChar,
+			scoreRand, scoreToReach
+			);
+
+		if (scoreRand <= scoreToReach)
+		{
+			AddItem(30000, 1, 0, 0);
+
+			char messageOut[256];
+			sprintf(messageOut, "+1 youhaicoin !");
+			lootOwner->Say(messageOut, LANG_UNIVERSAL);
+		}
+	}
+	else
+	{
+		BASIC_LOG("RICHARD: add coin on loot - NO because ERROR richard01=%d", richard01);
+	}
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // Must now check if current looter have right to loot all item or he will lockout that item until he look and release the loot
     if (!m_currentLooterGuid.IsEmpty() && m_ownerSet.size() > 1 && m_lootMethod != FREE_FOR_ALL) // only for group that are not free for all
@@ -1137,7 +1269,7 @@ void Loot::Release(Player* player)
                     {
                         // this vein have can be now refilled, as this is a vein no other player are looting it so no need to send them release
                         Clear();                // clear the content and reset some values
-                        FillLoot(go->GetGOInfo()->GetLootId(), LootTemplates_Gameobject, player, false); // refill the loot with new items
+                        FillLoot(   0, 0,     go->GetGOInfo()->GetLootId(), LootTemplates_Gameobject, player, false); // refill the loot with new items
                         go->SetLootState(GO_READY);
                     }
                     else
@@ -1570,7 +1702,18 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
             SetGroupLootRight(player);
             m_clientLootType = CLIENT_LOOT_CORPSE;
 
-            if ((creatureInfo->LootId && FillLoot(creatureInfo->LootId, LootTemplates_Creature, player, false)) || creatureInfo->MaxLootGold > 0)
+
+
+			int32 richard2 = creature->getLevel();
+			if (creature->IsElite())
+			{
+				richard2 = -richard2;
+			}
+
+
+
+
+            if ((creatureInfo->LootId && FillLoot(    1, richard2,           creatureInfo->LootId, LootTemplates_Creature, player, false)) || creatureInfo->MaxLootGold > 0)
             {
                 GenerateMoneyLoot(creatureInfo->MinLootGold, creatureInfo->MaxLootGold);
                 // loot may be anyway empty
@@ -1592,7 +1735,7 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
             if (!creature->isAlive() || player->getClass() != CLASS_ROGUE)
                 return;
 
-            if (!creatureInfo->LootId || !FillLoot(creatureInfo->PickpocketLootId, LootTemplates_Pickpocketing, player, false))
+            if (!creatureInfo->LootId || !FillLoot(       0,0,       creatureInfo->PickpocketLootId, LootTemplates_Pickpocketing, player, false))
             {
                 sLog.outError("Loot::CreateLoot> cannot create pickpocket loot, FillLoot failed with loot id(%u)!", creatureInfo->LootId);
                 return;
@@ -1611,7 +1754,7 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
         case LOOT_SKINNING:
         {
             m_clientLootType = CLIENT_LOOT_PICKPOCKETING;
-            if (!creatureInfo->SkinningLootId || !FillLoot(creatureInfo->SkinningLootId, LootTemplates_Skinning, player, false))
+            if (!creatureInfo->SkinningLootId || !FillLoot(       0,0,      creatureInfo->SkinningLootId, LootTemplates_Skinning, player, false))
             {
                 sLog.outError("Loot::CreateLoot> cannot create skinning loot, FillLoot failed with loot id(%u)!", creatureInfo->SkinningLootId);
                 return;
@@ -1680,7 +1823,7 @@ Loot::Loot(Player* player, GameObject* gameObject, LootType type) :
             {
                 // Entry 0 in fishing loot template used for store junk fish loot at fishing fail it junk allowed by config option
                 // this is overwrite fishinghole loot for example
-                FillLoot(0, LootTemplates_Fishing, player, true);
+                FillLoot(       0,0,      0, LootTemplates_Fishing, player, true);
 
                 // setting loot right
                 m_ownerSet.insert(player->GetObjectGuid());
@@ -1693,9 +1836,61 @@ Loot::Loot(Player* player, GameObject* gameObject, LootType type) :
                 uint32 zone, subzone;
                 gameObject->GetZoneAndAreaId(zone, subzone);
                 // if subzone loot exist use it
-                if (!FillLoot(subzone, LootTemplates_Fishing, player, true, (subzone != zone)) && subzone != zone)
-                    // else use zone loot (if zone diff. from subzone, must exist in like case)
-                    FillLoot(zone, LootTemplates_Fishing, player, true);
+               
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//   RICHARD   -   repare le fishing qui peut donner 0 poissons
+				//   voir le ticket que j'ai créé :  894
+
+				// original :
+				// if (!     FillLoot(  0,0,     subzone, LootTemplates_Fishing, player, true, (subzone != zone))        && subzone != zone)
+				//      // else use zone loot (if zone diff. from subzone, must exist in like case)
+				//     FillLoot(  0,0,     zone, LootTemplates_Fishing, player, true);
+
+				bool fillLoot1 = FillLoot(0, 0, subzone, LootTemplates_Fishing, player, true, (subzone != zone));
+				int nbFish1 = m_lootItems.size();
+				if (nbFish1 == 0 || (!fillLoot1  &&   subzone != zone))
+				{
+					FillLoot(0, 0, zone, LootTemplates_Fishing, player, true);
+					int nbFish2 = m_lootItems.size();
+					int aaaaa = 0;
+
+					BASIC_LOG("RICHARD: peche de %d poissons dans la zone %d  (no data for SUBzone=%d)", nbFish2, zone, subzone);
+				}
+				else
+				{
+					BASIC_LOG("RICHARD: peche de %d poissons dans la SUBzone %d   (no need to loot zone=%d)", nbFish1, subzone, zone);
+				}
+
+				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                 // setting loot right
                 m_ownerSet.insert(player->GetObjectGuid());
@@ -1712,7 +1907,7 @@ Loot::Loot(Player* player, GameObject* gameObject, LootType type) :
                     else
                         SetGroupLootRight(player);
 
-                    FillLoot(lootid, LootTemplates_Gameobject, player, false);
+                    FillLoot(       0,0,      lootid, LootTemplates_Gameobject, player, false);
                     GenerateMoneyLoot(gameObject->GetGOInfo()->MinMoneyLoot, gameObject->GetGOInfo()->MaxMoneyLoot);
 
                     if (m_lootType == LOOT_FISHINGHOLE)
@@ -1762,7 +1957,7 @@ Loot::Loot(Player* player, Corpse* corpse, LootType type) :
             pLevel = player->getLevel(); // TODO:: not correct, need to save real player level in the corpse data in case of logout
 
         if (player->GetBattleGround()->GetTypeID() == BATTLEGROUND_AV)
-            FillLoot(0, LootTemplates_Creature, player, false);
+            FillLoot(       0,0,      0, LootTemplates_Creature, player, false);
         // It may need a better formula
         // Now it works like this: lvl10: ~6copper, lvl70: ~9silver
         m_gold = (uint32)(urand(50, 150) * 0.016f * pow(((float)pLevel) / 5.76f, 2.5f) * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
@@ -1797,11 +1992,11 @@ Loot::Loot(Player* player, Item* item, LootType type) :
     switch (type)
     {
         case LOOT_DISENCHANTING:
-            FillLoot(item->GetProto()->DisenchantID, LootTemplates_Disenchant, player, true);
+            FillLoot(       0,0,      item->GetProto()->DisenchantID, LootTemplates_Disenchant, player, true);
             item->SetLootState(ITEM_LOOT_TEMPORARY);
             break;
         default:
-            FillLoot(item->GetEntry(), LootTemplates_Item, player, true, item->GetProto()->MaxMoneyLoot == 0);
+            FillLoot(       0,0,      item->GetEntry(), LootTemplates_Item, player, true, item->GetProto()->MaxMoneyLoot == 0);
             GenerateMoneyLoot(item->GetProto()->MinMoneyLoot, item->GetProto()->MaxMoneyLoot);
             item->SetLootState(ITEM_LOOT_CHANGED);
             break;
@@ -1829,11 +2024,11 @@ Loot::Loot(Player* player, uint32 id, LootType type) :
     switch (type)
     {
         case LOOT_MAIL:
-            FillLoot(id, LootTemplates_Mail, player, true, true);
+            FillLoot(       0,0,      id, LootTemplates_Mail, player, true, true);
             m_clientLootType = CLIENT_LOOT_PICKPOCKETING;
             break;
         case LOOT_SKINNING:
-            FillLoot(id, LootTemplates_Skinning, player, true, true);
+            FillLoot(       0,0,      id, LootTemplates_Skinning, player, true, true);
             m_clientLootType = CLIENT_LOOT_PICKPOCKETING;
             break;
         default:

@@ -462,6 +462,9 @@ bool ChatHandler::HandleRichardCommand_Quit(char* args)
 
 
 
+
+
+
 /// Close RA connection
 bool ChatHandler::HandleQuitCommand(char* /*args*/)
 {
