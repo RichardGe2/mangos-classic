@@ -552,7 +552,7 @@ Player::~Player()
 	sprintf(nameFile, "RICHARD/_ri_stat_%s_%d_%02d_%02d.txt",
 		playerName,
 		now->tm_year + 1900,
-		now->tm_mon,
+		now->tm_mon+1,
 		now->tm_mday
 		);
 	FILE* fout = fopen(nameFile, "wb");
