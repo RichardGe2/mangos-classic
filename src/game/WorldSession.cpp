@@ -430,6 +430,12 @@ void WorldSession::LogoutPlayer(bool save)
         ///- Remove pet
         _player->RemovePet(PET_SAVE_AS_CURRENT);
 
+
+
+
+		_player->richard_saveToLog();
+
+
         ///- empty buyback items and save the player in the database
         // some save parts only correctly work in case player present in map/player_lists (pets, etc)
         if (save)

@@ -850,6 +850,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         explicit Player(WorldSession* session);
         ~Player();
 
+		void richard_saveToLog();
+
         void CleanupsBeforeDelete() override;
 
         static UpdateMask updateVisualBits;

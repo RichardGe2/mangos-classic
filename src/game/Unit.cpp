@@ -6200,12 +6200,28 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 		//richard   add spell damage
+		//
+		// at this point, DoneAdvertisedBenefit  contains the sum of spell dommage bonus that the player has
+		// (can be 0 if no spell bonus )
+		//
 		Player* play = dynamic_cast<Player*>(this);
 		if (play)
 		{
 			uint32 nb30001 = play->richard_countItem(30001);
-			float multipl = 1.0f + (float)nb30001*1.0f;
-			float finalnum = (float)DoneAdvertisedBenefit * multipl;
+			
+			//je pense pas que c'est une bonne idée de faire en coeff pour la stat du  spell damage
+			//le coeff comme ca, c'est bien pour l'intelligence..etc... qui vont monter progressivement avec le niveau.
+			//la on parle d'une stat qui peut passer de 0 à 30 si je joueur change d'objet
+			//
+			//float multipl = 1.0f + (float)nb30001*1.0f;
+			//float finalnum = (float)DoneAdvertisedBenefit * multipl;
+
+			//le probleme de cette methode c'est qu'elle donne le meme bonus a un niveau 1 et un niveau 60.
+			//il faudrait peut etre multipler par   <niveau du joueur> / 60
+			float finalnum = (float)DoneAdvertisedBenefit +  (float)nb30001 * 2.0f ;
+
+			
+			
 			BASIC_LOG("RICHARD: spell domage %d->%d", DoneAdvertisedBenefit, (int32)(finalnum));
 			DoneAdvertisedBenefit = (int32)(finalnum);
 		}

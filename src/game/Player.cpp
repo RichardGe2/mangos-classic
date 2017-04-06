@@ -532,17 +532,15 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     m_cannotBeDetectedTimer = 0;
 }
 
-Player::~Player()
+
+
+void Player::richard_saveToLog()
 {
-
-
-
-
-
-
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// richard : generation outfile :
+
+	BASIC_LOG("Start Save custom outfile....");
 
 	time_t t = time(0);   // get time now
 	struct tm * now = localtime(&t);
@@ -559,7 +557,7 @@ Player::~Player()
 
 	uint32 coinItemID = 30000; // id dans la base de donnée
 
-	char outt[2048];
+	char outt[4096];
 	sprintf(outt, "played,%d\r\n", GetTotalPlayedTime());
 	fwrite(outt, 1, strlen(outt), fout);
 
@@ -590,6 +588,10 @@ Player::~Player()
 	fwrite(outt, 1, strlen(outt), fout);
 
 	sprintf(outt, "nbQuete,%d\r\n", nbQuete);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	sprintf(outt, "\r\n#LIST_SPELLS =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
 
 
@@ -654,12 +656,157 @@ Player::~Player()
 			);
 		fwrite(outt, 1, strlen(outt), fout);
 	}
+
+
+
+
+	//save items of player
+	{
+
+		sprintf(outt, "\r\n#LIST_ITEMS =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	
+		bool inBankAlso = true; // count bank or not
+		bool inEquipmentAlso = true;
+		bool inKeyRingAlso = true;
+		bool inInventoryAlso = true;
+
+		//uint32 tempcount = 0;
+
+		//j ai pas trouvé comment avoir le nom de l'objet
+		//const char* itemName = "NULL";
+
+		sprintf(outt, "\r\n#EQUIPED ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		if (inEquipmentAlso)
+		{
+			for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+		sprintf(outt, "\r\n#KEYRING ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		if (inKeyRingAlso)
+		{
+			for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+		sprintf(outt, "\r\n#INVENTORY ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		if (inInventoryAlso)
+		{
+			for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+
+						Item* pItem = GetItemByPos(i, j);
+
+						if (pItem)
+						{
+							//	BASIC_LOG("RICHARD: item = %d",pItem->GetEntry());
+						}
+						else
+						{
+							//	BASIC_LOG("RICHARD: item = nothing");
+						}
+
+						if ( pItem )
+						{
+							ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+							sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+							fwrite(outt, 1, strlen(outt), fout);
+						}
+					}
+				}
+			}
+
+			for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i) // les 16 place du packback de default
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+		sprintf(outt, "\r\n#BANK ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		if (inBankAlso)
+		{
+			for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+			for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+						Item* pItem = GetItemByPos(i, j);
+						if ( pItem )
+						{
+							ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+							sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() ,  itemProto->Name1    );
+							fwrite(outt, 1, strlen(outt), fout);
+						}
+					}
+				}
+			}
+		}
+
+
+
+	 }
+
+
+
+	 sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+
 	fclose(fout);
+
+	BASIC_LOG("END Save custom outfile.");
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
 
+}
 
 
 
@@ -673,11 +820,8 @@ Player::~Player()
 
 
 
-
-
-
-
-
+Player::~Player()
+{
 
 
     CleanupsBeforeDelete();
@@ -15217,6 +15361,11 @@ bool Player::_LoadHomeBind(QueryResult* result)
 
 void Player::SaveToDB()
 {
+
+	BASIC_LOG("critical part START - Player::SaveToDB"); // s'il y a un crash pdt cette partie, ca peut etre grave
+
+
+
     // we should assure this: ASSERT((m_nextSave != sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE)));
     // delay auto save at any saves (manual, in code, or autosave)
     m_nextSave = sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE);
@@ -15396,6 +15545,13 @@ void Player::SaveToDB()
     // save pet (hunter pet level and experience and all type pets health/mana).
     if (Pet* pet = GetPet())
         pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+
+
+
+	BASIC_LOG("critical part END - Player::SaveToDB");
+
+
+
 }
 
 // fast save function for item/money cheating preventing - save only inventory and money state
