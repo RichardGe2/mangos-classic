@@ -4620,6 +4620,86 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
     Player* player = (Player*)m_caster;
 
     uint32 pet_entry = m_spellInfo->EffectMiscValue[eff_idx];
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// RICHARD : invoquer pokeball
+	float scalePet = -1.0f;
+	int petlevel = -1;
+	if ( m_spellInfo->Id  ==  13548   &&  pet_entry   ==  7392 )
+	{
+		uint32 itemKeyRin0  = 0;
+		uint32 quantity = 0;
+		player->richard_countItem_pokeball(itemKeyRin0  , quantity  );
+
+		if ( itemKeyRin0 > 0 && quantity > 0 )
+		{
+			pet_entry = itemKeyRin0 - 100000;
+
+			if ( pet_entry >  100000 ) // si c'est un pokemon epic
+			{
+				pet_entry -= 100000;
+			}
+
+			scalePet = 1.0f;
+			petlevel = quantity;
+
+			if ( petlevel > 60 )
+			{
+				petlevel = 60;
+			}
+
+			scalePet = 0.25f + (float)petlevel*0.25f;
+			if ( scalePet > 2.0f ) 
+			{
+				scalePet = 2.0f;
+			}
+
+			Pet* old_critter = player->GetMiniPet();
+			if (!old_critter )
+			{
+				char messageOut[256];
+				sprintf(messageOut, "Youhaimon GO !");
+				player->Say(messageOut, LANG_UNIVERSAL);
+			}
+			
+			
+
+		}
+		else
+		{
+			
+			char messageOut[256];
+			sprintf(messageOut, "Pas de youhaimon");
+			player->Say(messageOut, LANG_UNIVERSAL);
+
+			Pet* old_critter = player->GetMiniPet();
+			if (old_critter)
+			{
+				player->RemoveMiniPet();
+			}
+
+			return;
+		}
+	}
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
     if (!pet_entry)
         return;
 
@@ -4650,6 +4730,10 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
     // summon new pet
     Pet* critter = new Pet(MINI_PET);
 
+
+
+
+
     Map* map = m_caster->GetMap();
     if (!critter->Create(map->GenerateLocalLowGuid(HIGHGUID_PET), pos, cInfo, pet_entry))
     {
@@ -4657,6 +4741,10 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
         delete critter;
         return;
     }
+
+
+
+
 
     critter->SetRespawnCoord(pos);
 
@@ -4668,6 +4756,31 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
     critter->SelectLevel();                                 // some summoned critters have different from 1 DB data for level/hp
     critter->SetUInt32Value(UNIT_NPC_FLAGS, critter->GetCreatureInfo()->NpcFlags);
     // some mini-pets have quests
+
+
+
+
+
+	
+	/////////////////////////////////////////////////
+	//richard set scale
+	if ( scalePet > 0.0f ) 
+	{ 
+		critter->SetObjectScale(scalePet);  
+	}
+	if ( petlevel > 0 ) 
+	{
+		critter->SetLevel(petlevel);
+	}
+	/////////////////////////////////////////////////
+
+
+
+
+
+
+
+
 
     critter->InitPetCreateSpells();                         // e.g. disgusting oozeling has a create spell as critter...
 

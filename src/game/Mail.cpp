@@ -313,6 +313,13 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
     else
         expire_delay = (m_COD > 0) ? 3 * DAY : 30 * DAY;
 
+
+
+	/// RICHARD je passe le delay des courriers a 60 jours tout le temps :
+	expire_delay = 60 * DAY;
+
+
+
     time_t expire_time = deliver_time + expire_delay;
 
     // Add to DB

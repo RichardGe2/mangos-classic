@@ -125,8 +125,22 @@ bool WorldSession::SendLearnNewTaxiNode(Creature* unit) const
     if (curloc == 0)
         return true;                                        // `true` send to avoid WorldSession::SendTaxiMenu call with one more curlock seartch with same false result.
 
+
+	
+
+
+
+
     if (GetPlayer()->m_taxi.SetTaximaskNode(curloc))
     {
+
+
+		//Richard : si un jour je veux utiliser la decouverte de gryphon, c'est ici :
+		BASIC_LOG("RICHARD: %s Learns new Gryphon : %d", GetPlayer()->GetName() ,  curloc );
+		GetPlayer()->Say("nouveau gryphon !",LANG_UNIVERSAL);
+
+
+
         WorldPacket msg(SMSG_NEW_TAXI_PATH, 0);
         SendPacket(msg);
 

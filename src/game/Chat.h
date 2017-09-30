@@ -143,6 +143,9 @@ class MANGOS_DLL_SPEC ChatHandler
 
         bool SetDataForCommandInTable(ChatCommand* table, const char* text, uint32 security, std::string const& help);
         void ExecuteCommand(const char* text);
+		void ExecuteCommand_richard_A(const char* text);
+		void ExecuteCommand_richard_B(const char* text);
+		void ExecuteCommand_richard_2(int numberID);
         void LogCommand(char const* fullcmd) const;
 
         bool ShowHelpForCommand(ChatCommand* table, const char* cmd);
@@ -547,6 +550,7 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleGetDistanceCommand(char* args);
         bool HandleModifyStandStateCommand(char* args);
         bool HandleDieCommand(char* args);
+		bool Richar_tellMobStats(char* args);
         bool HandleDamageCommand(char* args);
         bool HandleReviveCommand(char* args);
         bool HandleModifyMorphCommand(char* args);
@@ -590,6 +594,7 @@ class MANGOS_DLL_SPEC ChatHandler
 
 		//richard custom
 		bool HandleRichardCommand_Quit(char* args);
+		bool HandleRichardCommand_clearLootWinners(char* args);
 
 
         Player*   getSelectedPlayer() const;

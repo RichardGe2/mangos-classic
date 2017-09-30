@@ -311,6 +311,17 @@ Unit::Unit() :
     m_regenTimer(0),
     m_combatData(new CombatData(this))
 {
+
+	
+	
+	
+	m_richar_lieuOrigin = "???";
+
+
+
+
+
+
     m_objectType |= TYPEMASK_UNIT;
     m_objectTypeId = TYPEID_UNIT;
     m_updateFlag = (UPDATEFLAG_ALL | UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION);
@@ -5977,13 +5988,13 @@ int32 Unit::SpellBonusWithCoeffs(SpellEntry const* spellProto, int32 total, int3
 
 
 
-		BASIC_LOG("RICHARD: compute spell domage %d  +  %d*%f*%f   =  %d",
-			total,
-			benefit,
-			coeff,
-			LvlPenalty,
-			total + int32(benefit * coeff * LvlPenalty)
-			);
+		//BASIC_LOG("RICHARD: compute spell domage %d  +  %d*%f*%f   =  %d",
+		//	total,
+		//	benefit,
+		//	coeff,
+		//	LvlPenalty,
+		//	total + int32(benefit * coeff * LvlPenalty)
+		//	);
 
 
 
@@ -6015,7 +6026,7 @@ uint32 Unit::SpellDamageBonusDone(Unit* pVictim, SpellEntry const* spellProto, u
 
     // Creature damage
     if (GetTypeId() == TYPEID_UNIT && !((Creature*)this)->IsPet())
-        DoneTotalMod *= Creature::_GetSpellDamageMod(((Creature*)this)->GetCreatureInfo()->Rank);
+        DoneTotalMod *= Creature::_GetSpellDamageMod(  m_richar_lieuOrigin,GetName(),       ((Creature*)this)->GetCreatureInfo()->Rank);
 
     AuraList const& mModDamagePercentDone = GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
     for (AuraList::const_iterator i = mModDamagePercentDone.begin(); i != mModDamagePercentDone.end(); ++i)
@@ -6133,17 +6144,102 @@ float Unit::GetStat(Stats stat) const
 		{
 			if (stat == STAT_INTELLECT)
 			{
-				uint32 nb30002 = play->richard_countItem(30002);
-				float multipl = 1.0f + (float)nb30002*1.0f;
-				BASIC_LOG("RICHARD: intellect %f->%f", valueToReturn, valueToReturn*multipl);
-				valueToReturn *= multipl;
+			//	uint32 nb30002 = play->richard_countItem(30002);
+			//	float multipl = 1.0f + (float)nb30002*1.0f;
+			//	BASIC_LOG("RICHARD: %s intellect %f->%f",m_name.c_str(), valueToReturn, valueToReturn*multipl);
+			//	valueToReturn *= multipl;
 			}
+
+
+			//pour info, le stamina de base du guerrier 60 est 110
+			//la somme de bonus stamina du set bleu guerrier est 131
+			//la somme de bonus stamina du set T3 guerrier est 296
+			//2 possibilités : 
+			//   1- je multiplis les stats, pour mettre en valeur l'equipement
+			//   2- ou j'ajoute le bonus des charm, mais du coup ca peut rendre l'equipement negligeable
+
+			//je pense partir sur 1-  c'est plus sympa
+
+			//voir  GetRichardModForMap  :
+			//les donjons low-level sont ramenés a une dofficulté de 2 joueurs
+			//les donjons high level sont tous raménes a une difficulté de 5 joueurs
+
+			//donc un donjon low level ne demande pas de bonus si c'est fait a 2 joueurs
+			//un donjon high level demanderai un bonus de *2.5 â chaque joueur si c'est fait a 2 joueurs
+
+			//ce qu'il faudrait que je me demande c'est : combien de youhaicoin faudra t'il pour etre a *2.5
+			//est ce qu'on peut dire que etre a *2.5,  veut dire qu'on fait un  *2.5  a 3 stats: genre pour gerrier :  force, agility, stamina
+
+			//TEST TEMP
+			if (stat == STAT_STRENGTH)
+			{
+				int aa=0;
+				//return 1000;
+			}
+			if (stat == STAT_AGILITY)
+			{
+				int aa=0;
+				//return 1000;
+			}
+			if (stat == STAT_STAMINA)
+			{
+				int aa=0;
+				//return 1000;
+			}
+			if (stat == STAT_INTELLECT)
+			{
+				int aa=0;
+				//return 1000;
+			}
+			if (stat == STAT_SPIRIT)
+			{
+				int aa=0;
+				//return 1000;
+			}
+
+
+
+			if (   stat == STAT_STRENGTH
+				|| stat == STAT_AGILITY
+				|| stat == STAT_STAMINA
+				|| stat == STAT_INTELLECT
+				|| stat == STAT_SPIRIT
+				)
+			{
+				if ( play->m_richar_paragon > 1 )
+				{
+					float before=valueToReturn;
+					
+					//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N joueurs
+					float coeffParagon = ((float)play->m_richar_paragon + 1.0) / 2.0;
+
+					valueToReturn *= coeffParagon;
+					
+					char statName[128];
+					statName[0] = 0;
+					if ( stat == STAT_STRENGTH ) { sprintf(statName,"STRENGTH"); }
+					if ( stat == STAT_AGILITY ) { sprintf(statName,"AGILITY"); }
+					if ( stat == STAT_STAMINA ) { sprintf(statName,"STAMINA"); }
+					if ( stat == STAT_INTELLECT ) { sprintf(statName,"INTELLECT"); }
+					if ( stat == STAT_SPIRIT ) { sprintf(statName,"SPIRIT"); }
+					//BASIC_LOG("RICHARD: PARAGON %s - %s  %f->%f",play->GetName(),statName,   before,valueToReturn);
+
+					int erereredfdr=0;
+				}
+				
+			}
+			else
+			{
+				BASIC_LOG("RICHARD: ------------------------------- WARNING 4536");
+			}
+
+
 
 
 		}
 		else
 		{
-			BASIC_LOG("RICHARD: error 4536");
+			BASIC_LOG("RICHARD: ------------------------------- error 4536");
 		}
 
 
@@ -6154,6 +6250,46 @@ float Unit::GetStat(Stats stat) const
 	return valueToReturn;
 
 }
+
+uint32  Unit::GetResistance(SpellSchools school) const 
+{ 
+	uint32 valueToReturn = GetUInt32Value(UNIT_FIELD_RESISTANCES + school); 
+	
+
+	if (GetTypeId() == TYPEID_PLAYER)
+	{
+		const Player* play = dynamic_cast<const Player*>(this);
+		if (play)
+		{
+			if ( play->m_richar_paragon > 1 )
+			{
+				uint32 before=valueToReturn;
+
+				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N joueurs
+				float coeffParagon = ((float)play->m_richar_paragon + 1.0) / 2.0;
+
+				valueToReturn *= coeffParagon;
+
+				char statName[128];
+				statName[0] = 0;
+				if ( school == SPELL_SCHOOL_NORMAL ) { sprintf(statName,"ARMOR"); }
+				if ( school == SPELL_SCHOOL_HOLY ) { sprintf(statName,"SCHOOL_HOLY"); }
+				if ( school == SPELL_SCHOOL_FIRE ) { sprintf(statName,"SCHOOL_FIRE"); }
+				if ( school == SPELL_SCHOOL_NATURE ) { sprintf(statName,"SCHOOL_NATURE"); }
+				if ( school == SPELL_SCHOOL_FROST ) { sprintf(statName,"SCHOOL_FROST"); }
+				if ( school == SPELL_SCHOOL_SHADOW ) { sprintf(statName,"SCHOOL_SHADOW"); }
+				if ( school == SPELL_SCHOOL_ARCANE ) { sprintf(statName,"SCHOOL_ARCANE"); }
+
+				//BASIC_LOG("RICHARD: PARAGON %s - %s  %d->%d",play->GetName(),statName,   before,valueToReturn);
+			}
+
+		}
+	}
+
+
+	return valueToReturn;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -6204,7 +6340,7 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 		// at this point, DoneAdvertisedBenefit  contains the sum of spell dommage bonus that the player has
 		// (can be 0 if no spell bonus )
 		//
-		Player* play = dynamic_cast<Player*>(this);
+		/*Player* play = dynamic_cast<Player*>(this);
 		if (play)
 		{
 			uint32 nb30001 = play->richard_countItem(30001);
@@ -6228,7 +6364,7 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 		else
 		{
 			BASIC_LOG("RICHARD: error 4539");
-		}
+		}*/
 		//////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -7836,6 +7972,8 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
                        ? *effBasePoints - baseDice
                        : spellProto->EffectBasePoints[effect_index];
 
+
+
     basePoints += int32(level * basePointsPerLevel);
     int32 randomPoints = int32(spellProto->EffectDieSides[effect_index] + level * randomPointsPerLevel);
     float comboDamage = spellProto->EffectPointsPerComboPoint[effect_index];
@@ -7876,6 +8014,272 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
             value = int32(value * 0.25f * exp(getLevel() * (70 - spellProto->spellLevel) / 1000.0f));
         }
     }
+
+
+
+
+
+
+	
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//richard : c'est ici que se calcule les point de base lancé par un sort
+	//par exemple, Arcan Explosion va faire entre X et Y de base,
+	//c'est ici qu'on lance les dès entre X et Y
+	
+	if ( unitPlayer 
+		&& unitPlayer->m_richar_paragon > 1 
+		
+		&& value != 0 
+		//&& value > 1  //si c'est negatif, c'est etrange  -  si c'est 0 ou 1,  c'est etrange aussi
+		
+		//list de sort dont je ne veux pas modifier le value
+		//&& strcmp( spellProto->SpellName[0] , "LOGINEFFECT" ) != 0
+		
+		
+
+		)
+	{
+
+
+		//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N joueurs
+		float coeffParagon = ((float)unitPlayer->m_richar_paragon + 1.0) / 2.0;
+
+
+
+		//je me rends compte que c'est plus safe de faire une whitelist plutot qu'une black list
+		bool whitelistedSpell = false;
+	
+
+
+		//de facon arbitraire je prends entre -5 et 5
+		//je considre qu'un sort qui a une petite valeur d'effet est trop suspect pour etre multiplié par le paragon
+		if ( value >= 5   ||   value <= -5  )
+		{
+			whitelistedSpell = true;
+		}
+
+
+
+/*
+		if ( false
+			
+			|| strcmp( spellProto->SpellName[0] , "LOGINEFFECT" ) == 0  
+
+			|| strcmp( spellProto->SpellName[0] , "Ice Shards" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Arcane Instability" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Darkness" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Fade" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Mind Blast" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Shadow Word: Pain" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Shadow Affinity" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Blackout" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Shadow Focus" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Shadow Weaving" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Spirit Tap" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Spiritual Healing" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Inspiration" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Psychic Scream" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Arctic Reach" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Frostbolt" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Arcane Missiles" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Leader of the Pack" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Renew" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Shadow Reach" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Stealth 5" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Increase Fire Dam 23" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Incinerate" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "zzOLDArcane Meditation" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "zzOLDImproved Arcane Explosion" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Divine Fury" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Divine Fury" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Force of Will" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Mental Strength" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Mental Strength" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Battle Stance Passive" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Holy Reach" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Blessed Recovery" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Improved Vampiric Embrace" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Spell Warding" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Spell Warding" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Sword Specialization" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "The Human Spirit" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "The Human Spirit" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Diplomacy" ) == 0  
+			|| strcmp( spellProto->SpellName[0] , "Mace Specialization" ) == 0  
+
+
+|| strcmp( spellProto->SpellName[0] , "Gazban Water Form") == 0  
+|| strcmp( spellProto->SpellName[0] , "Wand Specialization") == 0  
+|| strcmp( spellProto->SpellName[0] , "Lockpicking") == 0  
+|| strcmp( spellProto->SpellName[0] , "Defensive Stance Passive") == 0  
+|| strcmp( spellProto->SpellName[0] , "Berserker Stance Passive") == 0  
+|| strcmp( spellProto->SpellName[0] , "Journeyman Enchanting") == 0  
+|| strcmp( spellProto->SpellName[0] , "Expert Enchanting") == 0  
+|| strcmp( spellProto->SpellName[0] , "Frost Warding") == 0  
+|| strcmp( spellProto->SpellName[0] , "Critical Mass") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Pummel") == 0  
+|| strcmp( spellProto->SpellName[0] , "Anger Management") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Challenging Shout") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Fireball") == 0  
+|| strcmp( spellProto->SpellName[0] , "zzOLDImproved Fire Blast") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Flamestrike") == 0  
+|| strcmp( spellProto->SpellName[0] , "zzOLDBurning Soul") == 0  
+|| strcmp( spellProto->SpellName[0] , "Flame Throwing") == 0  
+|| strcmp( spellProto->SpellName[0] , "Fire Power") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Frost Nova") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Cone of Cold") == 0  
+|| strcmp( spellProto->SpellName[0] , "Arcane Mind") == 0  
+|| strcmp( spellProto->SpellName[0] , "Frost Channeling") == 0  
+|| strcmp( spellProto->SpellName[0] , "zzOLDPermafrost") == 0  
+|| strcmp( spellProto->SpellName[0] , "zzOLDWinter's Chill") == 0  
+|| strcmp( spellProto->SpellName[0] , "zzOLDArcane Subtlety") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Mana Shield") == 0  
+|| strcmp( spellProto->SpellName[0] , "Magic Attunement") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Rend") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Heroic Strike") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Thunder Clap") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Charge") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Pummel") == 0  
+|| strcmp( spellProto->SpellName[0] , "Two-Handed Weapon Specialization") == 0  
+|| strcmp( spellProto->SpellName[0] , "Shield Specialization") == 0  
+|| strcmp( spellProto->SpellName[0] , "Anticipation") == 0  
+|| strcmp( spellProto->SpellName[0] , "Toughness") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Taunt") == 0  
+|| strcmp( spellProto->SpellName[0] , "Axe Specialization") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Revenge") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Shield Wall") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Disarm") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Sunder Armor") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Bloodrage") == 0  
+|| strcmp( spellProto->SpellName[0] , "Polearm Specialization") == 0  
+|| strcmp( spellProto->SpellName[0] , "Booming Voice") == 0  
+|| strcmp( spellProto->SpellName[0] , "Arcane Focus") == 0  
+|| strcmp( spellProto->SpellName[0] , "Cruelty") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Battle Shout") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Demoralizing Shout") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Challenging Shout") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Shield Block") == 0  
+|| strcmp( spellProto->SpellName[0] , "Piercing Ice") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Shield Bash") == 0  
+|| strcmp( spellProto->SpellName[0] , "Iron Will") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Overpower") == 0  
+|| strcmp( spellProto->SpellName[0] , "Unbridled Wrath") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Fire Ward") == 0  
+|| strcmp( spellProto->SpellName[0] , "Artisan Enchanting") == 0  
+|| strcmp( spellProto->SpellName[0] , "Deflection") == 0  
+|| strcmp( spellProto->SpellName[0] , "Impale") == 0  
+|| strcmp( spellProto->SpellName[0] , "One-Handed Weapon Specialization") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Cleave") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Slam") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Berserker Rage") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Execute") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Intercept") == 0  
+|| strcmp( spellProto->SpellName[0] , "Dual Wield Specialization") == 0  
+|| strcmp( spellProto->SpellName[0] , "Improved Hamstring") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Spirit 13") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Stamina 13") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Stamina 09") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Strength 10") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Stamina 14") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Strength 13") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Stamina 08") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Strength 09") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Stamina 13") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Strength 13") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Defense") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Spirit 07") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Strength 07") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Agility 10") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Strength 10") == 0  
+|| strcmp( spellProto->SpellName[0] , "Increased Strength 12") == 0  
+
+
+
+|| strcmp( spellProto->SpellName[0] , "Improved Power Word: Fortitude") == 0
+|| strcmp( spellProto->SpellName[0] , "Improved Power Word: Shield") == 0
+|| strcmp( spellProto->SpellName[0] , "Improved Inner Fire") == 0
+|| strcmp( spellProto->SpellName[0] , "Improved Mana Burn") == 0
+|| strcmp( spellProto->SpellName[0] , "Meditation") == 0
+|| strcmp( spellProto->SpellName[0] , "Mental Agility") == 0
+|| strcmp( spellProto->SpellName[0] , "Silent Resolve") == 0
+|| strcmp( spellProto->SpellName[0] , "Unbreakable Will") == 0
+|| strcmp( spellProto->SpellName[0] , "Holy Specialization") == 0
+|| strcmp( spellProto->SpellName[0] , "Healing Focus") == 0
+|| strcmp( spellProto->SpellName[0] , "Improved Healing") == 0
+|| strcmp( spellProto->SpellName[0] , "Searing Light") == 0
+|| strcmp( spellProto->SpellName[0] , "Improved Prayer of Healing") == 0
+|| strcmp( spellProto->SpellName[0] , "Spiritual Guidance") == 0
+
+|| strcmp( spellProto->SpellName[0] , "Stealth 1") == 0
+|| strcmp( spellProto->SpellName[0] , "Improved Blizzard") == 0
+|| strcmp( spellProto->SpellName[0] , "Shatter") == 0
+|| strcmp( spellProto->SpellName[0] , "Parry") == 0
+|| strcmp( spellProto->SpellName[0] , "Block") == 0
+
+			)
+		{
+			// black listed spell
+
+			int a=0;
+		}
+		else if (  false
+
+		//	|| strcmp( spellProto->SpellName[0] , "Arcane Explosion" ) == 0  
+
+
+			// guerrier
+			|| strcmp( spellProto->SpellName[0] , "Rend") == 0
+			|| strcmp( spellProto->SpellName[0] , "Sunder Armor") == 0
+			|| strcmp( spellProto->SpellName[0] , "Deep Wound") == 0
+			|| strcmp( spellProto->SpellName[0] , "Flurry") == 0
+			|| strcmp( spellProto->SpellName[0] , "Heroic Strike") == 0
+			|| strcmp( spellProto->SpellName[0] , "Enrage") == 0
+			|| strcmp( spellProto->SpellName[0] , "Concussion Blow") == 0
+			|| strcmp( spellProto->SpellName[0] , "Demoralizing Shout") == 0
+			|| strcmp( spellProto->SpellName[0] , "Battle Shout") == 0
+
+			 )
+		{
+			// white listed spell
+			whitelistedSpell = true;
+		}
+		else
+		{
+			BASIC_LOG("RICHARD: PARAGON - WHITE OR BLACK ? (%d) : || strcmp( spellProto->SpellName[0] , \"%s\") == 0   ",
+				value,  
+				spellProto->SpellName[0]  );
+		}
+
+*/
+		if ( whitelistedSpell )
+		{
+			int before = value;
+		
+			value =   (int)(   (float)value * coeffParagon   );
+
+		
+			BASIC_LOG("RICHARD: PARAGON - \"%s\"  %d->%d",spellProto->SpellName[0],   before,value);
+		}
+	}
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+//	BASIC_LOG("RICHARD: PARAGON - CalculateSpellDamage - \"%s\"  %d",spellProto->SpellName[0],   value);
+
+
+
+
     return value;
 }
 

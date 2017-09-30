@@ -680,6 +680,76 @@ class MANGOS_DLL_SPEC WorldSession
 
         std::mutex m_recvQueueLock;
         std::deque<std::unique_ptr<WorldPacket>> m_recvQueue;
+
+
+
+
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// richard 
+
+	class RICHARD_TRY_LOOT_WANT_NB
+	{
+	public:
+		RICHARD_TRY_LOOT_WANT_NB() { nbFois = 0; scoreDice = -1; }
+	
+		int nbFois;
+
+		// -1 : pas init
+		// 0  : joueur arrivé en retard.
+		// 1 -> 1000
+		int scoreDice;
+	};
+
+	class RICHARD_TRY_LOOT_WANT
+	{
+	public:
+		RICHARD_TRY_LOOT_WANT() 
+		{ 
+			winner = nullptr; 
+			//winnerSaidIWinAlone = false;
+			messageSentToPlayer_po = false;
+			messageSentToPlayer_loot = false;
+
+			okWinDoneOnThisLoot = false;
+		}
+
+
+		std::map<Player * ,  RICHARD_TRY_LOOT_WANT_NB >  list;
+
+		Player * winner;
+
+		//bool winnerSaidIWinAlone;
+
+		bool messageSentToPlayer_po;
+		bool messageSentToPlayer_loot;
+
+		bool okWinDoneOnThisLoot;
+		
+	};
+
+	
+
+	public: static std::map<time_t  , RICHARD_TRY_LOOT_WANT  > g_wantLoot ;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
 };
 #endif
 /// @}

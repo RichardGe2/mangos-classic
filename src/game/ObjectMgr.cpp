@@ -6959,9 +6959,49 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
         case CONDITION_SKILL:
             return player->HasSkill(m_value1) && player->GetBaseSkillValue(m_value1) >= m_value2;
         case CONDITION_QUESTREWARDED:
+		{
+
+
+
+			/////////////////////////////////////////////////////////
+			//RICHARD DEBUG PLAYER MEET CONDITION
+			bool result = player->GetQuestRewardStatus(m_value1);
+			BASIC_LOG("RICHARD : PlayerCondition::Meets - condition_entry=%d - type=CONDITION_QUESTREWARDED - m_value1=%d - result=%d",
+				m_entry,
+				m_value1,
+				result);
+			
+
+			/////////////////////////////////////////////////////////
+
+
+
+
+
+
             return player->GetQuestRewardStatus(m_value1);
+		}
         case CONDITION_QUESTTAKEN:
+		{
+
+
+
+			/////////////////////////////////////////////////////////
+			//RICHARD DEBUG PLAYER MEET CONDITION
+			bool result = player->IsCurrentQuest(m_value1, m_value2);
+			BASIC_LOG("RICHARD : PlayerCondition::Meets - condition_entry=%d - type=CONDITION_QUESTTAKEN - m_value1=%d - m_value2=%d -result=%d",
+				m_entry,
+				m_value1,
+				m_value2,
+				result);
+			
+
+			/////////////////////////////////////////////////////////
+
+
+
             return player->IsCurrentQuest(m_value1, m_value2);
+		}
         case CONDITION_AD_COMMISSION_AURA:
         {
             Unit::SpellAuraHolderMap const& auras = player->GetSpellAuraHolderMap();

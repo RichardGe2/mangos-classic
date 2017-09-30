@@ -316,7 +316,7 @@ private:
     void CheckIfRollIsNeeded(Player const* plr);
     void SetGroupLootRight(Player* player);
     void GenerateMoneyLoot(uint32 minAmount, uint32 maxAmount);
-    bool FillLoot(              int32 richard01, int32 richard02,             uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal, bool noEmptyError = false);
+    bool FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal, bool noEmptyError = false);
     void ForceLootAnimationCLientUpdate() const;
     void SetPlayerIsLooting(Player* player);
     void SetPlayerIsNotLooting(Player* player);
@@ -346,6 +346,15 @@ private:
     bool             m_isChanged;                     // true if at least one item is looted
     GroupLootRollMap m_roll;                          // used if an item is under rolling
     GuidSet          m_playersLooting;                // player who opened loot windows
+
+
+
+
+public : time_t m_richard_timeCreated;
+
+
+
+
 };
 
 extern LootStore LootTemplates_Creature;

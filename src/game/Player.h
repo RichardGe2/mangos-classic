@@ -851,6 +851,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         ~Player();
 
 		void richard_saveToLog();
+		void richard_importVariables(uint64 guid__);
 
         void CleanupsBeforeDelete() override;
 
@@ -1026,7 +1027,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
 
 		uint32 richard_countItem(uint32 item) const;
-
+		void richard_countItem_pokeball(uint32& itemKeyRin0 , uint32& quantity ) const;
 
 
 
@@ -2357,6 +2358,43 @@ class MANGOS_DLL_SPEC Player : public Unit
         ReputationMgr  m_reputationMgr;
 
         int32 m_cannotBeDetectedTimer;
+
+
+
+
+
+
+
+
+		///////////////////////////////////////////////////////////////////////////////////
+		// richar
+		public:
+		void Richard_InformDiscoveredNewArea(int areaFlag);
+		struct MAP_SECONDA
+		{
+			MAP_SECONDA(const std::string& name_, bool explored_ , int areaFlag_)
+			{
+				name = name_ ;
+				explored = explored_;
+				areaFlag__ = areaFlag_;
+			}
+
+			std::string name;
+			bool explored;
+			int areaFlag__;
+		};
+
+		
+		void Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECONDA>  >& mapsList,   int&  nbAreaExplored,  int&  nbAreaTotal);
+		
+		int m_richar_paragon;
+		///////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
 };
 
 void AddItemsSetItem(Player* player, Item* item);

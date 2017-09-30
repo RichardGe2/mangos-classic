@@ -63,6 +63,8 @@
 
 #include <cmath>
 
+#include <fstream>
+
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
 
 #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
@@ -368,6 +370,9 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
+	m_richar_paragon = 0;
+
+
     m_transport = nullptr;
 
     m_speakTime = 0;
@@ -534,6 +539,296 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
 
 
+
+void Player::Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECONDA>  >& mapsList  ,   int&  nbAreaExplored,  int&  nbAreaTotal)
+{
+
+	int loc = GetSession()->GetSessionDbcLocale();
+
+
+	AreaTableEntry const* aEntry = nullptr;
+	for (uint32 i = 0; i <= sAreaStore.GetNumRows(); i++)
+	{
+		if (AreaTableEntry const* AreaEntry = sAreaStore.LookupEntry(i))
+		{
+			AreaEntry->exploreFlag ;
+			AreaEntry->area_name[loc];
+			AreaEntry->ID;
+			AreaEntry->zone; // parent area ID
+
+
+			std::string parentName = "???";
+
+			AreaTableEntry const* AreaEntryParent = sAreaStore.LookupEntry(AreaEntry->zone);
+			if ( AreaEntryParent )
+			{
+				parentName = std::string(AreaEntryParent->area_name[loc]);
+			}
+			else
+			{	if ( AreaEntry->zone == 0 )
+				{
+					parentName = "AAA__ROOT_0"; // si la zone parent est l'indice 0 -> pas de parent
+				}
+				int aaaa=0;
+			}
+
+
+			int areaFlag_ = GetAreaFlagByAreaID(AreaEntry->ID);
+				
+			if ( areaFlag_ == -1 )
+			{
+				int aaa=0;
+				continue; // ERRORR
+			}
+
+			int offset = areaFlag_ / 32;
+
+			uint32 val = (uint32)(1 << (areaFlag_ % 32));
+
+				
+			if ( strcmp((char*)AreaEntry->area_name[loc],"Southfury River" ) == 0 )
+			{
+				int aaa=0;
+			}
+
+			if ( offset < PLAYER_EXPLORED_ZONES_SIZE && offset >= 0  )
+			{
+				const uint32 explorred = GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset) ;
+
+
+				//liste des exclus :
+				if (   strcmp(AreaEntry->area_name[loc], "City") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "***On Map Dungeon***") == 0 
+
+					|| strcmp(AreaEntry->area_name[loc], "UNUSED Stratholme") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "UNUSEDShadowfang Keep 003") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Unused The Deadmines 002") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "UNUSEDAlcaz Island") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "DELETE ME") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Darrowmere Lake UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "South Seas UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "UNUSED Stonewrought Pass") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Unused Ironcladcove") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "***On Map Dungeon***") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Programmer Isle") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Caer Darrow UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "The Maul UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Unused Ironclad Cove 003") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "GM Island") == 0
+					|| strcmp(AreaEntry->area_name[loc], "Designer Island") == 0
+					|| strcmp(AreaEntry->area_name[loc], "Island of Doctor Lapidis") == 0
+
+					//List des zone : on retire quand le nom du sub-area correspond au nom d'une zone entiere
+					|| strcmp(AreaEntry->area_name[loc], "Alterac Mountains") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Alterac Valley") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Arathi Basin") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Arathi Highlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Ashenvale") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Azshara") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Badlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Blasted Lands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Burning Steppes") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Darkshore") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Darnassus") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Deadwind Pass") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Desolace") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Dun Morogh") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Durotar") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Duskwood") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Dustwallow Marsh") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Eastern Plaguelands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Elwynn Forest") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Felwood") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Feralas") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Hillsbrad Foothills") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Loch Modan") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Moonglade") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Mulgore") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Old Hillsbrad Foothills") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Redridge Mountains") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Ruins of Ahn'Qiraj") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Searing Gorge") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Silithus") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Silverpine Forest") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Stonetalon Mountains") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Stranglethorn Vale") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Swamp of Sorrows") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Tanaris") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Teldrassil") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "The Barrens") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "The Hinterlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Thousand Needles") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Thunder Bluff") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Tirisfal Glades") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Un'Goro Crater") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Warsong Gulch") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Western Plaguelands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Westfall") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Wetlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Winterspring") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Zul'Gurub") == 0 
+
+
+					//on retire les  zone entirere qui nous interresse pas dans les stats
+					|| parentName == "Programmer Isle"
+						
+
+					// || strcmp(AreaEntry->area_name[loc], "XXXXXX") == 0 
+					)
+				{
+					int eeee=0;
+				}
+				else
+				{
+
+					if ( explorred & val )
+					{
+						nbAreaExplored++;
+					}
+
+					mapsList[parentName].push_back(  MAP_SECONDA( AreaEntry->area_name[loc] ,  explorred & val  ,  areaFlag_ ) );
+
+					nbAreaTotal++;
+				}
+
+
+					
+			}
+			else
+			{
+				int aa=0;  // ERRORR
+			}
+
+			int aaa=0;
+		}
+	}
+
+}
+
+
+void Player::richard_importVariables(uint64 guid__)
+{
+	BASIC_LOG("Start richard_importVariables....");
+
+
+	//on set toute les valeurs par default - au cas ou la variable existe pas
+	m_richar_paragon = 0;
+
+
+
+	char nameFile2[2048];
+	//const char* playerName = GetName();
+	sprintf(nameFile2, "RICHARD/_ri_cust_%d.txt",guid__);
+
+	std::ifstream infile(nameFile2);
+
+	int nbOk = 0;
+	bool error = false;
+
+	int lineConsts = 0;
+	const int Line_First = lineConsts; lineConsts++;
+	const int Line_Version = lineConsts; lineConsts++;
+	const int Line_Name = lineConsts; lineConsts++;
+	const int Line_Paragon = lineConsts; lineConsts++;
+	//const int Line_End = lineConsts; lineConsts++;
+
+	std::string line;
+	int lineCount = 0;
+	while (std::getline(infile, line))
+	{
+		//std::istringstream iss(line);
+		//int a, b;
+		//if (!(iss >> a >> b)) { break; } // error
+
+		// process pair (a,b)
+
+
+		if ( lineCount == Line_First )
+		{
+			int value = atoi(line.c_str());
+			if ( value != 53647 )
+			{
+				error = true; break;
+			}
+			else
+			{
+				nbOk++;
+			}
+		}
+
+		else if ( lineCount == Line_Version )
+		{
+			int value = atoi(line.c_str());
+			if ( value != 3 ) // version
+			{
+				error = true; break;
+			}
+			else
+			{
+				nbOk++;
+			}
+		}
+
+		else if ( lineCount == Line_Name )
+		{
+			int aa=0;
+		}
+
+
+		else if ( lineCount == Line_Paragon )
+		{
+			int value = atoi(line.c_str());
+			m_richar_paragon = value;
+		}
+
+
+		/*
+		else if ( lineCount == Line_End )
+		{
+			int value = atoi(line.c_str());
+
+			if ( value != 3146 )
+			{
+				error = true; break;
+			}
+			else
+			{
+				nbOk++;
+			}
+
+			//break;
+		}
+		*/
+
+
+		else
+		{
+			error = true;
+			break;
+		}
+
+
+		lineCount++;
+	}
+
+
+
+	if ( nbOk != 2 || error )
+	{
+		BASIC_LOG("RICHARD WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE (%d) !!!!!!!!!!!", guid__ );
+
+		
+
+	}
+
+
+	infile.close();
+
+	BASIC_LOG("FINISH richard_importVariables");
+}
+
+
+
 void Player::richard_saveToLog()
 {
 
@@ -555,20 +850,91 @@ void Player::richard_saveToLog()
 		);
 	FILE* fout = fopen(nameFile, "wb");
 
-	uint32 coinItemID = 30000; // id dans la base de donnée
 
 	char outt[4096];
+
+	//////////////////////////////////////////////////////////////////////////////
+	//// sauvegarde des custom variables
+
+	ObjectGuid const& guiiddd = GetObjectGuid();
+	uint32 entryy = guiiddd.GetEntry();
+	uint64 guid = guiiddd.GetRawValue();
+
+	char nameFile2[2048];
+	sprintf(nameFile2, "RICHARD/_ri_cust_%d.txt",guid);
+	FILE* fcustom = fopen(nameFile2, "wb");
+	sprintf(outt, "53647\r\n"); // juste un code pour savoir si tout est ok
+	fwrite(outt, 1, strlen(outt), fcustom);
+	
+	sprintf(outt, "3\r\n"); // la version
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%s\r\n",GetName()); // name
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%d\r\n",m_richar_paragon);
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+
+
+	//sprintf(outt, "3146\r\n"); // juste un code pour savoir si tout est ok
+	//fwrite(outt, 1, strlen(outt), fcustom);
+	fclose(fcustom); fcustom=0;
+
+
+	//////////////////////////////////////////////////////////////////////////////
+
+
+	// id dans la base de donnée
+	const uint32 coinItemID1 = 30000; 
+	const uint32 coinItemID2 = 30007;
+	
 	sprintf(outt, "played,%d\r\n", GetTotalPlayedTime());
 	fwrite(outt, 1, strlen(outt), fout);
 
-	sprintf(outt, "youhaicoin,%d\r\n", richard_countItem(coinItemID));
+	sprintf(outt, "youhaicoin,%d\r\n", richard_countItem(coinItemID1) +  richard_countItem(coinItemID2));
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "youhaicoin_paragon,%d\r\n", richard_countItem(coinItemID1) );
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "youhaicoin_cadeau,%d\r\n", richard_countItem(coinItemID2) );
 	fwrite(outt, 1, strlen(outt), fout);
 
 	sprintf(outt, "level,%d\r\n", getLevel());
 	fwrite(outt, 1, strlen(outt), fout);
 
-	sprintf(outt, "nbGryphon,%d\r\n", m_taxi.m_TaxiDestinations.size());
+	sprintf(outt, "xp,%d\r\n", GetUInt32Value(PLAYER_XP));
 	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "xpNextLevel,%d\r\n", GetUInt32Value(PLAYER_NEXT_LEVEL_XP));
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "paragon,%d\r\n", m_richar_paragon);
+	fwrite(outt, 1, strlen(outt), fout);
+
+	
+	int nbGryphonss = 0;
+	//sprintf(outt, "GryphonList,");
+	//fwrite(outt, 1, strlen(outt), fout);
+	for(int iNode=1; iNode< TaxiMaskSize*32;  iNode++)
+	{
+		bool knownnn = m_taxi.IsTaximaskNodeKnown( iNode) ;
+		if ( knownnn )
+		{
+			nbGryphonss++;
+			//sprintf(outt, "%d,", iNode);
+			//fwrite(outt, 1, strlen(outt), fout);
+		}
+	}
+	//sprintf(outt, "\r\n");
+	//fwrite(outt, 1, strlen(outt), fout);
+
+
+	sprintf(outt, "nbGryphon,%d\r\n", nbGryphonss);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
 
 	sprintf(outt, "queteList,");
 	fwrite(outt, 1, strlen(outt), fout);
@@ -589,6 +955,136 @@ void Player::richard_saveToLog()
 
 	sprintf(outt, "nbQuete,%d\r\n", nbQuete);
 	fwrite(outt, 1, strlen(outt), fout);
+
+
+	sprintf(outt, "version,10\r\n"); // version of THIS save file, think to increment it each time you add update
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	// QUEST_STATUS_NONE, je me demande si ca veut pas dire que c'est une quete que j'ai accepté, puis abandonnée
+	// ca comprends aussi les quetes qui sont en cours dans le journal de quetes
+	sprintf(outt, "questList_NONE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_NONE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded == QUEST_STATUS_NONE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_NONE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_NONE,%d\r\n", nbQuete_NONE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_COMPLETE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_COMPLETE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded == QUEST_STATUS_COMPLETE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_COMPLETE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_COMPLETE,%d\r\n", nbQuete_COMPLETE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_UNAVAILABLE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_UNAVAILABLE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded == QUEST_STATUS_UNAVAILABLE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_UNAVAILABLE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_UNAVAILABLE,%d\r\n", nbQuete_UNAVAILABLE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_INCOMPLETE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_INCOMPLETE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded == QUEST_STATUS_INCOMPLETE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_INCOMPLETE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_INCOMPLETE,%d\r\n", nbQuete_INCOMPLETE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	//je crois que  QUEST_STATUS_AVAILABLE  est inutilisé.
+	sprintf(outt, "questList_AVAILABLE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_AVAILABLE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded == QUEST_STATUS_AVAILABLE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_AVAILABLE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_AVAILABLE,%d\r\n", nbQuete_AVAILABLE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_FAILED,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_FAILED = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded == QUEST_STATUS_FAILED )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_FAILED++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_FAILED,%d\r\n", nbQuete_FAILED);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+
+
 
 
 	sprintf(outt, "\r\n#LIST_SPELLS =================================\r\n");
@@ -647,7 +1143,8 @@ void Player::richard_saveToLog()
 		//}
 
 
-		sprintf(outt, "%s,%d,0x%llx,%s\r\n",
+		sprintf(outt, "%d,\"%s\",%d,0x%llx,%s\r\n",
+			itr->first,
 			spellInfo->SpellName[loc],
 			spellInfo->Category,
 			spellInfo->SpellFamilyFlags,
@@ -656,6 +1153,7 @@ void Player::richard_saveToLog()
 			);
 		fwrite(outt, 1, strlen(outt), fout);
 	}
+
 
 
 
@@ -791,6 +1289,401 @@ void Player::richard_saveToLog()
 
 
 	 }
+
+
+
+
+
+	 sprintf(outt, "\r\n#LIST_SKILLS =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	for (SkillStatusMap::const_iterator itr = mSkillStatus.begin(); itr != mSkillStatus.end(); ++itr)
+	{
+		SkillStatusData const& skillStatus = itr->second;
+		if (skillStatus.uState == SKILL_DELETED)
+        continue;
+
+		//par exemple, les humains on +5 en sword et en mass
+		uint32 bonus = GetUInt32Value(PLAYER_SKILL_BONUS_INDEX(skillStatus.pos));
+		//bonus va contenir le temporaire et le permanent  (en LO, et en HI)
+
+		int32 value_ = int32(SKILL_VALUE(GetUInt32Value(PLAYER_SKILL_VALUE_INDEX(skillStatus.pos))));
+		int32 value_max = int32(SKILL_MAX(GetUInt32Value(PLAYER_SKILL_VALUE_INDEX(skillStatus.pos))));
+
+		std::string finalName;
+
+		for (uint32 id = 0; id < sSkillLineStore.GetNumRows(); ++id)
+		{
+			SkillLineEntry const* skillInfo = sSkillLineStore.LookupEntry(id);
+			if (skillInfo)
+			{
+				int loc = GetSession()->GetSessionDbcLocale();
+				std::string name = skillInfo->name[loc];
+
+				if ( itr->first == id )
+				{
+					finalName = name;
+					break;
+				}
+
+				int aa=0;
+			}
+		}
+
+		sprintf(outt, "%d,\"%s\",%d,%d,%d,%d\r\n",  itr->first  ,  finalName.c_str() , value_ ,  value_max  , SKILL_TEMP_BONUS(bonus) , SKILL_PERM_BONUS(bonus) );
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+
+	 sprintf(outt, "\r\n#LIST_REPUTATION =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+	
+	
+	 for ( auto  itr = GetReputationMgr().GetStateList().begin(); itr != GetReputationMgr().GetStateList().end(); ++itr)
+    {
+		 const RepListID& faction_1 = itr->first;
+        const FactionState& faction_2 = itr->second;
+
+
+		ReputationRank rank = GetReputationRank(faction_2.ID) ;
+
+		int32 reput = GetReputationMgr().GetReputation(faction_2.ID);
+
+
+
+		FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_2.ID);
+
+		std::string nameeeee = std::string(factionEntry->name[0]);
+
+		std::string rank_str = "???";
+
+		if ( rank == REP_HATED ) { rank_str = "HATED";            reput = 36000 + 3000 + 3000 + reput; }
+		if ( rank == REP_HOSTILE ) { rank_str = "HOSTILE";        reput = 3000 + 3000        + reput ;  }
+		if ( rank == REP_UNFRIENDLY ) { rank_str = "UNFRIENDLY";  reput =  3000              + reput; }
+		if ( rank == REP_NEUTRAL ) { rank_str = "NEUTRAL"; }
+		if ( rank == REP_FRIENDLY ) { rank_str = "FRIENDLY";  reput -= 3000; }
+		if ( rank == REP_HONORED ) { rank_str = "HONORED";   reput -= 3000;  reput -= 6000; }
+		if ( rank == REP_REVERED ) { rank_str = "REVERED";   reput -= 3000;  reput -= 6000; reput -= 12000;}
+		if ( rank == REP_EXALTED ) { rank_str = "EXALTED";   reput -= 3000;   reput -= 6000; reput -= 12000; reput -= 21000;}
+
+        //if (faction.needSave)
+       // {
+        //    stmtDel.PExecute(m_player->GetGUIDLow(), faction.ID);
+        //    stmtIns.PExecute(m_player->GetGUIDLow(), faction.ID, faction.Standing, faction.Flags);
+        //    faction.needSave = false;
+        //}
+
+
+		sprintf(outt, "%d,\"%s\",\"%s\",%d\r\n",   faction_2.ID  ,  nameeeee.c_str()   , rank_str.c_str() , reput );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		int aa=0;
+    }
+
+
+
+
+	 sprintf(outt, "\r\n#LIST_HONOR =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+
+	//save talent tree
+	{
+
+		sprintf(outt, "\r\n#LIST_TALENT_TREE =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		int nbTotalPoint = 0;
+		int nbTotalSpells = 0;
+
+		for (unsigned int i = 0; i < sTalentStore.GetNumRows(); ++i)
+		{
+			TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
+
+			if (!talentInfo)
+				continue;
+
+			TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+
+			if (!talentTabInfo)
+				continue;
+
+			if ((getClassMask() & talentTabInfo->ClassMask) == 0)
+				continue;
+
+			int loc = GetSession()->GetSessionDbcLocale();
+
+			int maxRank = -1;
+
+			
+
+			for (int j = 0; j < MAX_TALENT_RANK; ++j)
+			{
+				if (talentInfo->RankID[j])
+				{
+					uint32 spell_id__ = talentInfo->RankID[j];   
+
+					bool playerHasSpell = false;
+
+					for (PlayerSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+					{
+						//SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+						SpellEntry const* spellInfo___ = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
+						if (!spellInfo___)
+						continue;
+
+						if ( itr->first == spell_id__ )
+						{
+							playerHasSpell = true;
+							break;
+						}
+
+
+					}
+
+
+					if (   playerHasSpell   )
+					{
+
+						maxRank = j;
+					}
+
+					int a=0;
+				}
+			}
+
+			//  maxRank = 0 veut dire qu'on a mis 1 point dans ce talen
+			
+			if ( maxRank >= 0 )
+			{
+				uint32 spell_id__ = talentInfo->RankID[maxRank];   
+				bool passivv = IsPassiveSpell(talentInfo->RankID[maxRank]);
+
+				std::string spellNameStr = "??spellname??";
+				SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spell_id__);
+				if (spellInfo)
+				{
+					spellNameStr = std::string( spellInfo->SpellName[loc] );
+				}
+				else
+				{
+					int erer=0;
+				}
+
+				sprintf(outt, "%d,%s,%d\r\n", spell_id__ ,  spellNameStr.c_str(),  maxRank+1   );
+				fwrite(outt, 1, strlen(outt), fout);
+
+				nbTotalPoint += maxRank+1;
+
+				nbTotalSpells ++;
+
+			}
+
+
+		}
+
+
+		sprintf(outt, "nbTotalTalentPoint,%d\r\n", nbTotalPoint);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "nbTotalTalentSpells,%d\r\n", nbTotalSpells);
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+	}
+
+	
+	/*
+	//!  ASUP   !!!!!!
+	//save explored areas
+	{
+
+		int loc = GetSession()->GetSessionDbcLocale();
+
+		int nbAreaExplored = 0;
+		//int nbAreaTotal = 0;
+
+		sprintf(outt, "\r\n#LIST_EXPLORED_AREAS =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		int generalVisitID = 0;
+
+		for (uint32 i = 0; i < PLAYER_EXPLORED_ZONES_SIZE; ++i) // string
+		{
+			const uint32 explorred = GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + i) ;
+
+			for(int areaFlag=0; areaFlag<32; areaFlag++)
+			{
+				uint32 val = (uint32)(1 << (areaFlag % 32));
+
+				//uint32 mappId = GetMapId();
+
+				if ( explorred & val )
+				{
+
+				
+
+
+					bool areaFound = false;
+					uint32 areaFound_mapID = 0;
+					std::string areaName = "?????"; 
+
+					AreaTableEntry const* aEntry = nullptr;
+					for (uint32 i = 0; i <= sAreaStore.GetNumRows(); i++)
+					{
+						//if (area_flag != 0)
+						{
+							if (AreaTableEntry const* AreaEntry = sAreaStore.LookupEntry(i))
+							{
+								//if (AreaEntry->exploreFlag == area_flag)
+								{
+									// area_flag found but it lets test map_id too
+									//if (AreaEntry->mapid == map_id)
+
+									uint32 mapID =  AreaEntry->mapid;
+
+
+									AreaTableEntry const* p = GetAreaEntryByAreaFlagAndMap(generalVisitID, mapID);
+									if ( p != 0 )
+									{
+										areaFound = true;
+										areaFound_mapID = mapID;
+										areaName = std::string( p->area_name[loc] );
+										break;
+									}
+
+									int aaaaa=0;
+
+								}
+							}
+						}
+					}
+
+
+
+
+				
+
+
+
+
+
+					if ( !areaFound )
+					{
+						//erreur etrange ????
+						areaName = "??errorr???"; 
+						int a=0;
+					}
+					else
+					{
+	
+					}
+
+					sprintf(outt, "%d,%d,%d,\"%s\"\r\n",  areaFound_mapID ,  i, areaFlag ,  areaName.c_str()  );
+					fwrite(outt, 1, strlen(outt), fout);
+
+
+					nbAreaExplored++;
+					
+				}
+
+
+				generalVisitID++;
+			}
+
+			int a=0;
+		}
+
+		sprintf(outt, "nbAreaVisited,%d\r\n", nbAreaExplored);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		//sprintf(outt, "nbAreaTotal,%d\r\n", nbAreaTotal);
+		//fwrite(outt, 1, strlen(outt), fout);
+
+	}
+	*/
+
+
+	//save list GRYPHONS KNOWN
+	{
+		sprintf(outt, "\r\n#LIST_GRYPHON_NAMES =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+		//sprintf(outt, "GryphonListNames,");
+		//fwrite(outt, 1, strlen(outt), fout);
+		for(int iNode=1; iNode< TaxiMaskSize*32;  iNode++)
+		{
+			bool knownnn = m_taxi.IsTaximaskNodeKnown( iNode) ;
+			if ( knownnn )
+			{
+
+				std::string taxiiName = "?ERROR?";
+
+				if ( iNode < sTaxiNodesStore.GetNumRows() )
+				{
+					TaxiNodesEntry const* nodeEntry = sTaxiNodesStore.LookupEntry(iNode);
+					if (nodeEntry)
+					{
+						int loc = GetSession()->GetSessionDbcLocale();
+						taxiiName = nodeEntry->name[loc];
+					}
+					else
+					{
+						taxiiName = "?ERROR?";
+						int aa=0; // error ????
+					}
+				}
+
+				sprintf(outt, "%d,\"%s\"\r\n",iNode, taxiiName.c_str());
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+		}
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+
+
+
+	{
+
+		sprintf(outt, "\r\n#LIST_EXPLORED_AREAS_2 =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		int nbAreaExplored = 0;
+		int nbAreaTotal = 0;
+
+		
+
+		std::map<std::string,  std::vector<MAP_SECONDA>  > mapsList;
+		Richard_GetListExplored(mapsList,nbAreaExplored,nbAreaTotal);
+
+		sprintf(outt, "nbAreaVisited,%d\r\n", nbAreaExplored);
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "nbAreaTotal,%d\r\n", nbAreaTotal);
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		for (const auto& elemI : mapsList)
+		{
+			for (const auto& elemJ : elemI.second)
+			{
+				sprintf(outt, "\"%s\",\"%s\",%d\r\n", elemI.first.c_str() ,  elemJ.name.c_str()  ,  elemJ.explored  );
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+		}
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+	}
+
+
 
 
 
@@ -2554,7 +3447,93 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 
     // XP to money conversion processed in Player::RewardQuest
     if (level >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+	{
+
+
+
+
+
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// RICHARD PARAGON
+
+		//if (   strcmp( GetName() , "Grandjuge") == 0 )
+		{
+			if ( xp > 0 )
+			{
+
+				// pour passer 1 paragon, il faut 371 336 XP
+				// pour passer un level de reputation, il faut 21 000
+				const float coeffXPToParagon = 21000.0f/371336.0f;   // ATTENTION, CE NOMBRE EST COPIE COLLE 2 FOIS DANS LE CODE
+
+				int repToAdd = (int)((float)xp * coeffXPToParagon);
+
+
+				int aaa=0;
+
+				FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(93);
+
+
+				int32 currentRep = GetReputationMgr().GetReputation(93);
+
+				//la reputation du Paragon doit etre entre 21000 et 42000
+
+				if ( currentRep > 42000 ) // si c'est trop grand (ca ne devrait pas arriver, mais on sait jamais)
+				{
+					if ( repToAdd < 10000 )
+					{
+						GetReputationMgr().SetReputation(factionEntry1,21000 + repToAdd); // on se remet a 21000 + l'XP a ajouter
+					}
+					else
+					{
+						GetReputationMgr().SetReputation(factionEntry1,21000); // on se remet a 21000
+					}
+				}
+				else
+				{
+
+			
+					int newRep = currentRep + repToAdd;
+
+					if ( newRep > 42000 )
+					{
+						repToAdd = 42010 - currentRep;
+
+						m_richar_paragon++;
+
+						char messageOut[256];
+						sprintf(messageOut, "Paragon %d !", m_richar_paragon);
+						Say(messageOut, LANG_UNIVERSAL);
+					}
+
+			
+					GetReputationMgr().ModifyReputation(factionEntry1,repToAdd);
+
+				}
+			}
+
+			int aa=0;
+
+		}
+
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
         return;
+	}
+
+
+
+
 
     // XP resting bonus for kill
     uint32 rested_bonus_xp = victim ? GetXPRestBonus(xp) : 0;
@@ -5915,6 +6894,75 @@ void Player::SendCinematicStart(uint32 CinematicSequenceId)
     SendDirectMessage(data);
 }
 
+
+
+
+
+void Player::Richard_InformDiscoveredNewArea(int areaFlag)
+{
+
+	std::map<std::string,  std::vector<MAP_SECONDA>  > mapsList;
+	int nbAreaExplored = 0;
+	int nbAreaTotal = 0;
+	Richard_GetListExplored(mapsList,nbAreaExplored,nbAreaTotal);
+
+
+	//on recherche l'area flag :
+	bool areaFound = false;
+	for (const auto& elemI : mapsList)
+	{
+		for (const auto& elemJ : elemI.second)
+		{
+			elemI.first.c_str() ;
+			elemJ.name.c_str()  ;
+			elemJ.explored ;
+
+			
+			if ( elemJ.areaFlag__ == areaFlag )
+			{
+				areaFound = true;
+
+				int nbSubZone=0;
+				int nbSubDiscovered = 0;
+
+				if ( elemI.first == "AAA__ROOT_0" )
+				{
+					nbSubZone = 1;
+					nbSubDiscovered = 1;
+				}
+				else
+				{
+					
+					for (const auto& elemK : elemI.second)
+					{
+						if ( elemK.explored ) { nbSubDiscovered++; }
+						nbSubZone++;
+					}
+				}
+
+				BASIC_LOG("RICHARD:  %s has discovered new : %s,%s  score=%d/%d ",  GetName()  ,  elemI.first.c_str(),  elemJ.name.c_str(),  nbSubDiscovered,  nbSubZone  );
+
+				char messageOut[256];
+				sprintf(messageOut, "Decouverte zone (%d/%d)", nbSubDiscovered, nbSubZone);
+				Say(messageOut, LANG_UNIVERSAL);
+
+
+				//pour l'instan je cache
+				//Say("INFO", LANG_UNIVERSAL);
+				
+
+				break;
+			}
+			
+		}
+
+		if (  areaFound ) { break; }
+	}
+
+}
+
+
+
 void Player::CheckAreaExploreAndOutdoor()
 {
     if (!isAlive())
@@ -5971,6 +7019,10 @@ void Player::CheckAreaExploreAndOutdoor()
     {
         SetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset, (uint32)(currFields | val));
 
+
+		Richard_InformDiscoveredNewArea(areaFlag);
+
+
         AreaTableEntry const* p = GetAreaEntryByAreaFlagAndMap(areaFlag, GetMapId());
         if (!p)
         {
@@ -5979,7 +7031,11 @@ void Player::CheckAreaExploreAndOutdoor()
         else if (p->area_level > 0)
         {
             uint32 area = p->ID;
-            if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+           
+			
+			///////// if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+			if ( false )
+			// RICHARD : on s'assuer que cette action raporte du Paragon !
             {
                 SendExplorationExperience(area, 0);
             }
@@ -8261,11 +9317,35 @@ uint32 Player::richard_countItem(uint32 item) const
 		}
 	}
 
-	BASIC_LOG("RICHARD: _ player has %d item id %d", tempcount, item);
+	//BASIC_LOG("RICHARD: _ %s has %d item id %d", GetName(), tempcount, item);
 
 	return tempcount;
 }
 
+
+
+void Player::richard_countItem_pokeball(uint32& itemKeyRin0 , uint32& quantity ) const
+{
+
+	itemKeyRin0 = 0;
+	quantity = 0;
+
+	Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, KEYRING_SLOT_START);
+	if (pItem && pItem->GetEntry()  && !pItem->IsInTrade())
+	{
+		if ( pItem->GetEntry() >= 100000  &&    pItem->GetEntry() < 300000 )
+		{
+			itemKeyRin0 = pItem->GetEntry();
+			quantity = pItem->GetCount();
+		}
+	}
+
+
+
+
+
+	return ;
+}
 
 
 
@@ -11960,19 +13040,75 @@ bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 
 
 
-		BASIC_LOG("RICHARD: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
-		if (!b0) { BASIC_LOG("     b0 - SatisfyQuestStatus"); }
-		if (!b1) { BASIC_LOG("     b1 - SatisfyQuestExclusiveGroup"); }
-		if (!b2) { BASIC_LOG("     b2 - SatisfyQuestClass"); }
-		if (!b3) { BASIC_LOG("     b3 - SatisfyQuestRace"); }
-		if (!b4) { BASIC_LOG("     b4 - SatisfyQuestLevel"); }
-		if (!b5) { BASIC_LOG("     b5 - SatisfyQuestSkill"); }
-		if (!b6) { BASIC_LOG("     b6 - SatisfyQuestReputation"); }
-		if (!b7)
+		std::string finalMessage;
+
+
+		finalMessage += "RICHARD: ";
+		finalMessage += std::string(GetName());
+		finalMessage += " can t take quest ";
+		finalMessage += std::to_string(pQuest->GetQuestId());
+		finalMessage += " because :";
+
+		
+		//BASIC_LOG("RICHARD: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
+		
+		
+		if (!b2) { finalMessage += std::string("-- SatisfyQuestClass"); }
+		else if (!b3) { finalMessage += std::string("-- SatisfyQuestRace"); }
+		else if (!b4) 
+		{ 
+			finalMessage += std::string("-- SatisfyQuestLevel("); 
+			finalMessage += std::to_string(pQuest->GetMinLevel());
+			finalMessage += std::string(")"); 
+		}
+		else if (!b5) { finalMessage += std::string("-- SatisfyQuestSkill"); }
+
+		
+
+		else if (!b0) 
+		{
+
+			QuestStatusMap::const_iterator itr = mQuestStatus.find(pQuest->GetQuestId());
+
+			if (itr != mQuestStatus.end() && itr->second.m_status != QUEST_STATUS_NONE)
+			{
+				finalMessage += std::string("-- SatisfyQuestStatus:"); 
+
+				if ( itr->second.m_status == QUEST_STATUS_COMPLETE )
+				{
+					finalMessage += std::string("(complete) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_UNAVAILABLE )
+				{
+					finalMessage += std::string("(unvailable) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_INCOMPLETE )
+				{
+					finalMessage += std::string("(incomplete) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_FAILED )
+				{
+					finalMessage += std::string("(failed) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_AVAILABLE )
+				{
+					finalMessage += std::string("(available?????) "); // ne devrait pas etre utilisé ?????
+				}
+				else
+				{
+					finalMessage += std::string("(???) "); 
+				}
+
+			}
+
+			
+		}
+
+		else if (!b7)
 		{
 			//BASIC_LOG("     b7 - SatisfyQuestPreviousQuest");
 
-			std::string fullmessage = "     b7 - SatisfyQuestPreviousQuest - list = ";
+			std::string fullmessage = "-- SatisfyQuestPreviousQuest list = ";
 
 
 			for (Quest::PrevQuests::const_iterator iter = pQuest->prevQuests.begin(); iter != pQuest->prevQuests.end(); ++iter)
@@ -11983,13 +13119,69 @@ bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 
 			}
 
-			BASIC_LOG(fullmessage.c_str());
+			finalMessage += std::string(fullmessage.c_str());
 
 		}
-		if (!b8) { BASIC_LOG("     b8 - SatisfyQuestTimed"); }
-		if (!b9) { BASIC_LOG("     b9 - SatisfyQuestNextChain"); }
-		if (!ba) { BASIC_LOG("     ba - SatisfyQuestPrevChain"); }
-		if (!bb) { BASIC_LOG("     bb - IsActive"); }
+
+		else if (!b1) 
+		{ 
+
+			std::string fullmessage = "-- SatisfyQuestExclusiveGroup list = ";
+
+
+			Quest const* qInfo = pQuest;
+
+
+			ExclusiveQuestGroupsMapBounds bounds = sObjectMgr.GetExclusiveQuestGroupsMapBounds(qInfo->GetExclusiveGroup());
+
+			MANGOS_ASSERT(bounds.first != bounds.second);           // must always be found if qInfo->ExclusiveGroup != 0
+
+			for (ExclusiveQuestGroupsMap::const_iterator iter = bounds.first; iter != bounds.second; ++iter)
+			{
+				uint32 exclude_Id = iter->second;
+
+				// skip checked quest id, only state of other quests in group is interesting
+				if (exclude_Id == qInfo->GetQuestId())
+					continue;
+
+				QuestStatusMap::const_iterator i_exstatus = mQuestStatus.find(exclude_Id);
+
+				// alternative quest already started or completed
+				if (i_exstatus != mQuestStatus.end() 
+					&&
+					(i_exstatus->second.m_status == QUEST_STATUS_COMPLETE || 
+						i_exstatus->second.m_status == QUEST_STATUS_INCOMPLETE))
+				{
+					//if (msg)
+					//	SendCanTakeQuestResponse(INVALIDREASON_DONT_HAVE_REQ);
+
+					fullmessage += std::to_string(exclude_Id);
+					fullmessage += " ";
+				}
+			}
+
+
+			finalMessage += std::string(fullmessage.c_str());
+
+
+		}
+
+
+		else if (!b6) { finalMessage += std::string("-- SatisfyQuestReputation"); }
+		
+		else if (!b8) { finalMessage += std::string("-- SatisfyQuestTimed"); }
+		else if (!b9) { finalMessage += std::string("-- SatisfyQuestNextChain"); }
+		else if (!ba) { finalMessage += std::string("-- SatisfyQuestPrevChain"); }
+		else if (!bb) { finalMessage += std::string("-- IsActive"); }
+		else 
+		{
+			finalMessage += std::string("-- ERROR UNKONWN REASON ??????????????");
+		}
+
+
+		BASIC_LOG(finalMessage.c_str());
+
+
 	}
 
 
@@ -12405,78 +13597,102 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	bool questIsRaid = questType & QUEST_TYPE_RAID;
 	bool questIsLegendary = questType & QUEST_TYPE_LEGENDARY;
 	bool questIsEscort = questType & QUEST_TYPE_ESCORT;
-
+	uint32 questID = pQuest->GetQuestId();
 	bool questIsHarder = questIsDungeon | questIsElite | questIsRaid | questIsLegendary | questIsEscort;
 
-	//jaune, c'est tout le temps entre   lvlPlayer-2  et  lvlPlayer+2
-	//vert ca depend : pour un player 10, le vert va etre entre 5 et 7    pour un player lvl 50 le vert va etre entre 40 et 47... donc je vais considere que le vert sera entre  lvl-7 et lvl-3
 
-	char typeQuestChar[256];
-	strcpy(typeQuestChar, "ERROR");
+	
+	if (
+		//expection des quetes qui raportent pas de youhaicoin :
+		questID < 20000 // les quetes du vendeur youhainy
+		)
+	
+	{
 
-	int nbCoinToReceiveMax = 0;
-	if (!questIsHarder &&     questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est jaune 
-	{
-		strcpy(typeQuestChar, "easy-jaune");
-		nbCoinToReceiveMax = 1;
-	}
-	else if (!questIsHarder &&  questLevel >= playerLevel + 3)  // si la quete est orange ou plus
-	{
-		strcpy(typeQuestChar, "easy-orange");
-		nbCoinToReceiveMax = 2;
-	}
-	else if (questIsHarder &&     questLevel >= playerLevel - 7 && questLevel <= playerLevel - 3) // si la quete est dongeon et verte
-	{
-		strcpy(typeQuestChar, "hard-vert");
-		nbCoinToReceiveMax = 1;
-	}
-	else if (questIsHarder &&    questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est dongeon et jaune
-	{
-		strcpy(typeQuestChar, "hard-jaune");
-		nbCoinToReceiveMax = 2;
-	}
-	else if (questIsHarder &&    questLevel >= playerLevel + 3)  // si la quete est dongeon et orange ou plus
-	{
-		strcpy(typeQuestChar, "hard-orange");
-		nbCoinToReceiveMax = 3;
-	}
-	else
-	{
-		strcpy(typeQuestChar, "tooEasy");
-		nbCoinToReceiveMax = 0;
-	}
+		//jaune, c'est tout le temps entre   lvlPlayer-2  et  lvlPlayer+2
+		//vert ca depend : pour un player 10, le vert va etre entre 5 et 7    pour un player lvl 50 le vert va etre entre 40 et 47... donc je vais considere que le vert sera entre  lvl-7 et lvl-3
 
-	int nbCoinToReceiveReally = rand() % (nbCoinToReceiveMax + 1);     //  0 to nbCoinToReceive
+		char typeQuestChar[256];
+		strcpy(typeQuestChar, "ERROR");
 
-	BASIC_LOG("RICHARD:  add coin in quest reward - player=%d questLvl=%d quest=%s nbCoin=%d/%d",
-		playerLevel,
-		questLevel,
-		typeQuestChar,
-		nbCoinToReceiveReally, nbCoinToReceiveMax
-		);
-
-	uint32 coinItemID = 30000; // id dans la base de donnée
-
-	if (nbCoinToReceiveReally > 0)
-	{
-		ItemPosCountVec dest;
-		if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, coinItemID, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+		int nbCoinToReceiveMax = 0;
+		if (!questIsHarder &&     questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est jaune 
 		{
-			Item* item = StoreNewItem(dest, coinItemID, true, Item::GenerateItemRandomPropertyId(coinItemID));
-			SendNewItem(item, nbCoinToReceiveReally, true, false);
+			strcpy(typeQuestChar, "easy-jaune");
+			nbCoinToReceiveMax = 1;
+		}
+		else if (!questIsHarder &&  questLevel >= playerLevel + 3)  // si la quete est orange ou plus
+		{
+			strcpy(typeQuestChar, "easy-orange");
+			nbCoinToReceiveMax = 2;
+		}
+		else if (questIsHarder &&     questLevel >= playerLevel - 7 && questLevel <= playerLevel - 3) // si la quete est dongeon et verte
+		{
+			strcpy(typeQuestChar, "hard-vert");
+			nbCoinToReceiveMax = 1;
+		}
+		else if (questIsHarder &&    questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est dongeon et jaune
+		{
+			strcpy(typeQuestChar, "hard-jaune");
+			nbCoinToReceiveMax = 2;
+		}
+		else if (questIsHarder &&    questLevel >= playerLevel + 3)  // si la quete est dongeon et orange ou plus
+		{
+			strcpy(typeQuestChar, "hard-orange");
+			nbCoinToReceiveMax = 3;
+		}
+		else
+		{
+			strcpy(typeQuestChar, "tooEasy");
+			nbCoinToReceiveMax = 0;
 		}
 
-		char messageOut[256];
-		sprintf(messageOut, "+%d/%d youhaicoin !", nbCoinToReceiveReally, nbCoinToReceiveMax);
-		Say(messageOut, LANG_UNIVERSAL);
-	}
-	else if (nbCoinToReceiveReally == 0 && nbCoinToReceiveMax > 0)
-	{
-		char messageOut[256];
-		sprintf(messageOut, "+%d/%d youhaicoin :(", nbCoinToReceiveReally, nbCoinToReceiveMax);
-		Say(messageOut, LANG_UNIVERSAL);
-	}
+		int nbCoinToReceiveReally = rand() % (nbCoinToReceiveMax + 1);     //  0 to nbCoinToReceive
 
+		BASIC_LOG("RICHARD:  add coin in quest reward - player=%d questLvl=%d quest=%s nbCoin=%d/%d",
+			playerLevel,
+			questLevel,
+			typeQuestChar,
+			nbCoinToReceiveReally, nbCoinToReceiveMax
+			);
+
+			// id dans la base de donnée
+		const uint32 coinItemID1 = 30000; 
+		const uint32 coinItemID2 = 30007;
+
+		if (nbCoinToReceiveReally > 0)
+		{
+			uint32 newCoin_ = urand(0,1) == 0 ?  coinItemID1  :  coinItemID2 ;
+
+			ItemPosCountVec dest;
+			if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newCoin_, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+			{
+				Item* item = StoreNewItem(dest, newCoin_, true, Item::GenerateItemRandomPropertyId(newCoin_));
+				SendNewItem(item, nbCoinToReceiveReally, true, false);
+			}
+
+
+			if ( newCoin_ == coinItemID1 )
+			{
+				char messageOut[256];
+				sprintf(messageOut, "+%d/%d youhaicoin paragon!", nbCoinToReceiveReally, nbCoinToReceiveMax);
+				Say(messageOut, LANG_UNIVERSAL);
+			}
+			else
+			{
+				char messageOut[256];
+				sprintf(messageOut, "+%d/%d youhaicoin cadeau!", nbCoinToReceiveReally, nbCoinToReceiveMax);
+				Say(messageOut, LANG_UNIVERSAL);
+			}
+		}
+		else if (nbCoinToReceiveReally == 0 && nbCoinToReceiveMax > 0)
+		{
+			char messageOut[256];
+			sprintf(messageOut, "+%d/%d youhaicoin :(", nbCoinToReceiveReally, nbCoinToReceiveMax);
+			Say(messageOut, LANG_UNIVERSAL);
+		}
+
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -12508,10 +13724,31 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
     // Used for client inform but rewarded only in case not max level
     uint32 xp = uint32(pQuest->XPValue(this) * sWorld.getConfig(CONFIG_FLOAT_RATE_XP_QUEST));
 
-    if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
-        GiveXP(xp, nullptr);
-    else
-        ModifyMoney(int32(pQuest->GetRewMoneyMaxLevel() * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)));
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////  RICHARD : pour le paragon, on s'assure que GiveXP est tout le temps appelé
+	/////
+    //////  if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+   ////     GiveXP(xp, nullptr);
+   ///// else
+   //////     ModifyMoney(int32(pQuest->GetRewMoneyMaxLevel() * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)));
+		
+		if ( quest_id == 20001 ) // custom XP win pour la quete qui donne des niveau de paragon
+		{
+			const float coeffXPToParagon = 21000.0f/371336.0f; // ATTENTION, CE NOMBRE EST COPIE COLLE 2 FOIS DANS LE CODE
+
+			float nbParagonToWin = 100.0f;
+
+			GiveXP(  (int)(nbParagonToWin / coeffXPToParagon)   , nullptr);
+		}
+		else
+		{
+			GiveXP(xp, nullptr);
+		}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
     // Give player extra money if GetRewOrReqMoney > 0 and get ReqMoney if negative
     ModifyMoney(pQuest->GetRewOrReqMoney());
@@ -15362,7 +16599,7 @@ bool Player::_LoadHomeBind(QueryResult* result)
 void Player::SaveToDB()
 {
 
-	BASIC_LOG("critical part START - Player::SaveToDB"); // s'il y a un crash pdt cette partie, ca peut etre grave
+	BASIC_LOG("critical part START - Player::SaveToDB (%s)", GetName() ); // s'il y a un crash pdt cette partie, ca peut etre grave
 
 
 
@@ -15548,7 +16785,7 @@ void Player::SaveToDB()
 
 
 
-	BASIC_LOG("critical part END - Player::SaveToDB");
+	BASIC_LOG("critical part END - Player::SaveToDB (%s)", GetName());
 
 
 

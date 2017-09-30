@@ -164,6 +164,59 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         return;
     }
 
+
+
+
+
+
+
+
+
+
+	//////////////////////////////////////////////////////////////////////
+	// RICHARD : interdire les mails des persos primaires vers secondaires
+	//
+	{
+		ObjectGuid const& guiiddd = pl->GetObjectGuid();
+		//uint32 entryy = guiiddd.GetEntry();
+		//uint64 guid = guiiddd.GetRawValue();
+
+		uint32 sender_account = sObjectMgr.GetPlayerAccountIdByGUID(guiiddd);
+		uint32 receiver_account = sObjectMgr.GetPlayerAccountIdByGUID(rc);
+
+		if (    sender_account == 5 && receiver_account == 10  // richard vers richard2
+			||  sender_account == 6 && receiver_account == 9  // diane vers diane2
+
+			||  sender_account == 5 && receiver_account == 9  // richard vers diane2
+			||  sender_account == 6 && receiver_account == 10  // diane vers richard2
+			)
+		{
+			pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_NOT_YOUR_TEAM);
+			 return;
+		}
+
+	}
+	//////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     uint32 rc_account = receive
                         ? receive->GetSession()->GetAccountId()
                         : sObjectMgr.GetPlayerAccountIdByGUID(rc);

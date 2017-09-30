@@ -3378,6 +3378,154 @@ bool ChatHandler::HandleDieCommand(char* /*args*/)
     return true;
 }
 
+
+bool ChatHandler::Richar_tellMobStats(char* /*args*/)
+{
+    Player* player = m_session->GetPlayer();
+    Unit* target = getSelectedUnit();
+
+   // if (!target || !player->GetSelectionGuid())
+   // {
+  //      SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
+   //     SetSentErrorMessage(true);
+   //     return false;
+    //}
+
+
+    if (!target ||  target->GetTypeId() == TYPEID_PLAYER)
+    {
+
+		 Player* playerTarget = 0;
+
+		 if ( target )
+		 {
+			 playerTarget = dynamic_cast<Player*>(target);
+		 }
+		 else
+		 {
+			 playerTarget = player;
+		 }
+
+
+		 char messageee[2048];
+
+		 if ( playerTarget )
+		 {
+		
+
+			sprintf(messageee, "==== INFO ========================"  );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "TYPEID_PLAYER" );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "Name = %s", playerTarget->GetName() );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "Paragon = %d", playerTarget->m_richar_paragon );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+
+			sprintf(messageee, "MaxHealth = %d", playerTarget->GetMaxHealth() );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			//sprintf(messageee, "entry = %d", playerTarget->GetEntry() );
+			//BASIC_LOG(messageee);
+			//PSendSysMessage(messageee);
+
+			sprintf(messageee, "GUIDlow = %d", playerTarget->GetGUIDLow() );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			
+
+		 }
+		 else
+		 {
+			 sprintf(messageee, "ERROR playerTarget" );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+		 }
+    }
+
+   // if (target->isAlive() )
+	else
+	{
+
+		char messageee[2048];
+
+		sprintf(messageee, "==== INFO ========================"  );
+		BASIC_LOG(messageee);
+		PSendSysMessage(messageee);
+		
+		sprintf(messageee, "Name = %s", target->GetName() );
+		BASIC_LOG(messageee);
+		PSendSysMessage(messageee);
+
+		sprintf(messageee, "Health = %d / %d  (%.0f pourcent) ", target->GetHealth() ,   target->GetMaxHealth() , target->GetHealthPercent()    );
+		BASIC_LOG(messageee);
+		PSendSysMessage(messageee);
+
+
+		//sprintf(messageee, "entry = %d", target->GetEntry() );
+		//BASIC_LOG(messageee);
+		//PSendSysMessage(messageee);
+
+
+		Creature* cast_creature = dynamic_cast<Creature*>(target);
+
+		if ( cast_creature )
+		{
+			CreatureInfo const* cinfo = cast_creature->GetCreatureInfo();
+
+			if ( cinfo )
+			{
+				sprintf(messageee, "cinfo->MinMeleeDmg = %f", cinfo->MinMeleeDmg );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "cinfo->MaxMeleeDmg = %f", cinfo->MaxMeleeDmg );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "npc = %d", cinfo->Entry );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "Richar_difficuly_health = %f", cast_creature->Richar_difficuly_health );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+			}
+			else
+			{
+				sprintf(messageee, "ERROR cinfo" );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+			}
+		}
+		else
+		{
+			sprintf(messageee, "NOT_CREATURE" );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+		}
+
+		
+
+	
+	}
+
+    return true;
+}
+
+
+
 bool ChatHandler::HandleDamageCommand(char* args)
 {
     if (!*args)

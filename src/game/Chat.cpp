@@ -37,6 +37,8 @@
 
 #include <cstdarg>
 
+#include <fstream>
+
 // Supported shift-links (client generated and server side)
 // |color|Harea:area_id|h[name]|h|r
 // |color|Hareatrigger:id|h[name]|h|r
@@ -296,7 +298,7 @@ ChatCommand* ChatHandler::getCommandTable()
 
     static ChatCommand instanceCommandTable[] =
     {
-        { "listbinds",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleInstanceListBindsCommand,   "", nullptr },
+        { "listbinds",      SEC_PLAYER,  false, &ChatHandler::HandleInstanceListBindsCommand,   "", nullptr }, // Richard : j'ai passé cette commande en  SEC_PLAYER
         { "unbind",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleInstanceUnbindCommand,      "", nullptr },
         { "stats",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleInstanceStatsCommand,       "", nullptr },
         { "savedata",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleInstanceSaveDataCommand,    "", nullptr },
@@ -687,7 +689,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "go",             SEC_MODERATOR,      false, nullptr,                                           "", goCommandTable       },
         { "gobject",        SEC_GAMEMASTER,     false, nullptr,                                           "", gobjectCommandTable  },
         { "guild",          SEC_GAMEMASTER,     true,  nullptr,                                           "", guildCommandTable    },
-        { "instance",       SEC_ADMINISTRATOR,  true,  nullptr,                                           "", instanceCommandTable },
+        { "instance",       SEC_PLAYER,  true,  nullptr,                                           "", instanceCommandTable },  // richard changer droits
         { "learn",          SEC_MODERATOR,      false, nullptr,                                           "", learnCommandTable    },
         { "list",           SEC_ADMINISTRATOR,  true,  nullptr,                                           "", listCommandTable     },
         { "lookup",         SEC_MODERATOR,      true,  nullptr,                                           "", lookupCommandTable   },
@@ -715,8 +717,16 @@ ChatCommand* ChatHandler::getCommandTable()
         { "die",            SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDieCommand,                 "", nullptr },
         
 
+
 		//RICHARD : commande .killrichard  :  sert juste a sauvegarder une instance
 		{ "killrichard",            SEC_PLAYER,  false, &ChatHandler::HandleDieCommand,                 "", nullptr },
+		// RICHARD command  okwin : sert uniquement quand il y a un loot commun, et que le winner du loot veut permettre aux autre de prendre le loot
+		//                           interdit de faire cette commande dans d'autres cas
+		{ "okwin",           SEC_PLAYER,     false, &ChatHandler::HandleRichardCommand_clearLootWinners, "", nullptr },
+		// RICHARD : donner les detail d'un mob selectionné :
+		{ "stat",            SEC_PLAYER,  false, &ChatHandler::Richar_tellMobStats,                 "", nullptr },
+
+
 
 		
 		{ "revive",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReviveCommand,              "", nullptr },
@@ -1169,6 +1179,631 @@ ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*
     return CHAT_COMMAND_UNKNOWN;
 }
 
+
+
+
+void ChatHandler::ExecuteCommand_richard_B(const char* text)
+{
+	// example  [item=4536]
+
+	if ( text == 0 )
+	{
+		return;
+	}
+
+	if ( text[0] == 0 )
+	{
+		return;
+	}
+
+	int lennn = strlen(text) ;
+	if ( lennn < 8 )
+	{
+		return;
+	}
+
+
+	if ( text[lennn-1] != ']' )
+	{
+		return;
+	}
+
+
+	if (    text[0] == '['
+		&&  text[1] == 'i'
+		&&  text[2] == 't'
+		&&  text[3] == 'e'
+		&&  text[4] == 'm'
+		&&  text[5] == '='
+		)
+	{
+		char number[1024];
+		number[0] = 0;
+		for(int i=6; ;i++)
+		{
+			if ( text[i] >= '0' &&  text[i] <= '9' )
+			{
+				number[i-6] = text[i] ;
+				number[i-6+1] = 0;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		int numberID = atoi(number);
+
+		ExecuteCommand_richard_2(numberID);
+
+
+	}
+
+
+
+
+}
+
+
+// sert a avoir des information sur un Item
+void ChatHandler::ExecuteCommand_richard_A(const char* text)
+{
+	
+	//deja, on regarde si   text est un lien vers un objet  (joueur a fait  Majuscule + click gauche sur objet)
+	//
+	// exemple :  |cffffffff|Hitem:2692:0:0:0|h[Hot Spices]|h|r
+	// exemple :  |cff1eff00|Hitem:30000:0:0:0|h[YouhaiCoin Paragon]|h|r
+	//exemple :   |cffa335ee|Hitem:13353:0:0:0|h[Book of the Dead]|h|r
+	//je crois que le premier nombre est la couleur
+
+	if ( text == 0 )
+	{
+		return;
+	}
+
+	if ( text[0] == 0 )
+	{
+		return;
+	}
+
+	const char beg[] = "|cffffffff|Hitem:";
+	
+	int i=0;
+	for(;;i++)
+	{
+		if ( beg[i] == 0 )
+		{
+			break;
+		}
+
+		if ( i >= 2 && i <= 9 )
+		{
+			if (   text[i] >= '0' && text[i] <= '9'
+				|| text[i] >= 'a' && text[i] <= 'f')
+			{
+				// ok : info sur la couleur
+			}
+			else
+			{
+				return;
+			}
+
+		}
+			
+			
+		else if ( text[i] != beg[i] )
+		{
+			return;
+		}
+	}
+
+	char number[1024];
+	int j=0;
+	for(;;i++)
+	{
+		if ( text[i] == ':' )
+		{
+			break;
+		}
+
+		if ( text[i] == 0 )
+		{
+			return;
+		}
+
+		if ( j > 100 )
+		{
+			return;
+		}
+
+		number[j] = text[i]; j++;
+		number[j] = 0;
+		
+	}
+
+	int numberID = atoi(number);
+
+	ExecuteCommand_richard_2(numberID);
+
+}
+
+
+// sert a avoir des information sur un Item
+void ChatHandler::ExecuteCommand_richard_2(int numberID)
+{
+
+	char messageOUt[2048];
+
+	ItemPrototype const* itemProtoype = sItemStorage.LookupEntry<ItemPrototype>(numberID);
+    if (!itemProtoype)
+            return;
+
+
+	if ( m_session == 0 )
+	{
+		return;
+	}
+
+	Player* player = m_session->GetPlayer();
+
+	if ( player == 0 )
+	{
+		return;
+	}
+
+
+
+
+
+	bool developerInfo = false;
+	ObjectGuid const& guiiddd = player->GetObjectGuid();
+	uint32 account_guid = sObjectMgr.GetPlayerAccountIdByGUID(guiiddd);
+	if (    account_guid == 5  // richard
+		|| account_guid == 7  // grandjuge
+		|| account_guid == 10  // richard2
+		)
+	{
+		developerInfo = true;
+	}
+
+
+
+
+	if ( developerInfo )
+	{
+		sprintf(messageOUt,"Item.entry=%d",numberID);
+		PSendSysMessage(messageOUt);
+	}
+	else
+	{
+		sprintf(messageOUt,"item=%d",numberID);
+		PSendSysMessage(messageOUt);
+	}
+
+
+	int goldAmount = itemProtoype->SellPrice;
+	int nbpo = goldAmount / 10000;
+	int nbpa = (goldAmount - nbpo*10000) / 100;
+	int nbpc = (goldAmount - nbpo*10000 - nbpa*100) ;
+	if ( developerInfo )
+	{
+		sprintf(messageOUt,"Item.SellPrice= %d  %d  %d",   nbpo, nbpa, nbpc);
+		PSendSysMessage(messageOUt);
+	}
+	else
+	{
+		if ( goldAmount == 0 )
+		{
+			sprintf(messageOUt,"Pas de prix de vente");
+			PSendSysMessage(messageOUt);
+		}
+		else
+		{
+			sprintf(messageOUt,"Prix de vente : %d - %d - %d",   nbpo, nbpa, nbpc);
+			PSendSysMessage(messageOUt);
+		}
+	}
+
+
+
+	if ( developerInfo )
+	{
+		sprintf(messageOUt,"Item.spellid_1=%d",itemProtoype->Spells[0].SpellId);
+		PSendSysMessage(messageOUt);
+	}
+
+	int searchKnowSpell = 0;
+
+	SpellEntry const* spellProtoypeLearn = 0;
+
+	if ( itemProtoype->Spells[0].SpellId != 0 )
+	{
+		SpellEntry const* spellProtoype = sSpellTemplate.LookupEntry<SpellEntry>(itemProtoype->Spells[0].SpellId);
+		if (spellProtoype)
+		{
+			
+
+			if ( spellProtoype->Effect[0] == 36 )
+			{
+				spellProtoypeLearn = sSpellTemplate.LookupEntry<SpellEntry>(spellProtoype->EffectTriggerSpell[0]);
+				if ( spellProtoypeLearn )
+				{
+					sprintf(messageOUt,"Item.spellid_1->effect#1= Learn Spell %d (%s)", spellProtoype->EffectTriggerSpell[0]  ,  spellProtoypeLearn->SpellName[0]);
+					searchKnowSpell = spellProtoype->EffectTriggerSpell[0];
+				}
+				else
+				{
+					sprintf(messageOUt,"Item.spellid_1->effect#1= Learn Spell %d (???)", spellProtoype->EffectTriggerSpell[0]  );
+				}
+
+				
+				if ( developerInfo )
+				{
+					PSendSysMessage(messageOUt);
+				}
+			}
+
+			else if ( spellProtoype->Effect[0] == 24 )
+			{
+				if ( developerInfo )
+				{
+					sprintf(messageOUt,"Item.spellid_1->effect#1= Create Item %d ", 0);
+					PSendSysMessage(messageOUt);
+				}
+			}
+
+			else if ( spellProtoype->Effect[0] == 6 )
+			{
+				if ( developerInfo )
+				{
+					sprintf(messageOUt,"Item.spellid_1->effect#1= apply aura ", 0);
+					PSendSysMessage(messageOUt);
+				}
+			}
+
+			else
+			{
+				if ( developerInfo )
+				{
+					sprintf(messageOUt,"Item.spellid_1->effect#1= ?%d? "  ,  spellProtoype->Effect[0]);
+					PSendSysMessage(messageOUt);
+				}
+			}
+
+			int aaa=0;
+
+		}
+           
+	}
+
+
+
+
+	if ( searchKnowSpell != 0 )
+	{
+		bool KnownByPlayer = false;
+
+		std::string nameToSearch = "";
+		if ( strcmp(player->GetName(),"Bouzigouloum") == 0 )
+		{
+			nameToSearch = "Boulette";
+		}
+		else if ( strcmp(player->GetName(),"Adibou") == 0 )
+		{
+			nameToSearch = "Bouillot";
+		}
+		else if ( strcmp(player->GetName(),"Grandtroll") == 0 )
+		{
+			nameToSearch = "Bouillot"; // for debug
+		}
+		else if ( strcmp(player->GetName(),"Grandjuge") == 0 )
+		{
+			nameToSearch = "Boulette"; // for debug
+		}
+		else if ( strcmp(player->GetName(),"Bouillot") == 0 )
+		{
+			nameToSearch = "Bouillot"; // for debug
+		}
+		else if ( strcmp(player->GetName(),"Boulette") == 0 )
+		{
+			nameToSearch = "Boulette"; // for debug
+		}
+		else
+		{
+			sprintf(messageOUt,"INFO : pas de perso primaire associe a ce perso");
+			PSendSysMessage(messageOUt);
+			return;
+		}
+
+		//find most recent file
+		time_t t = time(0);   // get time now
+		struct tm * now = localtime(&t);
+
+
+		int day = now->tm_mday;
+		int mon = now->tm_mon+1;
+		int yea = now->tm_year + 1900;
+
+		char nameFile[2048];
+		nameFile[0] = 0;
+
+		for(;;)
+		{
+
+			sprintf(nameFile, "RICHARD/_ri_stat_%s_%d_%02d_%02d.txt",
+				nameToSearch.c_str(),
+				yea,
+				mon,
+				day
+				);
+
+			std::ifstream file(nameFile);
+			if ( file )
+			{
+				file.close();
+				break;
+			}
+
+			day--;
+			if ( day == 0 )
+			{
+				day = 31;
+				mon --;
+				if ( mon == 0 )
+				{
+					mon = 12;
+					yea --;
+					if ( yea == 2016 )
+					{
+						nameFile[0] = 0;
+						sprintf(messageOUt,"ERROR: pas de fichier pour le perso primaire");
+						PSendSysMessage(messageOUt);
+						return;
+					}
+				}
+			}
+		}
+
+
+		std::ifstream myfile(nameFile);
+
+		if (myfile.is_open()) 
+		{
+			bool insideSpellList = false;
+			std::string line;
+			while (std::getline(myfile, line)) 
+			{
+				if ( line == "#LIST_SPELLS =================================" )
+				{
+					insideSpellList = true;
+				}
+
+				else if ( line == "#LIST_ITEMS =================================" )
+				{
+					insideSpellList = false;
+					break;
+				}
+
+				else if ( insideSpellList )
+				{
+					char number[2048];
+					number[0] = 0;
+					for(int i=0; i<line.length();i++)
+					{
+						if ( line[i] == ',' )
+						{
+							break;
+						}
+
+						if ( i > 100 )
+						{
+							myfile.close();
+							return;
+						}
+
+						number[i] = line[i];
+						number[i+1] = 0;
+					}
+
+					if ( number[0] >= '0' && number[0] <= '9' )
+					{
+						int spellID = atoi(number);
+
+						if ( searchKnowSpell == spellID )
+						{
+							KnownByPlayer = true;
+							break;
+						}
+
+						int aa=0;
+					}
+				}
+			}
+
+			myfile.close();
+		}
+
+
+		if ( KnownByPlayer )
+		{
+			sprintf(messageOUt,"%s est CONNU par %s",spellProtoypeLearn->SpellName[0] , nameToSearch.c_str());
+			PSendSysMessage(messageOUt);
+		}
+		else
+		{
+			sprintf(messageOUt,"%s est INCONNU par %s",spellProtoypeLearn->SpellName[0] , nameToSearch.c_str());
+			PSendSysMessage(messageOUt);
+		}
+
+
+
+
+	}
+
+
+
+
+	if (    itemProtoype->Flags & 2048    )
+	{
+		sprintf(messageOUt,"objet est en loot commun");
+		PSendSysMessage(messageOUt);
+	}
+	else
+	{
+		sprintf(messageOUt,"objet n'est PAS en loot commun");
+		PSendSysMessage(messageOUt);
+	}
+
+
+
+	struct LOOT_CHANCE
+	{
+		LOOT_CHANCE(int32 entry_,float chances_)
+		{
+			entry = entry_;
+			chances = chances_;
+		}
+		int32 entry;
+		float chances;
+	};
+
+	std::vector<LOOT_CHANCE> listChances;
+
+	int itemmmCommand = numberID;
+	char command1[2048];
+	sprintf(command1,"SELECT entry FROM creature_loot_template WHERE item = '%d' ",itemmmCommand);
+
+	if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+    {
+		BarGoLink bar(result1->GetRowCount());
+        do
+        {
+            bar.step();
+            Field* fields = result1->Fetch();
+            
+			int32 entryItem = fields->GetInt32();
+
+			char command2[2048];
+			sprintf(command2,"SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '%d' AND entry = '%d' ",itemmmCommand, entryItem);
+
+
+
+
+			if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+			{
+
+				if ( result2->GetRowCount() != 1 )
+				{
+					// ERROR ?????
+					sprintf(messageOUt,"ERROR 103 avec le taux de loot");
+					PSendSysMessage(messageOUt);
+					delete result2;
+					delete result1;
+					return;
+				}
+
+				BarGoLink bar(result2->GetRowCount());
+				do
+				{
+					bar.step();
+					Field* fields = result2->Fetch();
+            
+					float chancesItem = fields->GetFloat();
+
+					listChances.push_back(LOOT_CHANCE(entryItem,chancesItem));
+
+					int aaaa=0;
+
+				}
+				while (result2->NextRow());
+
+				delete result2;
+			}
+			else
+			{
+				// ERROR ?????
+				sprintf(messageOUt,"ERROR 104 avec le taux de loot");
+				PSendSysMessage(messageOUt);
+				delete result1;
+				return;
+			}
+			
+
+
+
+
+
+			int aaaa=0;
+
+        }
+        while (result1->NextRow());
+        delete result1;
+	}
+	else
+	{
+		int aaa=0;
+	}
+
+
+
+
+	//on les range :
+	if ( listChances.size() > 1 )
+	{
+		for(int i=0; i<listChances.size(); i++)
+		{
+			for(int j=0; j<listChances.size(); j++)
+			{
+				if ( i < j )
+				{
+					if ( fabsf( listChances[i].chances ) <  fabsf( listChances[j].chances )  )
+					{
+						LOOT_CHANCE iii = listChances[i];
+						listChances[i] = listChances[j];
+						listChances[j] = iii;
+					}
+
+
+
+				}
+			}
+		}
+	}
+
+	//on les enum :
+	sprintf(messageOUt,"-----------");
+	PSendSysMessage(messageOUt);
+	for(int i=0; i<5; i++)
+	{
+		if ( i < listChances.size() )
+		{
+
+			std::string creatNamStr = "???";
+
+			CreatureInfo const* creatureProto = sCreatureStorage.LookupEntry<CreatureInfo>(listChances[i].entry);
+			if (creatureProto)
+			{
+				creatNamStr = std::string(creatureProto->Name);
+			}
+
+
+			sprintf(messageOUt,"%.0f pourcent  -  %s(%d)" ,listChances[i].chances , creatNamStr.c_str() , listChances[i].entry);
+			PSendSysMessage(messageOUt);
+		}
+	}
+
+
+
+	int aaaaaa=0;
+
+
+
+	//sprintf(messageOUt,"Item.spellid_1.category=%d",itemProtoype->Spells[0].SpellCategory);
+	//PSendSysMessage(messageOUt);
+
+}
+
+
 /**
  * Execute (sub)command available for chat handler access level with options in command line string
  *
@@ -1289,6 +1924,9 @@ bool ChatHandler::ParseCommands(const char* text)
     {
         if (m_session->GetSecurity() == SEC_PLAYER && !sWorld.getConfig(CONFIG_BOOL_PLAYER_COMMANDS))
             return false;
+
+		ExecuteCommand_richard_A(text);
+		ExecuteCommand_richard_B(text);
 
         if (text[0] != '!' && text[0] != '.')
             return false;

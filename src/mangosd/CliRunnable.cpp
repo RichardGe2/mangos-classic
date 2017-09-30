@@ -458,6 +458,49 @@ bool ChatHandler::HandleRichardCommand_Quit(char* args)
 	return true;
 }
 
+bool ChatHandler::HandleRichardCommand_clearLootWinners(char* args)
+{
+	if ( !m_session )
+	{
+		return false;
+	}
+
+	Player* playerEnterMessage = m_session->GetPlayer();
+
+	if ( !playerEnterMessage )
+	{
+		return false;
+	}
+	
+	int nbModifie = 0;
+	int nbLoot = 0;
+	for(auto &ent : WorldSession::g_wantLoot )
+	{
+
+		//on efface uniquement les winner qui correspondent au joueur qui a dit le message
+		if ( ent.second.winner == playerEnterMessage )
+		{
+			ent.second.winner = nullptr;
+			ent.second.list.clear();
+			ent.second.messageSentToPlayer_loot = false;
+			ent.second.messageSentToPlayer_po = false;
+			ent.second.okWinDoneOnThisLoot = true; // on signal qu'un OKWIN a été fait sur ce loot
+			nbModifie++;
+		}
+
+		nbLoot++; // nb total de loot
+
+	}
+
+	char messageee[2048];
+	sprintf(messageee, "RICHARD: %s a clean ses %d/%d loots.", playerEnterMessage->GetName(),nbModifie, nbLoot );
+
+	BASIC_LOG(messageee);
+	PSendSysMessage(messageee);
+
+	return true;
+}
+
 
 
 
