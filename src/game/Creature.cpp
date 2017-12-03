@@ -1190,7 +1190,7 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
 
 
-	Richar_difficuly_health = _GetHealthMod(  m_richar_lieuOrigin,GetName(),   rank); // Apply custom config setting
+	Richar_difficuly_health = _GetHealthMod(  m_richar_lieuOrigin,GetName(),GetOwner(),      rank); // Apply custom config setting
 
 
     health *= Richar_difficuly_health;
@@ -1238,7 +1238,7 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     }
 
     // damage
-    float damagemod = _GetDamageMod(    m_richar_lieuOrigin,GetName()     ,         rank);
+    float damagemod = _GetDamageMod(    m_richar_lieuOrigin,GetName(),GetOwner(),               rank);
 
     SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, cinfo->MinMeleeDmg * damagemod);
     SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, cinfo->MaxMeleeDmg * damagemod);
@@ -1257,8 +1257,49 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
 
 
-float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName)
+float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner)
 {
+
+	//j ai rajouté ca quand je me suis rendu compte que le pet demoniste etait affaiblie dans les donjons
+	const Unit* ownerrr = richaOwner; //GetOwner();
+	if ( ownerrr )
+	{
+		uint8 ownerid = ownerrr->GetTypeId();
+		if ( ownerid == TYPEID_PLAYER )
+		{
+			// du coup, si le owner est un joueur, on va en profiter pour modifer ici la difficulté de son pet en fonction du paragon du joueur :
+			
+			Player* ownerCastPlayer = (Player*)ownerrr;
+
+			if ( ownerCastPlayer->m_richar_paragon <= 1 )
+			{
+				return 1.0;
+			}
+			else
+			{
+				// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
+				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
+				float coeffParagon = ((float)ownerCastPlayer->m_richar_paragon + 1.0) / 2.0;
+
+				int aaaa=0;
+				
+				return coeffParagon;
+
+			}
+
+
+		}
+		else
+		{
+			int ggg = 0;
+		}
+	}
+	else
+	{
+		int gggf=0;
+	}
+
+
 	static bool messageSaidDungeaon = false;
 
 
@@ -1470,7 +1511,7 @@ float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobNa
 
 		if ( mobLower && mobUpper )
 		{
-			sLog.outBasic("RICHARD: --------------- WARNING ------------- unknown BlackrockSpire Mob - UP ET DOWN: '%s'" ,  mobName.c_str()  );
+			sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown BlackrockSpire Mob - UP ET DOWN: '%s'" ,  mobName.c_str()  );
 
 			// dans le doute, on le mets en difficulté la + dure !
 			outNumber =  1.0f;  
@@ -1478,7 +1519,7 @@ float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobNa
 
 		if ( !mobLower && !mobUpper )
 		{
-			sLog.outBasic("RICHARD: --------------- WARNING ------------- unknown BlackrockSpire Mob - NI UP NI DOWN: '%s'" ,  mobName.c_str()  );
+			sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown BlackrockSpire Mob - NI UP NI DOWN: '%s'" ,  mobName.c_str()  );
 
 			// dans le doute, on le mets en difficulté la + dure !
 			outNumber =  1.0f;  
@@ -1506,12 +1547,12 @@ float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobNa
 
 	else if ( cPosRicha == "???" )
 	{
-		sLog.outBasic("RICHARD: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
 		outNumber =  1.0;
 	}
 	else if ( cPosRicha == "" )
 	{
-		sLog.outBasic("RICHARD: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
 		outNumber =  1.0;
 	}
 	else
@@ -1520,7 +1561,7 @@ float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobNa
 
 
 
-		sLog.outBasic("RICHARD: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
 
 
 		if ( !messageDisplayed )
@@ -1542,7 +1583,7 @@ float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobNa
 		&& !messageSaidDungeaon) 
 	{ 
 		messageSaidDungeaon=true;  
-		sLog.outBasic("RICHARD: INSTANCE DETECTE : %s",cPosRicha.c_str() ); 
+		sLog.outBasic("RICHAR: INSTANCE DETECTE : %s",cPosRicha.c_str() ); 
 	} 
 
 
@@ -1552,10 +1593,10 @@ float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobNa
 
 
 
-float Creature::_GetHealthMod(    const std::string& cPosRicha,const std::string& mobName,          int32 Rank)
+float Creature::_GetHealthMod(    const std::string& cPosRicha,const std::string& mobName, const Unit* richaOwner,               int32 Rank)
 {
 
-	float modRicha = GetRichardModForMap(cPosRicha,mobName);
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
 	if ( modRicha > 0.0f )
 	{
 		return modRicha;
@@ -1579,10 +1620,10 @@ float Creature::_GetHealthMod(    const std::string& cPosRicha,const std::string
     }
 }
 
-float Creature::_GetDamageMod(     const std::string& cPosRicha,const std::string& mobName,          int32 Rank)
+float Creature::_GetDamageMod(     const std::string& cPosRicha,const std::string& mobName, const Unit* richaOwner,            int32 Rank)
 {
 
-	float modRicha = GetRichardModForMap(cPosRicha,mobName);
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
 	if ( modRicha > 0.0f )
 	{
 		return modRicha;
@@ -1607,10 +1648,10 @@ float Creature::_GetDamageMod(     const std::string& cPosRicha,const std::strin
     }
 }
 
-float Creature::_GetSpellDamageMod(     const std::string& cPosRicha,const std::string& mobName,          int32 Rank)
+float Creature::_GetSpellDamageMod(     const std::string& cPosRicha,const std::string& mobName,const Unit* richaOwner,                int32 Rank)
 {
 
-	float modRicha = GetRichardModForMap(cPosRicha,mobName);
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
 	if ( modRicha > 0.0f )
 	{
 		return modRicha;
@@ -1708,7 +1749,7 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
     {
 
 
-		Richar_difficuly_health = _GetHealthMod(m_richar_lieuOrigin,GetName(), GetCreatureInfo()->Rank);
+		Richar_difficuly_health = _GetHealthMod(m_richar_lieuOrigin,GetName(),GetOwner(),       GetCreatureInfo()->Rank);
 
 
         curhealth = uint32(curhealth * Richar_difficuly_health);

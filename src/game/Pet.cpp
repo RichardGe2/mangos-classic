@@ -1259,7 +1259,7 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                     minDmg = (cCLS->BaseDamage * cInfo->DamageVariance + (cCLS->BaseMeleeAttackPower / 14) * (cInfo->MeleeBaseAttackTime/1000)) * cInfo->DamageMultiplier;
 
                     // Apply custom damage setting (from config)
-                    minDmg *= _GetDamageMod(m_richar_lieuOrigin,GetName(),cInfo->Rank);
+                    minDmg *= _GetDamageMod(m_richar_lieuOrigin,GetName(),GetOwner(),      cInfo->Rank);
 
                     SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(minDmg));
                     SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(minDmg * 1.5));
@@ -1309,7 +1309,7 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                 minDmg = (cCLS->BaseDamage * cInfo->DamageVariance + (cCLS->BaseMeleeAttackPower / 14) * (cInfo->MeleeBaseAttackTime/1000)) * cInfo->DamageMultiplier;
 
                 // Get custom setting
-                minDmg *= _GetDamageMod(m_richar_lieuOrigin,GetName(),cInfo->Rank);
+                minDmg *= _GetDamageMod(m_richar_lieuOrigin,GetName(),GetOwner(),      cInfo->Rank);
 
                 // If the damage value is not passed on as float it will result in damage = 1; but only for guardian type pets, though...
                 SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(minDmg));
@@ -1319,7 +1319,7 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                 minDmg = (cCLS->BaseDamage * cInfo->DamageVariance + (cCLS->BaseRangedAttackPower / 14) * (cInfo->RangedBaseAttackTime/1000)) * cInfo->DamageMultiplier;
 
                 // Get custom setting
-                minDmg *= _GetDamageMod(m_richar_lieuOrigin,GetName(),cInfo->Rank);
+                minDmg *= _GetDamageMod(m_richar_lieuOrigin,GetName(),GetOwner(),      cInfo->Rank);
 
                 SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, float(minDmg));
                 SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, float(minDmg * 1.5));
@@ -1375,7 +1375,7 @@ void Pet::InitStatsForLevel(uint32 petlevel)
 
     // Apply custom health setting (from config)
 
-	Richar_difficuly_health = _GetHealthMod(m_richar_lieuOrigin,GetName()        ,cInfo->Rank);
+	Richar_difficuly_health = _GetHealthMod(m_richar_lieuOrigin,GetName(),GetOwner()            ,cInfo->Rank);
 
     health *= Richar_difficuly_health;
 

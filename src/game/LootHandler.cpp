@@ -112,29 +112,29 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 		}
 		else
 		{
-			sLog.outBasic("RICHARD: LOOT - type lootOrigin_creature + ????(%d)" , lootType );
+			sLog.outBasic("RICHAR: LOOT - type lootOrigin_creature + ????(%d)" , lootType );
 			lootOrigin = 0;
 			int aa=0;
 		}
 		
 		
-		//sLog.outBasic("RICHARD: LOOT - type creature" );
+		//sLog.outBasic("RICHAR: LOOT - type creature" );
 		
 	}
 	else if ( !lootOrigin_creature && lootOrigin_gameobj  && !lootOrigin_item )
 	{
-		//sLog.outBasic("RICHARD: LOOT - type gameobj" );
+		//sLog.outBasic("RICHAR: LOOT - type gameobj" );
 		lootOrigin = 2;
 	}
 	else if ( !lootOrigin_creature && !lootOrigin_gameobj  && lootOrigin_item )
 	{
 		// j'ai pas encore reussi a trouver quand ca vient d'un objet (exemple quand on desanchante)
-		//sLog.outBasic("RICHARD: LOOT - type item" ); 
+		//sLog.outBasic("RICHAR: LOOT - type item" ); 
 		lootOrigin = 3;
 	}
 	else
 	{
-		sLog.outBasic("RICHARD: LOOT - type ???" );
+		sLog.outBasic("RICHAR: LOOT - type ??? (object loot?)" );
 		lootOrigin = 0;
 		int aa=0;
 	}
@@ -147,6 +147,13 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 
 
 	g_wantLoot[loot->m_richard_timeCreated].list[_player].nbFois ++;
+
+	Group* groupPlay = _player->GetGroup();
+	int nbPLayInGroup = 1;
+	if ( groupPlay )
+	{
+		nbPLayInGroup = groupPlay->GetMembersCount();
+	}
 
 	if ( g_wantLoot[loot->m_richard_timeCreated].list[_player].scoreDice == -1 )
 	{
@@ -163,6 +170,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 
 		if ( !g_wantLoot[loot->m_richard_timeCreated].okWinDoneOnThisLoot  // ca sert a rien d'embrouiller les joueurs avec des infos useless - on s'en fou du score quand c'est pour looter un OKWIN
 			&& lootOrigin == 1 // on dit le MOI que sur les cadavres
+			&& nbPLayInGroup > 1 // on dot MOI que dans un groupe
 			)
 		{
 			char sayMoiMoiMoi[256];
@@ -174,12 +182,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 	}
 
 
-	Group* groupPlay = _player->GetGroup();
-	int nbPLayInGroup = 1;
-	if ( groupPlay )
-	{
-		nbPLayInGroup = groupPlay->GetMembersCount();
-	}
+	
 
 	
 	
@@ -198,7 +201,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 
 		) // pour rajouter un peu d'aleatoire, le palier est re-tiré au random a chaque fois 
 	{
-		sLog.outBasic("RICHARD: LOOTOBJ - REFUSE a %s - %d < %d  (nbCandidat=%d) (group de %d)", _player->GetName() ,difference, g___palier_ms ,g_wantLoot[loot->m_richard_timeCreated].list.size() , nbPLayInGroup );
+		sLog.outBasic("RICHAR: LOOTOBJ - REFUSE a %s - %d < %d  (nbCandidat=%d) (group de %d)", _player->GetName() ,difference, g___palier_ms ,g_wantLoot[loot->m_richard_timeCreated].list.size() , nbPLayInGroup );
 		return;
 	}
 	else
@@ -210,12 +213,12 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 			
 			int nbJoueur = g_wantLoot[loot->m_richard_timeCreated].list.size();
 
-			//sLog.outBasic("RICHARD: LOOT - on decide winner - %d condidats : ",nbJoueur );
+			//sLog.outBasic("RICHAR: LOOT - on decide winner - %d condidats : ",nbJoueur );
 
 			if ( nbJoueur == 0 )
 			{
 				//je crois que ce cas est pas possible
-				sLog.outBasic("RICHARD: LOOT - personne a reclame le loot donc on donne direct a %s"  ,  _player->GetName()  );
+				sLog.outBasic("RICHAR: LOOT - personne a reclame le loot donc on donne direct a %s"  ,  _player->GetName()  );
 				g_wantLoot[loot->m_richard_timeCreated].winner = _player;
 			}
 			else
@@ -260,7 +263,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 					//g_wantLoot[loot->m_richard_timeCreated].winnerSaidIWinAlone = true;
 				}
 				
-				sLog.outBasic("RICHARD: LOOT - le joueur qui gagne le loot est %s "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()   );
+				sLog.outBasic("RICHAR: LOOT - le joueur qui gagne le loot est %s "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()   );
 			
 			}
 
@@ -318,11 +321,11 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 
 		if ( _player == g_wantLoot[loot->m_richard_timeCreated].winner )
 		{
-			//sLog.outBasic("RICHARD: LOOT - le winner %s prend son loot "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()   );
+			//sLog.outBasic("RICHAR: LOOT - le winner %s prend son loot "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()   );
 		}
 		else
 		{
-			//sLog.outBasic("RICHARD: LOOT - REFUSE : le looser %s essaye de prendre loot. "  , _player->GetName()   );
+			//sLog.outBasic("RICHAR: LOOT - REFUSE : le looser %s essaye de prendre loot. "  , _player->GetName()   );
 			
 			//pour se faire autoriser un loot, le looser devra demander au winner de faire la commande :  .okwin
 
@@ -330,7 +333,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 		}
 		
 
-		//sLog.outBasic("RICHARD: loot accepete a %s - %d < %d", _player->GetName() ,difference, palier  );
+		//sLog.outBasic("RICHAR: loot accepete a %s - %d < %d", _player->GetName() ,difference, palier  );
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -470,29 +473,29 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 		}
 		else
 		{
-			sLog.outBasic("RICHARD: LOOT - type lootOrigin_creature + ????(%d)" , lootType );
+			sLog.outBasic("RICHAR: LOOT - type lootOrigin_creature + ????(%d)" , lootType );
 			lootOrigin = 0;
 			int aa=0;
 		}
 		
 		
-		//sLog.outBasic("RICHARD: LOOT - type creature" );
+		//sLog.outBasic("RICHAR: LOOT - type creature" );
 		
 	}
 	else if ( !lootOrigin_creature && lootOrigin_gameobj  && !lootOrigin_item )
 	{
-		//sLog.outBasic("RICHARD: LOOT - type gameobj" );
+		//sLog.outBasic("RICHAR: LOOT - type gameobj" );
 		lootOrigin = 2;
 	}
 	else if ( !lootOrigin_creature && !lootOrigin_gameobj  && lootOrigin_item )
 	{
 		// j'ai pas encore reussi a trouver quand ca vient d'un objet (exemple quand on desanchante)
-		//sLog.outBasic("RICHARD: LOOT - type item" ); 
+		//sLog.outBasic("RICHAR: LOOT - type item" ); 
 		lootOrigin = 3;
 	}
 	else
 	{
-		sLog.outBasic("RICHARD: LOOT - type ???" );
+		sLog.outBasic("RICHAR: LOOT - type ??? (object loot?)" );
 		lootOrigin = 0;
 		int aa=0;
 	}
@@ -500,6 +503,14 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 	uint32 difference = WorldTimer::getMSTime()  - loot->m_richard_timeCreated;
 
 	g_wantLoot[loot->m_richard_timeCreated].list[_player].nbFois ++;
+
+
+	Group* groupPlay = _player->GetGroup();
+	int nbPLayInGroup = 1;
+	if ( groupPlay )
+	{
+		nbPLayInGroup = groupPlay->GetMembersCount();
+	}
 
 	if ( g_wantLoot[loot->m_richard_timeCreated].list[_player].scoreDice == -1 )
 	{
@@ -516,6 +527,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 
 		if ( !g_wantLoot[loot->m_richard_timeCreated].okWinDoneOnThisLoot  // ca sert a rien d'embrouiller les joueurs avec des infos useless - on s'en fou du score quand c'est pour looter un OKWIN
 		     && lootOrigin == 1 // on dit le MOI que sur les cadavres
+			 && nbPLayInGroup > 1 // on dot MOI que dans un groupe
 			)
 		{
 			char sayMoiMoiMoi[256];
@@ -525,16 +537,6 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 
 	}
 
-	Group* groupPlay = _player->GetGroup();
-	int nbPLayInGroup = 1;
-	if ( groupPlay )
-	{
-		nbPLayInGroup = groupPlay->GetMembersCount();
-	}
-
-	
-	
-	
 	if (
 		!g_wantLoot[loot->m_richard_timeCreated].okWinDoneOnThisLoot // si un OKWIN a été fait pour ce loot, ---> alors on peut direct aller a l'election du vainqueur
 		&&
@@ -550,7 +552,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 
 		) // pour rajouter un peu d'aleatoire, le palier est re-tiré au random a chaque fois 
 	{
-		sLog.outBasic("RICHARD: LOOTPO - REFUSE a %s - %d < %d  (nbCandidat=%d) (group de %d)", _player->GetName() ,difference, g___palier_ms ,g_wantLoot[loot->m_richard_timeCreated].list.size() , nbPLayInGroup );
+		sLog.outBasic("RICHAR: LOOTPO - REFUSE a %s - %d < %d  (nbCandidat=%d) (group de %d)", _player->GetName() ,difference, g___palier_ms ,g_wantLoot[loot->m_richard_timeCreated].list.size() , nbPLayInGroup );
 		return;
 	}
 	else
@@ -562,12 +564,12 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 			
 			int nbJoueur = g_wantLoot[loot->m_richard_timeCreated].list.size();
 
-			//sLog.outBasic("RICHARD: LOOTPO - on decide winner - %d condidats : ",nbJoueur );
+			//sLog.outBasic("RICHAR: LOOTPO - on decide winner - %d condidats : ",nbJoueur );
 
 			if ( nbJoueur == 0 )
 			{
 				//je crois que ce cas est pas possible
-				sLog.outBasic("RICHARD: LOOTPO - personne a reclame le loot donc on donne direct a %s"  ,  _player->GetName()  );
+				sLog.outBasic("RICHAR: LOOTPO - personne a reclame le loot donc on donne direct a %s"  ,  _player->GetName()  );
 				g_wantLoot[loot->m_richard_timeCreated].winner = _player;
 			}
 			else
@@ -607,7 +609,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 					//g_wantLoot[loot->m_richard_timeCreated].winnerSaidIWinAlone = true;
 				}
 				
-				sLog.outBasic("RICHARD: LOOTPO - le joueur qui gagne le loot est %s "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()    );
+				sLog.outBasic("RICHAR: LOOTPO - le joueur qui gagne le loot est %s "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()    );
 			
 			}
 
@@ -668,11 +670,11 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 
 		if ( _player == g_wantLoot[loot->m_richard_timeCreated].winner )
 		{
-			//sLog.outBasic("RICHARD: LOOTPO - le winner %s prend son loot "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()   );
+			//sLog.outBasic("RICHAR: LOOTPO - le winner %s prend son loot "  , g_wantLoot[loot->m_richard_timeCreated].winner->GetName()   );
 		}
 		else
 		{
-			//sLog.outBasic("RICHARD: LOOTPO - REFUSE : le looser %s essaye de prendre loot. "  , _player->GetName()   );
+			//sLog.outBasic("RICHAR: LOOTPO - REFUSE : le looser %s essaye de prendre loot. "  , _player->GetName()   );
 
 			//pour se faire autoriser un loot, le looser devra demander au winner de faire la commande :  .okwin
 
@@ -680,7 +682,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 		}
 		
 
-		//sLog.outBasic("RICHARD: loot accepete a %s - %d < %d", _player->GetName() ,difference, palier  );
+		//sLog.outBasic("RICHAR: loot accepete a %s - %d < %d", _player->GetName() ,difference, palier  );
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

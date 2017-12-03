@@ -55,6 +55,14 @@
 #include "SQLStorages.h"
 #include "LootMgr.h"
 
+
+
+#include <iostream>
+#include <fstream>
+
+
+
+
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 {
     LANG_AHBOT_QUALITY_GREY, LANG_AHBOT_QUALITY_WHITE,
@@ -3378,6 +3386,390 @@ bool ChatHandler::HandleDieCommand(char* /*args*/)
     return true;
 }
 
+bool ChatHandler::Richar_listeventquest(char* /*args*/)
+{
+	//
+	// BUT DU SCRIPT :
+	//
+	// lister toutes les quete qui dependent des NPC et Gameobject qui n'apparraissent que
+	// pendant les events
+	//
+	//
+	//
+
+
+	Player* player = m_session->GetPlayer();
+
+	//event id,  creature id,  quest id
+	std::map<int,std::map<int,int>>  event_creature_quest;
+
+	//event id,  gameobject id,  quest id
+	std::map<int,std::map<int,int>>  event_gameobject_quest;
+
+	//event id,   quest id ,  not used
+	std::map<int,std::map<int,int>>  event_MERGED_quest;
+
+
+	char command1[2048];
+	sprintf(command1,"SELECT guid FROM game_event_creature");
+	if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+    {
+		BarGoLink bar1(result1->GetRowCount());
+        do
+        {
+            bar1.step();
+            Field* fields = result1->Fetch();
+			int32 entryItem = fields->GetInt32();
+
+
+			//on recupere l'ID de l'event :
+			int32 eventID = -1;
+			{
+				char command4[2048];
+				sprintf(command4,"SELECT event FROM game_event_creature WHERE guid=%d",entryItem);
+				if (QueryResult* result4 = WorldDatabase.PQuery( command4 ))
+				{
+					if ( result4->GetRowCount() != 1 )
+					{
+						BASIC_LOG("ERROR 325");
+						return true;
+					}
+
+					BarGoLink bar4(result4->GetRowCount());
+					bar4.step();
+					Field* fields = result4->Fetch();
+					eventID = fields->GetInt32();
+					delete result4;
+				}
+				else
+				{
+					BASIC_LOG("ERROR 326");
+					return true;
+				}
+			}
+
+
+			
+			
+			char command2[2048];
+			sprintf(command2,"SELECT id FROM creature WHERE guid=%d",entryItem);
+			if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+			{
+				if ( result2->GetRowCount() != 1 )
+				{
+					BASIC_LOG("ERROR 323");
+					return true;
+				}
+
+				BarGoLink bar2(result2->GetRowCount());
+				bar2.step();
+				Field* fields = result2->Fetch();
+				int32 npcID = fields->GetInt32();
+				delete result2;
+
+
+
+				//on recupere la liste de quete lie a ce NPC
+
+
+				char command3[2048];
+				sprintf(command3,"SELECT quest FROM creature_questrelation WHERE id=%d",npcID);
+				if (QueryResult* result3 = WorldDatabase.PQuery( command3 ))
+				{
+					BarGoLink bar3(result3->GetRowCount());
+					do
+					{
+						bar3.step();
+						Field* fields = result3->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_creature_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result3->NextRow());
+					delete result3;
+				}
+
+
+
+
+
+
+				char command5[2048];
+				sprintf(command5,"SELECT quest FROM creature_involvedrelation WHERE id=%d",npcID);
+				if (QueryResult* result5 = WorldDatabase.PQuery( command5 ))
+				{
+					BarGoLink bar5(result5->GetRowCount());
+					do
+					{
+						bar5.step();
+						Field* fields = result5->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_creature_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result5->NextRow());
+					delete result5;
+				}
+
+
+
+
+
+
+
+			}
+			else
+			{
+				int dddd=0;
+				//c'est pas normal, mais ca peut arriver:
+				//ca veut dire qu'une creature ID dans  game_event_creature
+				//n'est pas dans  creature
+
+				//BASIC_LOG("ERROR 322");
+				//return true;
+			}
+
+
+
+			int aaaa=0;
+
+        }
+        while (result1->NextRow());
+        delete result1;
+	}
+	else
+	{
+		BASIC_LOG("ERROR 321");
+		return true;
+	}
+
+
+	///////////////////////////////////
+
+
+
+	sprintf(command1,"SELECT guid FROM game_event_gameobject");
+	if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+    {
+		BarGoLink bar1(result1->GetRowCount());
+        do
+        {
+            bar1.step();
+            Field* fields = result1->Fetch();
+			int32 entryItem = fields->GetInt32();
+
+
+			//on recupere l'ID de l'event :
+			int32 eventID = -1;
+			{
+				char command4[2048];
+				sprintf(command4,"SELECT event FROM game_event_gameobject WHERE guid=%d",entryItem);
+				if (QueryResult* result4 = WorldDatabase.PQuery( command4 ))
+				{
+					if ( result4->GetRowCount() != 1 )
+					{
+						BASIC_LOG("ERROR 325");
+						return true;
+					}
+
+					BarGoLink bar4(result4->GetRowCount());
+					bar4.step();
+					Field* fields = result4->Fetch();
+					eventID = fields->GetInt32();
+					delete result4;
+				}
+				else
+				{
+					BASIC_LOG("ERROR 326");
+					return true;
+				}
+			}
+
+
+			
+			
+			char command2[2048];
+			sprintf(command2,"SELECT id FROM gameobject WHERE guid=%d",entryItem);
+			if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+			{
+				if ( result2->GetRowCount() != 1 )
+				{
+					BASIC_LOG("ERROR 323");
+					return true;
+				}
+
+				BarGoLink bar2(result2->GetRowCount());
+				bar2.step();
+				Field* fields = result2->Fetch();
+				int32 npcID = fields->GetInt32();
+				delete result2;
+
+
+
+				//on recupere la liste de quete lie a ce NPC
+
+
+				char command3[2048];
+				sprintf(command3,"SELECT quest FROM gameobject_questrelation WHERE id=%d",npcID);
+				if (QueryResult* result3 = WorldDatabase.PQuery( command3 ))
+				{
+					BarGoLink bar3(result3->GetRowCount());
+					do
+					{
+						bar3.step();
+						Field* fields = result3->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_gameobject_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result3->NextRow());
+					delete result3;
+				}
+
+
+
+
+
+
+				char command5[2048];
+				sprintf(command5,"SELECT quest FROM gameobject_involvedrelation WHERE id=%d",npcID);
+				if (QueryResult* result5 = WorldDatabase.PQuery( command5 ))
+				{
+					BarGoLink bar5(result5->GetRowCount());
+					do
+					{
+						bar5.step();
+						Field* fields = result5->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_gameobject_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result5->NextRow());
+					delete result5;
+				}
+
+
+
+
+
+
+
+			}
+			else
+			{
+				int dddd=0;
+				//c'est pas normal, mais ca peut arriver:
+				//ca veut dire qu'une creature ID dans  game_event_creature
+				//n'est pas dans  creature
+
+				//BASIC_LOG("ERROR 322");
+				//return true;
+			}
+
+
+
+			int aaaa=0;
+
+        }
+        while (result1->NextRow());
+        delete result1;
+	}
+	else
+	{
+		BASIC_LOG("ERROR 321");
+		return true;
+	}
+
+
+
+
+
+	//on merge les listes
+	for (const auto& elem1 : event_creature_quest)
+	{
+		for (const auto& elem2 : elem1.second)
+		{
+			int eventID__  = elem1.first;
+			//int npcID__  = elem2.first;
+			int questID__ = elem2.second;
+			event_MERGED_quest[eventID__][questID__] = 0;
+			int aaa=0;
+		}
+	}
+	for (const auto& elem1 : event_gameobject_quest)
+	{
+		for (const auto& elem2 : elem1.second)
+		{
+			int eventID__  = elem1.first;
+			//int npcID__  = elem2.first;
+			int questID__ = elem2.second;
+			event_MERGED_quest[eventID__][questID__] = 0;
+			int aaa=0;
+		}
+	}
+
+
+
+	//on peut lister :
+	std::ofstream myfile;
+	myfile.open ("RICHARDS/___OUT_listeventquest.txt");
+	myfile <<"## START -----------------";
+	for (const auto& elem1 : event_MERGED_quest)
+	{
+		myfile << "### quest for " << elem1.first  <<std::endl ;
+
+		for (const auto& elem2 : elem1.second)
+		{
+			int eventID__  = elem1.first;
+			//int npcID__  = elem2.first;
+			int questID__ = elem2.first;
+
+			//myfile << eventID__  << ", " << questID__ << std::endl ;
+
+
+			myfile <<"OR    quest=";
+			myfile <<questID__;
+			myfile <<std::endl ;
+
+			int aaa=0;
+		}
+	}
+
+	myfile <<"## END -----------------";
+	myfile.close();
+
+
+	BASIC_LOG("list even quest generated with success in  RICHARD/___OUT_listeventquest.txt ");
+
+
+	return true;
+
+}
+
 
 bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 {
@@ -3493,13 +3885,51 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 				BASIC_LOG(messageee);
 				PSendSysMessage(messageee);
 
+				//  cinfo->Entry  et   cast_creature->GetEntry()  retournent la meme chose
 				sprintf(messageee, "npc = %d", cinfo->Entry );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "creature GUID = %d", cast_creature->GetGUIDLow() );
 				BASIC_LOG(messageee);
 				PSendSysMessage(messageee);
 
 				sprintf(messageee, "Richar_difficuly_health = %f", cast_creature->Richar_difficuly_health );
 				BASIC_LOG(messageee);
 				PSendSysMessage(messageee);
+
+
+
+
+
+				if ( cinfo->Rank == CREATURE_ELITE_RARE )
+				{
+					//on chercher si  Victime_entry  est dans  m_richa_StatALL__elitGrisKilled
+					bool existInDataBase = false;
+					for(int i=0; i<Player::m_richa_StatALL__elitGrisKilled.size(); i++)
+					{
+						if ( Player::m_richa_StatALL__elitGrisKilled[i] == cinfo->Entry )
+						{
+							existInDataBase = true;
+							break;
+						}
+					}
+
+					if ( !existInDataBase )
+					{
+						sprintf(messageee, "Cet Elite Gris n'a PAS ete decouvert."  );
+						BASIC_LOG(messageee);
+						PSendSysMessage(messageee);
+					}
+					else
+					{
+						sprintf(messageee, "Cet Elite Gris a DEJA ete decouvert."  );
+						BASIC_LOG(messageee);
+						PSendSysMessage(messageee);
+					}
+		
+				}
+
 
 			}
 			else

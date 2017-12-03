@@ -193,6 +193,9 @@ struct LootItem
     bool AllowedForPlayer(Player const* player, WorldObject const* lootTarget) const;
     LootSlotType GetSlotTypeForSharedLoot(Player const* player, Loot const* loot) const;
     bool IsLootedFor(ObjectGuid const& playerGuid) const { return lootedBy.find(playerGuid) != lootedBy.end(); }
+
+	static bool Richard_lootCommunPourObjDeQuest(unsigned int itemID);
+
 };
 
 typedef std::vector<LootItem*> LootItemList;

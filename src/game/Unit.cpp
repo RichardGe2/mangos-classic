@@ -1216,6 +1216,306 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 
     // only lootable if it has loot or can drop gold
     victim->PrepareBodyLootState();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////
+	//  RICHARD  ---  quand on KILL une creature
+	//  mettre ici toutes les custom action de quand on tue une creature
+	
+	if ( GetTypeId() == TYPEID_PLAYER 
+		|| GetOwner() && GetOwner()->GetTypeId() == TYPEID_PLAYER   // ca arrive quand c'est un pet du joueur qui donne le coup de grace
+		|| responsiblePlayer
+		)
+	{
+
+
+		Player* thisPLayer = 0; // ceci est le joueur qui sera considere par moi comme le vrai tuer qui merrite la récompense
+		
+		if ( GetTypeId() == TYPEID_PLAYER  )
+		{
+			thisPLayer = ((Player*)this) ;
+		}
+		else if (  GetOwner() && GetOwner()->GetTypeId() == TYPEID_PLAYER )
+		{
+			//ce cas arrive quand un de nos pet tue un PNJ
+			const char* nameThis = GetName();
+			thisPLayer = (Player*)GetOwner() ;
+		}
+		else if ( responsiblePlayer )
+		{
+			//ce cas est assez rare mais devrait arriver dans 2 cas :
+			// - un garde d'une ville tue un mob qu'on a aggro
+			// - pendant une quete d'escorte, l'escorté tue un mob
+			thisPLayer = responsiblePlayer;
+		}
+		else
+		{
+			int aaa=0; // on devrait pas etre ici ??
+		}
+
+		
+		if ( responsiblePlayer != thisPLayer )
+		{
+			const char* name1 = 0;
+			const char* name2 = 0;
+
+			if ( responsiblePlayer )
+			{
+				name1 = responsiblePlayer->GetName();
+			}
+
+			if ( thisPLayer )
+			{
+				name2 = thisPLayer->GetName();
+			}
+
+
+
+			// ceci arrive souvent quand on est groupé,
+			// on aura  name1 = perso de Dian, et name2 = perso de richar
+			// par convention, ce bout de code ne va utiliser que  thisPLayer  et pas   responsiblePlayer
+			// a surveiller, mais je pense que ca changerai pas grand chose si je faisais l'inverse.  
+
+			//int aaaa=0;
+			//BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - TML35018 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+			//Sleep(20000);
+
+
+			int aaa=0;
+		}
+
+		const char* namePlayer___ = thisPLayer->GetName();
+		
+		uint64 playerGUID = thisPLayer->GetGUID();
+		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(playerGUID);
+
+		uint32 Victime_rank = victim->GetCreatureInfo()->Rank;
+        uint32 Victime_entry = victim->GetEntry(); //  npc=XXX
+
+		Group* thisPlayer_group = thisPLayer->GetGroup();
+		std::vector<Player*> groupMembers;
+		if ( thisPlayer_group )
+		{
+			int groupSize = thisPlayer_group->GetMembersCount();
+
+			int groupSize2 = 0;
+			
+
+			for (GroupReference* itr = thisPlayer_group->GetFirstMember(); itr != nullptr; itr = itr->next())
+			{
+				Player* Target = itr->getSource();
+
+				// IsHostileTo check duel and controlled by enemy
+				if (Target 
+					//&& Target != thisPLayer 
+					)
+					groupMembers.push_back(Target);
+
+				groupSize2++;
+			}
+
+
+
+
+			if ( groupSize2 != groupSize )
+			{
+				int aaaa=0;
+				BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - TML35118 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+				Sleep(20000);
+			}
+
+			int	aaaaa=0;
+		}
+		else
+		{
+			groupMembers.push_back(thisPLayer);
+		}
+
+
+		if ( Victime_rank == CREATURE_ELITE_RARE )
+		{
+			
+		
+
+
+			//on chercher si  Victime_entry  est dans  m_richa_StatALL__elitGrisKilled
+			bool existInDataBase = false;
+			for(int i=0; i<thisPLayer->m_richa_StatALL__elitGrisKilled.size(); i++)
+			{
+				if ( thisPLayer->m_richa_StatALL__elitGrisKilled[i] == Victime_entry )
+				{
+					existInDataBase = true;
+					break;
+				}
+			}
+
+			if ( !existInDataBase )
+			{
+				bool pushedDone = false;
+
+				//pour chaque player du groupe
+				for(int i=0; i<groupMembers.size(); i++)
+				{
+
+					//1PA si notre perso est niveau  >=1  et  <10   
+					//10PA si notre perso est niveau  >=10  et  <20   
+					//50PA si notre perso est niveau  >=20  et  <30 
+					//1PO si notre perso est niveau  >=30  et  <40 
+					//2PO si notre perso est niveau  >=40  et  <50 
+					//4PO si notre perso est niveau  >=50  et  <60 
+					//5PO pour 60
+
+					int lvlPlayer = groupMembers[i]->getLevel();
+					int winPO = 0;
+					if ( lvlPlayer < 10 ) { winPO = 1*100; }
+					if ( lvlPlayer >= 10 && lvlPlayer < 20 ) { winPO = 10*100; }
+					if ( lvlPlayer >= 20 && lvlPlayer < 30 ) { winPO = 50*100; }
+					if ( lvlPlayer >= 30 && lvlPlayer < 40 ) { winPO = 1*100*100; }
+					if ( lvlPlayer >= 40 && lvlPlayer < 50 ) { winPO = 2*100*100; }
+					if ( lvlPlayer >= 50 && lvlPlayer < 60 ) { winPO = 4*100*100; }
+					if ( lvlPlayer >= 60 ) { winPO = 5*100*100; }
+
+					groupMembers[i]->ModifyMoney(winPO);
+
+					int goldAmount = winPO;
+					int nbpo = goldAmount / 10000;
+					int nbpa = (goldAmount - nbpo*10000) / 100;
+					int nbpc = (goldAmount - nbpo*10000 - nbpa*100) ;
+
+					uint32 groupMember_account = sObjectMgr.GetPlayerAccountIdByGUID(groupMembers[i]->GetGUID());
+
+
+					// #LISTE_ACCOUNT_HERE
+					// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+					if ( 			
+						//seul un non-maitre du jeu a le droit d'officiellement ajouter cette creature a la liste des découvert
+						//
+						groupMember_account == 5 ||  // richard
+						groupMember_account == 10  || // richard2
+						groupMember_account == 6 || // diane
+						groupMember_account == 9 // diane2 
+					)
+					{
+						if ( !pushedDone )
+						{
+							groupMembers[i]->m_richa_StatALL__elitGrisKilled.push_back(Victime_entry);
+							pushedDone = true;
+						}
+
+						char messageOut[256];
+						sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d !",nbpo,nbpa,nbpc);
+						groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
+					}
+					else
+					{
+						char messageOut[256];
+						sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d ! - mais PAS ajoute a la liste.",nbpo,nbpa,nbpc);
+						groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
+					}
+			
+				}
+
+			}
+			else
+			{
+				char messageOut[256];
+				sprintf(messageOut, "On connait deja cet Elite Gris");
+				thisPLayer->Say(messageOut, LANG_UNIVERSAL);
+			}
+
+		} // si elite gris
+
+
+		
+		//on chercher si  Victime_entry  est dans  m_richa_NpcKilled
+		bool existInDataBase = false;
+		for(int i=0; i<thisPLayer->m_richa_NpcKilled.size(); i++)
+		{
+			if ( thisPLayer->m_richa_NpcKilled[i].npc_id == Victime_entry )
+			{
+				BASIC_LOG("RICHAR INFO - %s - %d  %d->%d" , thisPLayer->GetName() , Victime_entry  , thisPLayer->m_richa_NpcKilled[i].nb_killed  ,  thisPLayer->m_richa_NpcKilled[i].nb_killed+1  );
+				thisPLayer->m_richa_NpcKilled[i].nb_killed ++; // on incremente le nb de killed
+				existInDataBase = true;
+				break;
+			}
+		}
+
+		if ( !existInDataBase )
+		{
+			BASIC_LOG("RICHAR INFO - %s - %d  1" , thisPLayer->GetName(), Victime_entry   );
+			thisPLayer->m_richa_NpcKilled.push_back( Player::RICHA_NPC_KILLED_STAT(Victime_entry , 1) );
+		}
+		
+
+	}//si l'attaquant / tueur  est un joueur
+	
+	// DU COUP , j'ai changé : CE CAS SI DESSOUS EST GERE AU DESSUS
+	/*
+	else if ( responsiblePlayer )
+	{
+		//c'est pas du tout normal d'arriver la. ca devrait etre géré par le if precedent
+		
+		//c'est arrivé une fois j'ai pas bien compris,
+		//je vais rajouter plus d'info pour debugger la prochaine fois :
+		
+		// je CROIS que ce "bug" arrive quand un Garde tue un mob qu'on a aggro
+		// si c'est le cas , c'est tellement rare que c'est pas bien grave
+		// a surveiller
+
+		// a surveiller aussi dans une quete d'escorte comment ca se passe si l'escorté kill le mob
+
+		//le joueur que le jeux considere responsable de la mort
+		const char* name1 = responsiblePlayer->GetName();
+		
+		//le mob qui est mort
+		const char* name2 = 0;
+		if ( victim )
+		{
+			name2 = victim->GetName();
+		}
+
+		//celui qui a tué le mob
+		const char* name3 = this->GetName();
+
+		uint8 typeIdthis__ = this->GetTypeId();
+
+		int aaaa=0;
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - TML35019 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+		Sleep(20000);
+		int adddaaa=0;
+	}
+	*/
+
+	// richar - END
+	////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 void Unit::PetOwnerKilledUnit(Unit* pVictim)
@@ -5988,7 +6288,7 @@ int32 Unit::SpellBonusWithCoeffs(SpellEntry const* spellProto, int32 total, int3
 
 
 
-		//BASIC_LOG("RICHARD: compute spell domage %d  +  %d*%f*%f   =  %d",
+		//BASIC_LOG("RICHAR: compute spell domage %d  +  %d*%f*%f   =  %d",
 		//	total,
 		//	benefit,
 		//	coeff,
@@ -6026,7 +6326,7 @@ uint32 Unit::SpellDamageBonusDone(Unit* pVictim, SpellEntry const* spellProto, u
 
     // Creature damage
     if (GetTypeId() == TYPEID_UNIT && !((Creature*)this)->IsPet())
-        DoneTotalMod *= Creature::_GetSpellDamageMod(  m_richar_lieuOrigin,GetName(),       ((Creature*)this)->GetCreatureInfo()->Rank);
+        DoneTotalMod *= Creature::_GetSpellDamageMod(  m_richar_lieuOrigin,GetName(),GetOwner(),           ((Creature*)this)->GetCreatureInfo()->Rank);
 
     AuraList const& mModDamagePercentDone = GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
     for (AuraList::const_iterator i = mModDamagePercentDone.begin(); i != mModDamagePercentDone.end(); ++i)
@@ -6146,7 +6446,7 @@ float Unit::GetStat(Stats stat) const
 			{
 			//	uint32 nb30002 = play->richard_countItem(30002);
 			//	float multipl = 1.0f + (float)nb30002*1.0f;
-			//	BASIC_LOG("RICHARD: %s intellect %f->%f",m_name.c_str(), valueToReturn, valueToReturn*multipl);
+			//	BASIC_LOG("RICHAR: %s intellect %f->%f",m_name.c_str(), valueToReturn, valueToReturn*multipl);
 			//	valueToReturn *= multipl;
 			}
 
@@ -6210,7 +6510,8 @@ float Unit::GetStat(Stats stat) const
 				{
 					float before=valueToReturn;
 					
-					//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N joueurs
+					// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
+					//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
 					float coeffParagon = ((float)play->m_richar_paragon + 1.0) / 2.0;
 
 					valueToReturn *= coeffParagon;
@@ -6222,7 +6523,7 @@ float Unit::GetStat(Stats stat) const
 					if ( stat == STAT_STAMINA ) { sprintf(statName,"STAMINA"); }
 					if ( stat == STAT_INTELLECT ) { sprintf(statName,"INTELLECT"); }
 					if ( stat == STAT_SPIRIT ) { sprintf(statName,"SPIRIT"); }
-					//BASIC_LOG("RICHARD: PARAGON %s - %s  %f->%f",play->GetName(),statName,   before,valueToReturn);
+					BASIC_LOG("RICHAR: PARAGON %s - %s  %f->%f",play->GetName(),statName,   before,valueToReturn);
 
 					int erereredfdr=0;
 				}
@@ -6230,7 +6531,7 @@ float Unit::GetStat(Stats stat) const
 			}
 			else
 			{
-				BASIC_LOG("RICHARD: ------------------------------- WARNING 4536");
+				BASIC_LOG("RICHAR: ------------------------------- WARNING 4536");
 			}
 
 
@@ -6239,7 +6540,7 @@ float Unit::GetStat(Stats stat) const
 		}
 		else
 		{
-			BASIC_LOG("RICHARD: ------------------------------- error 4536");
+			BASIC_LOG("RICHAR: ------------------------------- error 4536");
 		}
 
 
@@ -6265,7 +6566,8 @@ uint32  Unit::GetResistance(SpellSchools school) const
 			{
 				uint32 before=valueToReturn;
 
-				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N joueurs
+				// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
+				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
 				float coeffParagon = ((float)play->m_richar_paragon + 1.0) / 2.0;
 
 				valueToReturn *= coeffParagon;
@@ -6280,7 +6582,7 @@ uint32  Unit::GetResistance(SpellSchools school) const
 				if ( school == SPELL_SCHOOL_SHADOW ) { sprintf(statName,"SCHOOL_SHADOW"); }
 				if ( school == SPELL_SCHOOL_ARCANE ) { sprintf(statName,"SCHOOL_ARCANE"); }
 
-				//BASIC_LOG("RICHARD: PARAGON %s - %s  %d->%d",play->GetName(),statName,   before,valueToReturn);
+				//BASIC_LOG("RICHAR: PARAGON %s - %s  %d->%d",play->GetName(),statName,   before,valueToReturn);
 			}
 
 		}
@@ -6358,12 +6660,12 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 
 			
 			
-			BASIC_LOG("RICHARD: spell domage %d->%d", DoneAdvertisedBenefit, (int32)(finalnum));
+			BASIC_LOG("RICHAR: spell domage %d->%d", DoneAdvertisedBenefit, (int32)(finalnum));
 			DoneAdvertisedBenefit = (int32)(finalnum);
 		}
 		else
 		{
-			BASIC_LOG("RICHARD: error 4539");
+			BASIC_LOG("RICHAR: error 4539");
 		}*/
 		//////////////////////////////////////////////////////////////////////////////////////////
 
@@ -8027,10 +8329,19 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 	//par exemple, Arcan Explosion va faire entre X et Y de base,
 	//c'est ici qu'on lance les dès entre X et Y
 	
+	// a garder a l'esprit
+	// ne multiplier QUE les spell qui font du damage ou du heal.
+	// c'est tout.
+	// ne pas modifier les autres spell
+	//
+	//typiquement, les sorts qui augmetent les stat, pas besoin de les multiplier
+	//exemple : Arcan intellect qui augmente l'intelligence - l'intelligence globale sera deja multipliée par le paragon dans Unit::GetStat - donc pas la peine de la multiplier ici.
+	
+
 	if ( unitPlayer 
 		&& unitPlayer->m_richar_paragon > 1 
 		
-		&& value != 0 
+		//&& value != 0 
 		//&& value > 1  //si c'est negatif, c'est etrange  -  si c'est 0 ou 1,  c'est etrange aussi
 		
 		//list de sort dont je ne veux pas modifier le value
@@ -8040,9 +8351,37 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 
 		)
 	{
+		uint32 effectttt = spellProto->Effect[effect_index];
+		uint32 auraNamee = spellProto->EffectApplyAuraName[effect_index];
+
+		//juste pour le debug
+		std::string effectStrr = "???";
+			 if ( effectttt == SPELL_EFFECT_NONE ) { effectStrr = "SPELL_EFFECT_NONE"; }
+		else if ( effectttt == SPELL_EFFECT_APPLY_AURA ) 
+		{ 
+			effectStrr = "SPELL_EFFECT_APPLY_AURA->" + std::to_string(auraNamee); 
+		
+		}
+		else if ( effectttt == SPELL_EFFECT_SKILL_STEP ) { effectStrr = "SPELL_EFFECT_SKILL_STEP"; }
+		else if ( effectttt == SPELL_EFFECT_PARRY ) { effectStrr = "SPELL_EFFECT_PARRY"; }
+		else if ( effectttt == SPELL_EFFECT_LEARN_SPELL ) { effectStrr = "SPELL_EFFECT_LEARN_SPELL"; }
+		else if ( effectttt == SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL ) { effectStrr = "SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL"; }
+		else if ( effectttt == SPELL_EFFECT_WEAPON ) { effectStrr = "SPELL_EFFECT_WEAPON"; }
+		else if ( effectttt == SPELL_EFFECT_PROFICIENCY ) { effectStrr = "SPELL_EFFECT_PROFICIENCY"; }
+		else if ( effectttt == SPELL_EFFECT_DUAL_WIELD ) { effectStrr = "SPELL_EFFECT_DUAL_WIELD"; }
+		else if ( effectttt == SPELL_EFFECT_DUMMY ) { effectStrr = "SPELL_EFFECT_DUMMY"; }
+		else if ( effectttt == SPELL_EFFECT_BLOCK ) { effectStrr = "SPELL_EFFECT_BLOCK"; }
+		else if ( effectttt == SPELL_EFFECT_SPAWN ) { effectStrr = "SPELL_EFFECT_SPAWN"; }
+		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
+		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
+		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
+		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
+		else { effectStrr =  "???" +  std::to_string(effectttt) + "???"; }
 
 
-		//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N joueurs
+
+		// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
+		//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
 		float coeffParagon = ((float)unitPlayer->m_richar_paragon + 1.0) / 2.0;
 
 
@@ -8051,13 +8390,79 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 		bool whitelistedSpell = false;
 	
 
-
+/*
 		//de facon arbitraire je prends entre -5 et 5
 		//je considre qu'un sort qui a une petite valeur d'effet est trop suspect pour etre multiplié par le paragon
 		if ( value >= 5   ||   value <= -5  )
 		{
 			whitelistedSpell = true;
 		}
+
+
+*/
+		whitelistedSpell = false;
+
+		
+		
+		
+		
+		
+		
+		
+
+
+		if (
+			//ici la liste des type de sort a multiplier
+               effectttt == SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL 
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PERIODIC_DAMAGE
+			|| effectttt == SPELL_EFFECT_HEAL
+			|| effectttt == SPELL_EFFECT_SCHOOL_DAMAGE
+			//|| effectttt == SPELL_EFFECT_WEAPON_DAMAGE  //  je sais pas pour lui ?
+			//  || effectttt == XXXXXX 
+			//  || effectttt == XXXXXX 
+			)
+		{
+			whitelistedSpell = true;
+		}
+		else if ( 
+			// ici la list des type de sort dont je suis sur qu'il ne faut PAS les multipler
+				 effectttt == SPELL_EFFECT_NONE
+			  //|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX
+			  || effectttt == SPELL_EFFECT_SKILL_STEP 
+			  || effectttt == SPELL_EFFECT_PARRY 
+			  || effectttt == SPELL_EFFECT_LEARN_SPELL 
+			  || effectttt == SPELL_EFFECT_WEAPON 
+			  || effectttt == SPELL_EFFECT_PROFICIENCY 
+			  || effectttt == SPELL_EFFECT_DUAL_WIELD 
+			  || effectttt == SPELL_EFFECT_DUMMY 
+			  || effectttt == SPELL_EFFECT_BLOCK 
+			  || effectttt == SPELL_EFFECT_SPAWN 
+			//  || effectttt == XXXXXX 
+			//  || effectttt == XXXXXX 
+			//  || effectttt == XXXXXX 
+			//  || effectttt == XXXXXX 
+			)
+		{
+			whitelistedSpell = false;
+		}
+		else if ( 
+			  effectttt == SPELL_EFFECT_APPLY_AURA 
+			)
+		{
+			//le cas particluer les auras, il y en a plein de type :  SPELL_AURA_PERIODIC_DAMAGE , .....	
+			//je pense que la majorité ne dois pas etre white listé.
+
+			whitelistedSpell = false;
+		}
+		else
+		{
+			BASIC_LOG("RICHAR: PARAGON - \"%s\" - %s -  ON LE WHITE LIST OU PAS ?????????????????????????????????????",spellProto->SpellName[0],effectStrr.c_str());
+			whitelistedSpell = false;
+		}
+
+
+
+
 
 
 
@@ -8246,7 +8651,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 		}
 		else
 		{
-			BASIC_LOG("RICHARD: PARAGON - WHITE OR BLACK ? (%d) : || strcmp( spellProto->SpellName[0] , \"%s\") == 0   ",
+			BASIC_LOG("RICHAR: PARAGON - WHITE OR BLACK ? (%d) : || strcmp( spellProto->SpellName[0] , \"%s\") == 0   ",
 				value,  
 				spellProto->SpellName[0]  );
 		}
@@ -8259,7 +8664,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 			value =   (int)(   (float)value * coeffParagon   );
 
 		
-			BASIC_LOG("RICHARD: PARAGON - \"%s\"  %d->%d",spellProto->SpellName[0],   before,value);
+			BASIC_LOG("RICHAR: PARAGON - \"%s\" - %s -  %d->%d",spellProto->SpellName[0],effectStrr.c_str(),   before,value);
 		}
 	}
 
@@ -8275,7 +8680,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 
 
 
-//	BASIC_LOG("RICHARD: PARAGON - CalculateSpellDamage - \"%s\"  %d",spellProto->SpellName[0],   value);
+//	BASIC_LOG("RICHAR: PARAGON - CalculateSpellDamage - \"%s\"  %d",spellProto->SpellName[0],   value);
 
 
 

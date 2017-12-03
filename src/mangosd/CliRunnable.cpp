@@ -493,7 +493,7 @@ bool ChatHandler::HandleRichardCommand_clearLootWinners(char* args)
 	}
 
 	char messageee[2048];
-	sprintf(messageee, "RICHARD: %s a clean ses %d/%d loots.", playerEnterMessage->GetName(),nbModifie, nbLoot );
+	sprintf(messageee, "RICHAR: %s a clean ses %d/%d loots.", playerEnterMessage->GetName(),nbModifie, nbLoot );
 
 	BASIC_LOG(messageee);
 	PSendSysMessage(messageee);

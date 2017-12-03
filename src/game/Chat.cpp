@@ -34,6 +34,7 @@
 #include "PoolManager.h"
 #include "GameEventMgr.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
+#include "LootMgr.h"
 
 #include <cstdarg>
 
@@ -725,7 +726,7 @@ ChatCommand* ChatHandler::getCommandTable()
 		{ "okwin",           SEC_PLAYER,     false, &ChatHandler::HandleRichardCommand_clearLootWinners, "", nullptr },
 		// RICHARD : donner les detail d'un mob selectionné :
 		{ "stat",            SEC_PLAYER,  false, &ChatHandler::Richar_tellMobStats,                 "", nullptr },
-
+		{ "listeventquest",  SEC_PLAYER,  false, &ChatHandler::Richar_listeventquest,                 "", nullptr },
 
 
 		
@@ -1181,10 +1182,10 @@ ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*
 
 
 
-
+// example  [item=4536]
 void ChatHandler::ExecuteCommand_richard_B(const char* text)
 {
-	// example  [item=4536]
+	
 
 	if ( text == 0 )
 	{
@@ -1245,16 +1246,162 @@ void ChatHandler::ExecuteCommand_richard_B(const char* text)
 }
 
 
-// sert a avoir des information sur un Item
+bool StrCmp_noCase(const char* a, const char* b)
+{
+	for(int i=0; ; i++)
+	{
+		char minus_a = a[i];
+		char minus_b = b[i];
+
+		if ( minus_a >= 'A' && minus_a <= 'Z' )
+		{
+			minus_a = minus_a - 'A' + 'a' ;
+		}
+		if ( minus_b >= 'A' && minus_b <= 'Z' )
+		{
+			minus_b = minus_b - 'A' + 'a' ;
+		}
+
+		if ( minus_a != minus_b )
+		{
+			return false;
+		}
+
+		if ( minus_a == 0 )
+		{
+			break;
+		}
+
+	}
+
+	return true;
+}
+
+
+
+// example  [item=savannah lion tusk]  
+//   ou     [item="savannah lion tusk"]  
+// la casse n'est PAS prise en compte
+void ChatHandler::ExecuteCommand_richard_C(const char* text)
+{
+
+
+	if ( text == 0 )
+	{
+		return;
+	}
+
+	if ( text[0] == 0 )
+	{
+		return;
+	}
+
+	int lennn = strlen(text) ;
+	if ( lennn < 8 )
+	{
+		return;
+	}
+
+
+	if ( text[lennn-1] != ']' )
+	{
+		return;
+	}
+
+
+	if ( text[6] == '\"' )
+	{
+		if ( text[lennn-2] != '\"' )
+		{
+			return;
+		}
+	}
+
+
+	if (    text[0] == '['
+		&&  text[1] == 'i'
+		&&  text[2] == 't'
+		&&  text[3] == 'e'
+		&&  text[4] == 'm'
+		&&  text[5] == '='
+		)
+	{
+
+		bool guillementUse = false; 
+		int txtOffset = 6;
+		if ( text[txtOffset] == '\"' )
+		{
+			guillementUse = true;
+			txtOffset++;
+		}
+
+
+		char itemName[1024];
+		itemName[0] = 0;
+		for(int i=txtOffset; ;i++)
+		{
+			if ( guillementUse && text[i] == '\"' )
+			{
+				break;
+			}
+
+			if ( !guillementUse && text[i] == ']' )
+			{
+				break;
+			}
+
+			if ( text[i] == 0 )
+			{
+				break;
+			}
+
+			itemName[i-txtOffset] = text[i] ;
+			itemName[i-txtOffset+1] = 0;
+
+		}
+
+		bool objectFound = false;
+
+		for (uint32 itemID = 0; itemID < sItemStorage.GetMaxEntry(); ++itemID)
+		{
+			//ItemPrototype const* prototype = sObjectMgr.GetItemPrototype(itemID);
+			ItemPrototype const* prototype = sItemStorage.LookupEntry<ItemPrototype>(itemID);
+
+			if ( prototype && StrCmp_noCase ( prototype->Name1 , itemName ) )
+			{
+				objectFound = true;
+				ExecuteCommand_richard_2(itemID);
+				break;
+			}
+
+		}
+
+		if ( !objectFound )
+		{
+			char messageOUt[2048];
+			sprintf(messageOUt,"item '%s' not found.",itemName);
+			PSendSysMessage(messageOUt);
+		}
+
+	}
+
+
+	return;
+
+}
+
+
+
+//deja, on regarde si   text est un lien vers un objet  (joueur a fait  Majuscule + click gauche sur objet)
+//
+// exemple :  |cffffffff|Hitem:2692:0:0:0|h[Hot Spices]|h|r
+// exemple :  |cff1eff00|Hitem:30000:0:0:0|h[YouhaiCoin Paragon]|h|r
+//exemple :   |cffa335ee|Hitem:13353:0:0:0|h[Book of the Dead]|h|r
+//je crois que le premier nombre est la couleur
 void ChatHandler::ExecuteCommand_richard_A(const char* text)
 {
 	
-	//deja, on regarde si   text est un lien vers un objet  (joueur a fait  Majuscule + click gauche sur objet)
-	//
-	// exemple :  |cffffffff|Hitem:2692:0:0:0|h[Hot Spices]|h|r
-	// exemple :  |cff1eff00|Hitem:30000:0:0:0|h[YouhaiCoin Paragon]|h|r
-	//exemple :   |cffa335ee|Hitem:13353:0:0:0|h[Book of the Dead]|h|r
-	//je crois que le premier nombre est la couleur
+	
 
 	if ( text == 0 )
 	{
@@ -1328,7 +1475,7 @@ void ChatHandler::ExecuteCommand_richard_A(const char* text)
 }
 
 
-// sert a avoir des information sur un Item
+// sert a avoir des information sur un Item a partir de son ID
 void ChatHandler::ExecuteCommand_richard_2(int numberID)
 {
 
@@ -1358,6 +1505,8 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 	bool developerInfo = false;
 	ObjectGuid const& guiiddd = player->GetObjectGuid();
 	uint32 account_guid = sObjectMgr.GetPlayerAccountIdByGUID(guiiddd);
+
+	// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
 	if (    account_guid == 5  // richard
 		|| account_guid == 7  // grandjuge
 		|| account_guid == 10  // richard2
@@ -1379,6 +1528,11 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 		sprintf(messageOUt,"item=%d",numberID);
 		PSendSysMessage(messageOUt);
 	}
+
+
+	sprintf(messageOUt,"name=%s",itemProtoype->Name1);
+	PSendSysMessage(messageOUt);
+	
 
 
 	int goldAmount = itemProtoype->SellPrice;
@@ -1484,6 +1638,8 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 		bool KnownByPlayer = false;
 
 		std::string nameToSearch = "";
+
+		// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
 		if ( strcmp(player->GetName(),"Bouzigouloum") == 0 )
 		{
 			nameToSearch = "Boulette";
@@ -1530,7 +1686,7 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 		for(;;)
 		{
 
-			sprintf(nameFile, "RICHARD/_ri_stat_%s_%d_%02d_%02d.txt",
+			sprintf(nameFile, "RICHARDS/_ri_stat_%s_%d_%02d_%02d.txt",
 				nameToSearch.c_str(),
 				yea,
 				mon,
@@ -1650,7 +1806,16 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 	}
 	else
 	{
-		sprintf(messageOUt,"objet n'est PAS en loot commun");
+		
+		bool forceLootCommun = LootItem::Richard_lootCommunPourObjDeQuest(numberID);
+		if ( forceLootCommun )
+		{
+			sprintf(messageOUt,"objet sera FORCE en loot commun.");
+		}
+		else
+		{
+			sprintf(messageOUt,"objet n'est PAS en loot commun.");
+		}
 		PSendSysMessage(messageOUt);
 	}
 
@@ -1773,25 +1938,33 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 	//on les enum :
 	sprintf(messageOUt,"-----------");
 	PSendSysMessage(messageOUt);
-	for(int i=0; i<5; i++)
+	
+	if ( listChances.size() > 0 )
 	{
-		if ( i < listChances.size() )
+		for(int i=0; i<5; i++)
 		{
-
-			std::string creatNamStr = "???";
-
-			CreatureInfo const* creatureProto = sCreatureStorage.LookupEntry<CreatureInfo>(listChances[i].entry);
-			if (creatureProto)
+			if ( i < listChances.size() )
 			{
-				creatNamStr = std::string(creatureProto->Name);
+
+				std::string creatNamStr = "???";
+
+				CreatureInfo const* creatureProto = sCreatureStorage.LookupEntry<CreatureInfo>(listChances[i].entry);
+				if (creatureProto)
+				{
+					creatNamStr = std::string(creatureProto->Name);
+				}
+
+
+				sprintf(messageOUt,"%.0f pourcent  -  %s(%d)" ,listChances[i].chances , creatNamStr.c_str() , listChances[i].entry);
+				PSendSysMessage(messageOUt);
 			}
-
-
-			sprintf(messageOUt,"%.0f pourcent  -  %s(%d)" ,listChances[i].chances , creatNamStr.c_str() , listChances[i].entry);
-			PSendSysMessage(messageOUt);
 		}
 	}
-
+	else
+	{
+		sprintf(messageOUt,"Ne se loot PAS sur des mobs.");
+		PSendSysMessage(messageOUt);
+	}
 
 
 	int aaaaaa=0;
@@ -1927,6 +2100,7 @@ bool ChatHandler::ParseCommands(const char* text)
 
 		ExecuteCommand_richard_A(text);
 		ExecuteCommand_richard_B(text);
+		ExecuteCommand_richard_C(text);
 
         if (text[0] != '!' && text[0] != '.')
             return false;

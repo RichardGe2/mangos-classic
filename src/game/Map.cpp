@@ -1393,6 +1393,7 @@ bool DungeonMap::Add(Player* player)
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// RICHARD : INSTANCES PERMANENTES - PAS DE RESET DES SAUVEGARDES - 
 			// pour l'utiliser : richard rentre (SANS etre groupé !) , une premiere fois dans l'instance.
+			// verifier dans l'historique de Chat Général que le le perso de Richard a bien Say("Sauvegarde permanante ACTIVE")
 			// juste pour valider la sauvegarde, richard selectionne un petit mob et le tue avec la commande:  .killrichard  (c'est la seule fois ou un joueur peu utiliser cette commande cheatée )
 			// puis il ressort, il invite diane
 			bool permanennt = false;
@@ -1406,10 +1407,15 @@ bool DungeonMap::Add(Player* player)
 
 			if ( //  strcmp ( nameplayer , "Grandjuge" ) == 0  <-- vaut mieux pas, au cas ou on a besoin du grand juge dans l'instance
 				 //  || 
-				strcmp(nameplayer, "Bouillot") == 0
+
+				//lister ici les perso principaux de Richard uniquement
+				// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+				   strcmp(nameplayer, "Bouillot") == 0
+				|| strcmp(nameplayer, "Adibou") == 0
 				)
 			{
 				permanennt = true;
+				player->Say("Sauvegarde permanante ACTIVE", LANG_UNIVERSAL);
 			}
 
 			// set up a solo bind or continue using it

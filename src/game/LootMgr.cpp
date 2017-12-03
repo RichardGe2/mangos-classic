@@ -329,7 +329,7 @@ bool LootStoreItem::IsValid(LootStore const& store, uint32 entry) const
 //
 // return TRUE si on peut forcer le loot commun
 //
-bool Richard_lootCommunPourObjDeQuest(unsigned int itemID)
+bool LootItem::Richard_lootCommunPourObjDeQuest(unsigned int itemID)
 {
 	//SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '5055'
 	//QueryResult* result = CharacterDatabase.PQuery("SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '%u'", itemID);
@@ -375,7 +375,7 @@ bool Richard_lootCommunPourObjDeQuest(unsigned int itemID)
 
 	if ( nbNbNeg > 0 && nbNbPos == 0 )
 	{
-		BASIC_LOG("RICHARD: on force le loot commun pour item = '%d'", itemID );
+		BASIC_LOG("RICHAR: on force le loot commun pour item = '%d'", itemID );
 		return true;
 	}
 
@@ -1018,7 +1018,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 	else
 	{
 		int aa=0;
-		BASIC_LOG("RICHARD: ERRRROR !!!!!!!!!!!!!!!!   unkonwn type loot  = '%s'", store.GetName() );
+		BASIC_LOG("RICHAR: ERRRROR !!!!!!!!!!!!!!!!   unkonwn type loot  = '%s'", store.GetName() );
 
 	}
 	
@@ -1036,7 +1036,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 		}
 		else
 		{
-			//sLog.outBasic("RICHARD: LOOT - type creature" );
+			//sLog.outBasic("RICHAR: LOOT - type creature" );
 			lootOrigin = 1;
 		}
 
@@ -1044,18 +1044,18 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 	}
 	else if ( !lootOrigin_creature && lootOrigin_gameobj  && !lootOrigin_item )
 	{
-		//sLog.outBasic("RICHARD: LOOT - type gameobj" );
+		//sLog.outBasic("RICHAR: LOOT - type gameobj" );
 		lootOrigin = 2;
 	}
 	else if ( !lootOrigin_creature && !lootOrigin_gameobj  && lootOrigin_item )
 	{
 		// j'ai pas encore reussi a trouver quand ca vient d'un objet (exemple quand on desanchante)
-		//sLog.outBasic("RICHARD: LOOT - type item" ); 
+		//sLog.outBasic("RICHAR: LOOT - type item" ); 
 		lootOrigin = 3;
 	}
 	else
 	{
-		//sLog.outBasic("RICHARD: LOOT - type ???" );
+		//sLog.outBasic("RICHAR: LOOT - type ???" );
 		int aa=0;
 	}
 	*/
@@ -1112,18 +1112,23 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 					nameGo
 					&&
 					(
-						strcmp(nameGo , "Solid Chest" ) == 0 
+
+						//maintenanir la meme liste en ici et  _______richard_ALL.txt
+						strcmp(nameGo , "Solid Chest" ) == 0  
 					||  strcmp(nameGo , "Battered Chest" ) == 0 
 					||  strcmp(nameGo , "Large Solid Chest" ) == 0 
 					||  strcmp(nameGo , "Large Mithril Bound Chest" ) == 0 
 					||  strcmp(nameGo , "Ancient Treasure" ) == 0 
 					||  strcmp(nameGo , "Witch Doctor\'s Chest" ) == 0 
+					||  strcmp(nameGo , "Large Battered Chest" ) == 0 
+					||  strcmp(nameGo , "Tattered Chest" ) == 0 
 						)
 					)
 				{
 					int aaaa=0;
 
 					// ajout d'une youhaincoin de type cadeau dans tous les coffres
+					// note : si un coffre ne donner pas de Youhaicoin, ca veut dire qu'il faut ajouter son nom a la liste
 					AddItem(coinItemID2, 1, 0, 0);
 
 
@@ -1173,7 +1178,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 					m_gold = uint32(urand(      minGoldBase      ,  goldBase+(goldBase*20)/100  )  );
 
 
-					BASIC_LOG("RICHARD: add coin on COFFRE - base=%d  -  entre %d et %d --> %d  ",
+					BASIC_LOG("RICHAR: add coin on COFFRE - base=%d  -  entre %d et %d --> %d  ",
 					goldBase,
 					minGoldBase ,
 					goldBase+(goldBase*20)/100,
@@ -1204,7 +1209,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 	if (richard01_test == 0)
 	{
-		//BASIC_LOG("RICHARD: add coin on loot - NO because richard01_test=%d", richard01_test);
+		//BASIC_LOG("RICHAR: add coin on loot - NO because richard01_test=%d", richard01_test);
 	}
 	else if (richard01_test == 1) // cadavre
 	{
@@ -1261,7 +1266,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			scoreToReach = 0;
 		}
 
-		BASIC_LOG("RICHARD: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%d<=%d",
+		BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%d<=%d",
 			playerlevel,
 			cadavreLevel,
 			typeMobChar,
@@ -1292,7 +1297,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 	}
 	else
 	{
-		//BASIC_LOG("RICHARD: add coin on loot - NO because ERROR richard01=%d", richard01);
+		//BASIC_LOG("RICHAR: add coin on loot - NO because ERROR richard01=%d", richard01);
 		int dfdfd=0;
 	}
 
@@ -1324,7 +1329,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 				AddItem(itemYouhaimon, 1, 0, 0);
 			}
 
-			BASIC_LOG("RICHARD: -------------------------------------------------------------> score youhaimon : %d",scoreRandYouhaimon);
+			BASIC_LOG("RICHAR: -------------------------------------------------------------> score youhaimon : %d",scoreRandYouhaimon);
 
 			
 		}
@@ -1703,7 +1708,62 @@ void Loot::Release(Player* player)
                         AutoStore(player); // can be lost if no space
                     Clear();
                     m_itemTarget->SetLootState(ITEM_LOOT_REMOVED);
+
+
+					//RICHARD - ne pas delete un tas d'objet quand en en desanchante 1 
+					//sauvegarde des states AVANT delete
+					//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+					uint32 entryItem = m_itemTarget->GetEntry();
+					uint32 countBeforeDelete = m_itemTarget->GetCount();
+					uint32 bagSlot_beforeDelete = m_itemTarget->GetBagSlot();
+					uint32 Slot_beforeDelete = m_itemTarget->GetSlot();
+					//FIN MODIF
+					///////////////////////////////////////////////////////////
+
+
+
+
                     player->DestroyItem(m_itemTarget->GetBagSlot(), m_itemTarget->GetSlot(), true);
+
+
+
+					//on donne ce qui a été delete APRES le delete
+					//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+					if ( countBeforeDelete > 1 ) // si on avait + d'un objet stacké
+					{
+						Item* item_AfterDelete = player->GetItemByPos(bagSlot_beforeDelete, Slot_beforeDelete);
+						if ( item_AfterDelete != nullptr )
+						{
+							sLog.outBasic("RICHAR: error 536903");
+							*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+						}
+						if ( item_AfterDelete == nullptr
+							//||
+							//item_AfterDelete->GetCount() < countBeforeDelete-1
+							)
+						{
+							Item* newItem = Item::CreateItem(entryItem,  countBeforeDelete-1 );
+							ItemPosCountVec sDest;
+							InventoryResult msg = player->CanStoreItem(bagSlot_beforeDelete, Slot_beforeDelete, sDest, newItem, false);
+							if (msg == EQUIP_ERR_OK)
+							{
+								player->StoreItem(sDest, newItem, true);
+							}
+							else
+							{
+								sLog.outBasic("RICHAR: error 536904");
+								*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+							}
+
+						}
+						
+					}
+					//FIN MODIF
+					///////////////////////////////////////////////////////////
+
+
+
+
                     break;
                 }
                 // normal persistence loot
@@ -1713,8 +1773,69 @@ void Loot::Release(Player* player)
                     if (IsLootedFor(player))
                     {
                         m_itemTarget->SetLootState(ITEM_LOOT_REMOVED);
+
+
+
+						//RICHARD - ne pas delete un objet quand en en ouvre 1 (exemple les coquillages)
+						//sauvegarde des states AVANT delete
+						//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+						uint32 entryItem = m_itemTarget->GetEntry();
+						uint32 countBeforeDelete = m_itemTarget->GetCount();
+						uint32 bagSlot_beforeDelete = m_itemTarget->GetBagSlot();
+						uint32 Slot_beforeDelete = m_itemTarget->GetSlot();
+						//FIN MODIF
+						///////////////////////////////////////////////////////////
+
+
+
+
                         player->DestroyItem(m_itemTarget->GetBagSlot(), m_itemTarget->GetSlot(), true);
-                    }
+                    
+					
+
+
+						//on donne ce qui a été delete APRES le delete
+						//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+						if ( countBeforeDelete > 1 ) // si on avait + d'un objet stacké
+						{
+							Item* item_AfterDelete = player->GetItemByPos(bagSlot_beforeDelete, Slot_beforeDelete);
+							if ( item_AfterDelete != nullptr )
+							{
+								sLog.outBasic("RICHAR: error 536901");
+								*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+							}
+							if ( item_AfterDelete == nullptr
+								//||
+								//item_AfterDelete->GetCount() < countBeforeDelete-1
+								)
+							{
+								Item* newItem = Item::CreateItem(entryItem,  countBeforeDelete-1 );
+								ItemPosCountVec sDest;
+								InventoryResult msg = player->CanStoreItem(bagSlot_beforeDelete, Slot_beforeDelete, sDest, newItem, false);
+								if (msg == EQUIP_ERR_OK)
+								{
+									player->StoreItem(sDest, newItem, true);
+								}
+								else
+								{
+									sLog.outBasic("RICHAR: error 536902");
+									*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+								}
+
+							}
+						
+						}
+						//FIN MODIF
+						///////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+					}
                     break;
                 }
             }
@@ -2249,11 +2370,11 @@ Loot::Loot(Player* player, GameObject* gameObject, LootType type) :
 					int nbFish2 = m_lootItems.size();
 					int aaaaa = 0;
 
-					BASIC_LOG("RICHARD: peche de %d poissons dans la zone %d  (no data for SUBzone=%d)", nbFish2, zone, subzone);
+					BASIC_LOG("RICHAR: peche de %d poissons dans la zone %d  (no data for SUBzone=%d)", nbFish2, zone, subzone);
 				}
 				else
 				{
-					BASIC_LOG("RICHARD: peche de %d poissons dans la SUBzone %d   (no need to loot zone=%d)", nbFish1, subzone, zone);
+					BASIC_LOG("RICHAR: peche de %d poissons dans la SUBzone %d   (no need to loot zone=%d)", nbFish1, subzone, zone);
 				}
 
 				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

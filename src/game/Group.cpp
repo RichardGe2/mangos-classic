@@ -1240,7 +1240,7 @@ static void RewardGroupAtKill_helper(Player* pGroupGuy, Unit* pVictim, uint32 co
 		// TEMPORAIRE : Quand on veut re-equilibrer les XP
 		//if ( count == 2 && strcmp(pGroupGuy->GetName(),"Boulette") == 0 )
 		//{
-		//	BASIC_LOG("RICHARD: ATTENTION MODIF TEMPORARE : on donne RIEN a 1 jouer et TOUT a l autre !!!!!!!!!!!!!!!!");
+		//	BASIC_LOG("RICHAR: ATTENTION MODIF TEMPORARE : on donne RIEN a 1 jouer et TOUT a l autre !!!!!!!!!!!!!!!!");
 		//	rate = group_rate * 1.0f / 100.0f;
 		//}
 		//else if ( count == 2 && strcmp(pGroupGuy->GetName(),"Bouillot") == 0 )

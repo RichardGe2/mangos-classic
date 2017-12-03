@@ -136,7 +136,7 @@ bool WorldSession::SendLearnNewTaxiNode(Creature* unit) const
 
 
 		//Richard : si un jour je veux utiliser la decouverte de gryphon, c'est ici :
-		BASIC_LOG("RICHARD: %s Learns new Gryphon : %d", GetPlayer()->GetName() ,  curloc );
+		BASIC_LOG("RICHAR: %s Learns new Gryphon : %d", GetPlayer()->GetName() ,  curloc );
 		GetPlayer()->Say("nouveau gryphon !",LANG_UNIVERSAL);
 
 

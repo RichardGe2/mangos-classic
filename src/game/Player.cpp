@@ -123,6 +123,26 @@ enum CharacterFlags
 
 static const uint32 corpseReclaimDelay[MAX_DEATH_COUNT] = {30, 60, 120};
 
+
+// Number of slots in keyring depending on the player's level
+static const uint32 LevelUpKeyringSize[7] =
+{
+	//numbers from Vanilla 1.11 / 1.12 Client :
+	4, // level 1 -> 9
+	4, // level 10 -> 19
+	4, // level 20 -> 29
+	4, // level 30 -> 39
+	8, // level 40 -> 49
+	12, // level 50 -> 59
+	12, // level 60 -> 69
+};
+
+
+std::vector<unsigned int> Player::m_richa_StatALL__elitGrisKilled;
+
+
+
+
 //== PlayerTaxi ================================================
 
 PlayerTaxi::PlayerTaxi()
@@ -371,7 +391,7 @@ UpdateMask Player::updateVisualBits;
 Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
 	m_richar_paragon = 0;
-
+	m_richar_paragonProgressFromFile = 0;
 
     m_transport = nullptr;
 
@@ -706,19 +726,378 @@ void Player::Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECO
 }
 
 
-void Player::richard_importVariables(uint64 guid__)
+void Player::richard_importVariables_END(uint64 guid__)
+{
+	int lvl = getLevel();
+
+	if ( lvl == 60  )
+	{
+		if ( m_richar_paragon >= 1 )
+		{
+			FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(93);
+			GetReputationMgr().SetReputation(factionEntry1,21000 + m_richar_paragonProgressFromFile);
+			int aaaa=0;
+		}
+		else
+		{
+			//si ca arrive, c'est surement parce que 
+			//le joueur n'est pas dans la liste des joueur niveau 60
+			//dans  Player::richard_importVariables_START
+			//il faut donc updater la liste
+			//
+			//Enfin si je suis la, qqchose ne va pas, il faut enqueter
+			BASIC_LOG("RICHAR: WARNING 53610 IMPORTANT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			//
+			m_richar_paragon = 0;
+
+		}
+	}
+	else
+	{
+		if ( m_richar_paragon != 0 )
+		{
+			//ERREUR ???
+			int aaa=0;
+		}
+
+		m_richar_paragon = 0;
+	}
+
+	m_richar_paragonProgressFromFile = 0;
+
+}
+
+
+void Player::richard_importVariables_START(uint64 guid__)
 {
 	BASIC_LOG("Start richard_importVariables....");
 
 
+
+
+	///////////////////////////////////////////////////////////////
+	// IMPORTATION DES VARIABLE Commune a tous les joueurs (sauf maitre du jeu)
+	
+	
+	if ( m_richa_StatALL__elitGrisKilled.size() == 0 ) //si ca a pas ete init
+	{
+		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid__);
+
+		if ( 
+
+			// #LISTE_ACCOUNT_HERE
+			// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+			
+			//si c'est pas un Maitre du Jeu
+			//player_account == 5 ||  // richard
+			//player_account == 10  || // richard2
+			//player_account == 6 || // diane
+			//player_account == 9 // diane2
+			
+			//j'ai comment-out  :  on s'en fou que ce soit le grandJuge qui lance le chargement de ces variables, non ?
+			
+			
+			true
+			)
+		{
+
+			char nameFile2[2048];
+			sprintf(nameFile2, "RICHARDS/_ri_all_dianerichard.txt");
+
+
+			{
+				std::ifstream infile(nameFile2);
+
+				if ( infile.fail() || !infile.is_open() )
+				{
+					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! read _ri_all_dianerichard fail" );
+				}
+				else
+				{
+					int nbEliteGris= 0;
+					bool error = false;
+					std::string line;
+					int lineCount = 0;
+					while (std::getline(infile, line))
+					{
+						if ( lineCount == 0 )
+						{
+							if ( line != "DIANE_ET_RICHARD_STAT" )
+							{
+								BASIC_LOG("RICHAR ERROR 46630 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+								error = true;
+								break;
+							}
+						}
+
+						else if ( lineCount == 1 )
+						{
+							if ( line != "VERSION_1" )
+							{
+								BASIC_LOG("RICHAR ERROR 46631 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+								error = true;
+								break;
+							}
+						}
+
+						else if ( lineCount == 2 )
+						{
+							if ( line != "ELITE_GRIS_TUES_COMMUN" )
+							{
+								BASIC_LOG("RICHAR ERROR 46632 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+								error = true;
+								break;
+							}
+						}
+
+						else if ( lineCount == 3 )
+						{
+							nbEliteGris=atoi(line.c_str());
+							int aaaa=0;
+						}
+
+						else if ( lineCount >= 4 && lineCount <= 4+nbEliteGris-1  )
+						{
+							int newEliteGris=atoi(line.c_str());
+							m_richa_StatALL__elitGrisKilled.push_back(newEliteGris);
+
+							int aaa=0;
+						}
+
+						else if ( lineCount == (4+nbEliteGris-1) +1 )
+						{
+							if ( line != "FIN_DOCUMENT" )
+							{
+								BASIC_LOG("RICHAR ERROR 46633 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+								error = true;
+								break;
+							}
+
+							break;
+						}
+
+						else
+						{
+							BASIC_LOG("RICHAR ERROR 46635!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+							error = true;
+							break;
+						}
+
+
+						lineCount++;
+					}
+
+					if ( m_richa_StatALL__elitGrisKilled.size() != nbEliteGris )
+					{
+						error = true;
+					}
+
+					if ( error )
+					{
+						BASIC_LOG("RICHAR ERROR 46634 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+						BASIC_LOG("RICHAR ERROR 46634 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+						Sleep(10000);
+						int aaa=0;
+						
+					}
+
+					infile.close();
+				}
+
+			}
+		}
+
+	}
+
+
+
+
+
+
+
+
+
+
+
 	//on set toute les valeurs par default - au cas ou la variable existe pas
 	m_richar_paragon = 0;
+	m_richar_paragonProgressFromFile = 0;
 
+
+	/////////////////////////////////////////////////////////////////////
+	//importation des variable propres au humain : diane, richard
+
+	{
+
+		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid__);
+		
+		char irlName[256];
+		// #LISTE_ACCOUNT_HERE
+		// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( player_account == 5 || player_account == 10 )
+		{
+			strcpy_s(irlName,"richard");
+		}
+		else if ( player_account == 6 || player_account == 9 )
+		{
+			strcpy_s(irlName,"diane");
+		}
+		else if ( player_account == 7  ) // grandjuge
+		{
+			strcpy_s(irlName,"dieu");
+		}
+		else
+		{
+			irlName[0] = 0;
+		}
+
+
+
+		if ( irlName[0] != 0 )
+		{
+			int fromFile_paragonLvl = 0;
+			int fromFile_paragoProgress = 0;
+
+			char nameFile2[2048];
+			sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+
+
+			{
+				std::ifstream infile(nameFile2);
+
+				int nbOk = 0;
+				bool error = false;
+
+				int lineConsts = 0;
+				const int Line_First = lineConsts; lineConsts++;
+				const int Line_Version = lineConsts; lineConsts++;
+				const int Line_Name = lineConsts; lineConsts++;
+				const int Line_Paragon = lineConsts; lineConsts++;
+				const int Line_ParagonProgress = lineConsts; lineConsts++;
+				//const int Line_End = lineConsts; lineConsts++;
+
+				std::string line;
+				int lineCount = 0;
+				while (std::getline(infile, line))
+				{
+					if ( lineCount == Line_First )
+					{
+						if ( line != "HUMAIN_STAT" )
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+
+					else if ( lineCount == Line_Version )
+					{
+						if ( line != "VERSION_4" ) // version
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+					else if ( lineCount == Line_Name )
+					{
+						int aa=0;
+					}
+					else if ( lineCount == Line_Paragon )
+					{
+						int value = atoi(line.c_str());
+						fromFile_paragonLvl = value;
+					}
+					else if ( lineCount == Line_ParagonProgress )
+					{
+						int value = atoi(line.c_str());
+						fromFile_paragoProgress = value;
+					}
+					else
+					{
+						error = true;
+						break;
+					}
+
+
+					lineCount++;
+				}
+
+
+
+				if ( nbOk != 2 || error )
+				{
+					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! read file fail" );
+
+					//si erreur, on reset tout
+					//m_richar_paragon = 0;
+					//paragonProgressBeforeSave = 0;
+					
+				}
+				else
+				{
+					//int lvl = getLevel();
+
+					//le GetLevel ne marche pas encore, donc c'est pas tres propre, mais mettre ici la liste
+					//des perso niveau 60 : c'est a dire qui ont le droit au paragon
+					//pour des raison de securité, il est important de ne jamais mettre m_richar_paragon > 0
+					//   pour les niveau < 60
+					//   meme pendant le chargement de ce perso.
+					//   comme ca je suis sur qu'on lui mets pas de sort cheaté par le coeff paragon..etc....
+					//
+					//de meme, pour les perso 60, je pense que c'est important d'avoir m_richar_paragon
+					//  de deja pret avec la bonne valeur >= 1
+					//  comme ca, s'il y a des init de sort, on a bien le coeff du paragon qui va influencer
+					//
+					//donc ca confirme bien qu'il me faut cette liste 
+					//
+					if ( 
+
+						// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+						   guid__ == 4 // boulette
+						|| guid__ == 5 // bouillot
+						|| player_account == 7 // tous les persos du compte du grand juge - je pense pas que ce soit grave si certain perso sont pas 60
+						)
+					{
+						m_richar_paragon = fromFile_paragonLvl;
+						m_richar_paragonProgressFromFile = fromFile_paragoProgress;
+						//fromFile_paragoProgress;
+
+						//FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(93);
+						//GetReputationMgr().SetReputation(factionEntry1,21000 + fromFile_paragoProgress);
+						//GetReputationMgr().SetReputation(factionEntry1,21000 + 1); // sera initialise pendant  richard_importVariables_END
+					}
+					else
+					{
+						m_richar_paragon = 0;
+						m_richar_paragonProgressFromFile = 0;
+					}
+
+					int aa=0;
+				}
+
+
+				infile.close();
+
+			}
+
+		}
+
+
+
+	}
+
+
+	//////////////////////////////////////////////////////////////////////
 
 
 	char nameFile2[2048];
 	//const char* playerName = GetName();
-	sprintf(nameFile2, "RICHARD/_ri_cust_%d.txt",guid__);
+	sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid__);
 
 	std::ifstream infile(nameFile2);
 
@@ -729,11 +1108,25 @@ void Player::richard_importVariables(uint64 guid__)
 	const int Line_First = lineConsts; lineConsts++;
 	const int Line_Version = lineConsts; lineConsts++;
 	const int Line_Name = lineConsts; lineConsts++;
-	const int Line_Paragon = lineConsts; lineConsts++;
+	//const int Line_Paragon = lineConsts; lineConsts++;
 	//const int Line_End = lineConsts; lineConsts++;
+
+	if ( m_richa_NpcKilled.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3265 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+	if ( m_richa_pageDiscovered.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3266 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+
+	m_richa_NpcKilled.clear();
+	m_richa_pageDiscovered.clear();
 
 	std::string line;
 	int lineCount = 0;
+	int nbNpcKilled = 0;
+	int nbPageDiscoverd = 0;
 	while (std::getline(infile, line))
 	{
 		//std::istringstream iss(line);
@@ -745,8 +1138,7 @@ void Player::richard_importVariables(uint64 guid__)
 
 		if ( lineCount == Line_First )
 		{
-			int value = atoi(line.c_str());
-			if ( value != 53647 )
+			if ( line != "CHARACTER_STAT" )
 			{
 				error = true; break;
 			}
@@ -758,8 +1150,7 @@ void Player::richard_importVariables(uint64 guid__)
 
 		else if ( lineCount == Line_Version )
 		{
-			int value = atoi(line.c_str());
-			if ( value != 3 ) // version
+			if ( line != "VERSION_4" ) // version
 			{
 				error = true; break;
 			}
@@ -774,32 +1165,76 @@ void Player::richard_importVariables(uint64 guid__)
 			int aa=0;
 		}
 
-
-		else if ( lineCount == Line_Paragon )
+		else if ( lineCount == 3 )
 		{
-			int value = atoi(line.c_str());
-			m_richar_paragon = value;
-		}
-
-
-		/*
-		else if ( lineCount == Line_End )
-		{
-			int value = atoi(line.c_str());
-
-			if ( value != 3146 )
+			if ( line != "LIST_NPC_KILLED" ) // version
 			{
 				error = true; break;
 			}
-			else
+		}
+
+		else if ( lineCount == 4 )
+		{
+			int nb = atoi(line.c_str());
+			nbNpcKilled = nb;
+		}
+
+		else if ( lineCount >= 5 && lineCount <= 5+nbNpcKilled-1 )
+		{
+			int npcid=0;
+			int npckilled=0;
+			sscanf(line.c_str(),"%d,%d",&npcid,&npckilled);
+			m_richa_NpcKilled.push_back(RICHA_NPC_KILLED_STAT(npcid,npckilled));
+		}
+
+
+		else if ( lineCount == 5+nbNpcKilled-1+1 )
+		{
+			if ( line != "LIST_PAGE_DISCOVERED" ) // version
 			{
-				nbOk++;
+				error = true; break;
+			}
+		}
+
+		else if ( lineCount == 5+nbNpcKilled-1+2 )
+		{
+			int nb = atoi(line.c_str());
+			nbPageDiscoverd = nb;
+		}
+
+		else if ( lineCount >= 5+nbNpcKilled-1+3 && lineCount <= (5+nbNpcKilled-1+3)+nbPageDiscoverd-1 )
+		{
+			int pageid=0;
+			int objectid=0;
+			int itemid=0;
+			int unuseddd=0;
+			sscanf(line.c_str(),"%d,%d,%d,%d",&pageid,&objectid,&itemid,&unuseddd);
+
+			if ( objectid == 0 && itemid == 0 )
+			{
+				error = true; break;
+			}
+			if ( objectid != 0 && itemid != 0 )
+			{
+				error = true; break;
+			}
+			if ( unuseddd != 0  )
+			{
+				error = true; break;
 			}
 
-			//break;
+			m_richa_pageDiscovered.push_back(RICHA_PAGE_DISCO_STAT(pageid,objectid,itemid));
 		}
-		*/
 
+
+		else if ( lineCount == ((5+nbNpcKilled-1+3)+nbPageDiscoverd-1)+1 )
+		{
+			if ( line != "FIN_DOCUMENT" ) // version
+			{
+				error = true; break;
+			}
+			break;
+		}
 
 		else
 		{
@@ -811,14 +1246,37 @@ void Player::richard_importVariables(uint64 guid__)
 		lineCount++;
 	}
 
+	if ( m_richa_NpcKilled.size() != nbNpcKilled )
+	{
+		error = true;
+	}
+	if ( m_richa_pageDiscovered.size() != nbPageDiscoverd )
+	{
+		error = true;
+	}
 
 
 	if ( nbOk != 2 || error )
 	{
-		BASIC_LOG("RICHARD WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE (%d) !!!!!!!!!!!", guid__ );
+		if ( error )
+		{
+			int aaaaa=0;
+		}
 
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE (%d) !!!!!!!!!!!", guid__ );
+		Sleep(5000);
+
+
+		//si on arrive dans cette erreur, ca veut dire que    _ri_character_%d.txt
+		//n'a pas été chargé correctment... ou n'existe pas . le seul cas ou c'est normal, c'est quand on cree un nouveau personnage
 		
 
+		// 1) on RESET toutes la variables importées par ce TXT :
+		m_richa_NpcKilled.clear();
+		m_richa_pageDiscovered.clear();
+
+
+		// 2) un nouveau fichier sera créé lors du premier log out du perso
 	}
 
 
@@ -832,6 +1290,9 @@ void Player::richard_importVariables(uint64 guid__)
 void Player::richard_saveToLog()
 {
 
+
+
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// richard : generation outfile :
 
@@ -840,9 +1301,293 @@ void Player::richard_saveToLog()
 	time_t t = time(0);   // get time now
 	struct tm * now = localtime(&t);
 
+	
+
+
+	char outt[4096];
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//// sauvegarde des custom variables - pour TOUT LE MONDE
+	{
+
+		// note : meme quand le grandjuge se deco, ca va save les valeur 
+		//alors que ces valeur pour lui doivent rester en read-only
+		//-  mais on s'en moque je pense
+
+		if ( m_richa_StatALL__elitGrisKilled.size() > 0 ) // si les donnée generale on été chargées
+		{
+			char nameFile2[2048];
+			sprintf(nameFile2, "RICHARDS/_ri_all_dianerichard.txt");
+
+			FILE* fcustom = fopen(nameFile2, "wb");
+			sprintf(outt, "DIANE_ET_RICHARD_STAT\r\n");
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			sprintf(outt, "VERSION_1\r\n");
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			sprintf(outt, "ELITE_GRIS_TUES_COMMUN\r\n");
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled.size());
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			for(int i=0; i<m_richa_StatALL__elitGrisKilled.size(); i++)
+			{
+				sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled[i]);
+				fwrite(outt, 1, strlen(outt), fcustom);
+			}
+
+			
+
+			sprintf(outt, "FIN_DOCUMENT\r\n");
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			fclose(fcustom); fcustom=0;
+			int zzzzz=0;
+		}
+	}
+
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//// sauvegarde des custom variables - pour les CHARACTER (bouillot, boulette, Inge, Herbo ...etc...)
+	{
+		ObjectGuid const& guiiddd = GetObjectGuid();
+		uint32 entryy = guiiddd.GetEntry();
+		uint64 guid = guiiddd.GetRawValue();
+
+		char nameFile2[2048];
+		sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid);
+		FILE* fcustom = fopen(nameFile2, "wb");
+		sprintf(outt, "CHARACTER_STAT\r\n"); // juste un code pour savoir si tout est ok
+		fwrite(outt, 1, strlen(outt), fcustom);
+	
+		sprintf(outt, "VERSION_4\r\n"); // la version
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		sprintf(outt, "%s\r\n",GetName()); // name
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		//sprintf(outt, "%d\r\n",m_richar_paragon);  // <--- TODO : retirer lui car il est save dans  _ri_human_%s
+		//fwrite(outt, 1, strlen(outt), fcustom);    //
+
+
+		sprintf(outt, "LIST_NPC_KILLED\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		sprintf(outt, "%d\r\n", m_richa_NpcKilled.size());
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		for(int i=0; i<m_richa_NpcKilled.size(); i++)
+		{
+			sprintf(outt, "%d,%d\r\n", m_richa_NpcKilled[i].npc_id , m_richa_NpcKilled[i].nb_killed);
+			fwrite(outt, 1, strlen(outt), fcustom);
+		}
+
+
+
+		sprintf(outt, "LIST_PAGE_DISCOVERED\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		sprintf(outt, "%d\r\n", m_richa_pageDiscovered.size());
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		for(int i=0; i<m_richa_pageDiscovered.size(); i++)
+		{
+			sprintf(outt, "%d,%d,%d,%d\r\n", m_richa_pageDiscovered[i].pageId, m_richa_pageDiscovered[i].objectID, m_richa_pageDiscovered[i].itemID , 0);
+			fwrite(outt, 1, strlen(outt), fcustom);
+		}
+
+
+
+		sprintf(outt, "FIN_DOCUMENT\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		//sprintf(outt, "3146\r\n"); // juste un code pour savoir si tout est ok
+		//fwrite(outt, 1, strlen(outt), fcustom);
+		fclose(fcustom); fcustom=0;
+	}
+
+	//////////////////////////////////////////////////////////////////////////////
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//// sauvegarde des custom variables - pour aux humain IRL (Richard, Diane )
+	{
+		ObjectGuid const& guiiddd = GetObjectGuid();
+		uint32 entryy = guiiddd.GetEntry();
+		uint64 guid = guiiddd.GetRawValue();
+		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid);
+		
+		char irlName[256];
+		// #LISTE_ACCOUNT_HERE
+		// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( player_account == 5 || player_account == 10 )
+		{
+			strcpy_s(irlName,"richard");
+		}
+		else if ( player_account == 6 || player_account == 9 )
+		{
+			strcpy_s(irlName,"diane");
+		}
+		else if ( player_account == 7  ) // grandjuge
+		{
+			strcpy_s(irlName,"dieu");
+		}
+		else
+		{
+			irlName[0] = 0;
+		}
+
+
+		if ( irlName[0] != 0 )
+		{
+
+			int paragonBeforeSave = 0;
+			int paragonProgressBeforeSave = 0;
+
+
+			char nameFile2[2048];
+			sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+
+			//Deja, avant de supprimer le fichier, on regarde les anciennes valeurs
+			{
+				std::ifstream infile(nameFile2);
+
+				int nbOk = 0;
+				bool error = false;
+
+				int lineConsts = 0;
+				const int Line_First = lineConsts; lineConsts++;
+				const int Line_Version = lineConsts; lineConsts++;
+				const int Line_Name = lineConsts; lineConsts++;
+				const int Line_Paragon = lineConsts; lineConsts++;
+				const int Line_ParagonProgress = lineConsts; lineConsts++;
+				//const int Line_End = lineConsts; lineConsts++;
+
+				std::string line;
+				int lineCount = 0;
+				while (std::getline(infile, line))
+				{
+					if ( lineCount == Line_First )
+					{
+						if ( line != "HUMAIN_STAT" )
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+
+					else if ( lineCount == Line_Version )
+					{
+						if ( line != "VERSION_4" ) // version
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+					else if ( lineCount == Line_Name )
+					{
+						int aa=0;
+					}
+					else if ( lineCount == Line_Paragon )
+					{
+						int value = atoi(line.c_str());
+						paragonBeforeSave = value;
+					}
+					else if ( lineCount == Line_ParagonProgress )
+					{
+						int value = atoi(line.c_str());
+						paragonProgressBeforeSave = value;
+					}
+					else
+					{
+						error = true;
+						break;
+					}
+
+
+					lineCount++;
+				}
+
+
+
+				if ( nbOk != 2 || error )
+				{
+					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE HUMAN (%s) !!!!!!!!!!!", irlName );
+
+					//si erreur, on reset tout
+					paragonBeforeSave = 0;
+					paragonProgressBeforeSave = 0;
+				}
+
+
+				infile.close();
+
+			}
+
+
+
+
+			//char nameFile2[2048];
+			//sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+			FILE* fcustom = fopen(nameFile2, "wb");
+			
+			sprintf(outt, "HUMAIN_STAT\r\n"); // juste un code pour savoir si tout est ok
+			fwrite(outt, 1, strlen(outt), fcustom);
+	
+			sprintf(outt, "VERSION_4\r\n"); // la version
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			sprintf(outt, "%s\r\n",irlName); // name
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			if (
+				//m_richar_paragon >= m_richar_paragon_COMMUN 
+				getLevel() == 60// seul un niveau 60 peut updater le niveau courant de paragon
+				)
+			{
+				sprintf(outt, "%d\r\n",m_richar_paragon);
+				fwrite(outt, 1, strlen(outt), fcustom);
+
+				int32 currentRepParagon = GetReputationMgr().GetReputation(93) - 21000;
+				sprintf(outt, "%d\r\n",currentRepParagon);
+				fwrite(outt, 1, strlen(outt), fcustom);
+			}
+			else
+			{
+				sprintf(outt, "%d\r\n",paragonBeforeSave);
+				fwrite(outt, 1, strlen(outt), fcustom);
+
+				sprintf(outt, "%d\r\n",paragonProgressBeforeSave);
+				fwrite(outt, 1, strlen(outt), fcustom);
+			}
+
+			fclose(fcustom); fcustom=0;
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+	// id dans la base de donnée
+	const uint32 coinItemID1 = 30000; 
+	const uint32 coinItemID2 = 30007;
+
 	char nameFile[2048];
 	const char* playerName = GetName();
-	sprintf(nameFile, "RICHARD/_ri_stat_%s_%d_%02d_%02d.txt",
+	sprintf(nameFile, "RICHARDS/_ri_stat_%s_%d_%02d_%02d.txt",
 		playerName,
 		now->tm_year + 1900,
 		now->tm_mon+1,
@@ -850,44 +1595,6 @@ void Player::richard_saveToLog()
 		);
 	FILE* fout = fopen(nameFile, "wb");
 
-
-	char outt[4096];
-
-	//////////////////////////////////////////////////////////////////////////////
-	//// sauvegarde des custom variables
-
-	ObjectGuid const& guiiddd = GetObjectGuid();
-	uint32 entryy = guiiddd.GetEntry();
-	uint64 guid = guiiddd.GetRawValue();
-
-	char nameFile2[2048];
-	sprintf(nameFile2, "RICHARD/_ri_cust_%d.txt",guid);
-	FILE* fcustom = fopen(nameFile2, "wb");
-	sprintf(outt, "53647\r\n"); // juste un code pour savoir si tout est ok
-	fwrite(outt, 1, strlen(outt), fcustom);
-	
-	sprintf(outt, "3\r\n"); // la version
-	fwrite(outt, 1, strlen(outt), fcustom);
-
-	sprintf(outt, "%s\r\n",GetName()); // name
-	fwrite(outt, 1, strlen(outt), fcustom);
-
-	sprintf(outt, "%d\r\n",m_richar_paragon);
-	fwrite(outt, 1, strlen(outt), fcustom);
-
-
-
-	//sprintf(outt, "3146\r\n"); // juste un code pour savoir si tout est ok
-	//fwrite(outt, 1, strlen(outt), fcustom);
-	fclose(fcustom); fcustom=0;
-
-
-	//////////////////////////////////////////////////////////////////////////////
-
-
-	// id dans la base de donnée
-	const uint32 coinItemID1 = 30000; 
-	const uint32 coinItemID2 = 30007;
 	
 	sprintf(outt, "played,%d\r\n", GetTotalPlayedTime());
 	fwrite(outt, 1, strlen(outt), fout);
@@ -1082,11 +1789,6 @@ void Player::richard_saveToLog()
 	fwrite(outt, 1, strlen(outt), fout);
 
 
-
-
-
-
-
 	sprintf(outt, "\r\n#LIST_SPELLS =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
 
@@ -1224,11 +1926,11 @@ void Player::richard_saveToLog()
 
 						if (pItem)
 						{
-							//	BASIC_LOG("RICHARD: item = %d",pItem->GetEntry());
+							//	BASIC_LOG("RICHAR: item = %d",pItem->GetEntry());
 						}
 						else
 						{
-							//	BASIC_LOG("RICHARD: item = nothing");
+							//	BASIC_LOG("RICHAR: item = nothing");
 						}
 
 						if ( pItem )
@@ -1683,8 +2385,60 @@ void Player::richard_saveToLog()
 
 	}
 
+	{
+
+		sprintf(outt, "\r\n#ELITE_GRIS_TUES_COMMUN =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_StatALL__elitGrisKilled.size(); i++)
+		{
+			sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled[i]);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+	{
+
+		sprintf(outt, "\r\n#LIST_NPC_KILLED =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "%d\r\n", m_richa_NpcKilled.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_NpcKilled.size(); i++)
+		{
+			sprintf(outt, "%d,%d\r\n", m_richa_NpcKilled[i].npc_id , m_richa_NpcKilled[i].nb_killed);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
 
 
+	{
+
+		sprintf(outt, "\r\n#LIST_PAGE_DISCOVERED =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "%d\r\n", m_richa_pageDiscovered.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_pageDiscovered.size(); i++)
+		{
+			sprintf(outt, "%d,%d,%d,%d\r\n", m_richa_pageDiscovered[i].pageId , m_richa_pageDiscovered[i].objectID, m_richa_pageDiscovered[i].itemID, 0);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
 
 
 	 sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
@@ -3457,6 +4211,10 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// RICHARD PARAGON
 
+		// en fait je vais revenir en arriere - le plus simple, c'est que SEUL les youhaicoin paragon peuvent faire monter le paragon
+		// #NO_XP_FOR_PARAGON
+
+		/*
 		//if (   strcmp( GetName() , "Grandjuge") == 0 )
 		{
 			if ( xp > 0 )
@@ -3516,7 +4274,7 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 
 		}
 
-
+		*/
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -6940,7 +7698,7 @@ void Player::Richard_InformDiscoveredNewArea(int areaFlag)
 					}
 				}
 
-				BASIC_LOG("RICHARD:  %s has discovered new : %s,%s  score=%d/%d ",  GetName()  ,  elemI.first.c_str(),  elemJ.name.c_str(),  nbSubDiscovered,  nbSubZone  );
+				BASIC_LOG("RICHAR:  %s has discovered new : %s,%s  score=%d/%d ",  GetName()  ,  elemI.first.c_str(),  elemJ.name.c_str(),  nbSubDiscovered,  nbSubZone  );
 
 				char messageOut[256];
 				sprintf(messageOut, "Decouverte zone (%d/%d)", nbSubDiscovered, nbSubZone);
@@ -9266,11 +10024,11 @@ uint32 Player::richard_countItem(uint32 item) const
 
 					if (pItem)
 					{
-						//	BASIC_LOG("RICHARD: item = %d",pItem->GetEntry());
+						//	BASIC_LOG("RICHAR: item = %d",pItem->GetEntry());
 					}
 					else
 					{
-						//	BASIC_LOG("RICHARD: item = nothing");
+						//	BASIC_LOG("RICHAR: item = nothing");
 					}
 
 					if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
@@ -9317,7 +10075,7 @@ uint32 Player::richard_countItem(uint32 item) const
 		}
 	}
 
-	//BASIC_LOG("RICHARD: _ %s has %d item id %d", GetName(), tempcount, item);
+	//BASIC_LOG("RICHAR: _ %s has %d item id %d", GetName(), tempcount, item);
 
 	return tempcount;
 }
@@ -9524,7 +10282,7 @@ InventoryResult Player::_CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, Item
         if (bag == INVENTORY_SLOT_BAG_0)
         {
             // keyring case
-            if (slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_START + GetMaxKeyringSize() && !(pProto->BagFamily == BAG_FAMILY_KEYS))
+            if (slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_START + GetMaxKeyringClientSize() && !(pProto->BagFamily == BAG_FAMILY_KEYS))
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
             // prevent cheating
@@ -9832,7 +10590,7 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
             // search free slot - keyring case
             if (pProto->BagFamily == BAG_FAMILY_KEYS)
             {
-                uint32 keyringSize = GetMaxKeyringSize();
+                uint32 keyringSize = GetMaxKeyringClientSize();
                 res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START, KEYRING_SLOT_START + keyringSize, dest, pProto, count, false, pItem, bag, slot);
                 if (res != EQUIP_ERR_OK)
                 {
@@ -9979,7 +10737,7 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
     {
         if (pProto->BagFamily == BAG_FAMILY_KEYS)
         {
-            uint32 keyringSize = GetMaxKeyringSize();
+            uint32 keyringSize = GetMaxKeyringClientSize();
             res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START, KEYRING_SLOT_START + keyringSize, dest, pProto, count, false, pItem, bag, slot);
             if (res != EQUIP_ERR_OK)
             {
@@ -10198,7 +10956,7 @@ InventoryResult Player::CanStoreItems(Item** pItems, int count) const
             bool b_found = false;
             if (pProto->BagFamily == BAG_FAMILY_KEYS)
             {
-                uint32 keyringSize = GetMaxKeyringSize();
+                uint32 keyringSize = GetMaxKeyringClientSize();
                 for (uint32 t = KEYRING_SLOT_START; t < KEYRING_SLOT_START + keyringSize; ++t)
                 {
                     if (inv_keys[t - KEYRING_SLOT_START] == 0)
@@ -11955,6 +12713,20 @@ void Player::RemoveItemFromBuyBackSlot(uint32 slot, bool del)
     }
 }
 
+
+uint32 Player::GetMaxKeyringClientSize() const 
+{ 
+	const int playerLevel = getLevel();
+	const int indexSize = (const int)(playerLevel / 10);
+
+	if ( indexSize < sizeof(LevelUpKeyringSize) / sizeof(LevelUpKeyringSize[0]) ) 
+	{  
+		return LevelUpKeyringSize[indexSize];
+	}
+	return KEYRING_SLOT_END - KEYRING_SLOT_START;
+}
+
+
 void Player::SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2, uint32 itemid /*= 0*/) const
 {
     DEBUG_LOG("WORLD: Sent SMSG_INVENTORY_CHANGE_FAILURE (%u)", msg);
@@ -13050,7 +13822,7 @@ bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 		finalMessage += " because :";
 
 		
-		//BASIC_LOG("RICHARD: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
+		//BASIC_LOG("RICHAR: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
 		
 		
 		if (!b2) { finalMessage += std::string("-- SatisfyQuestClass"); }
@@ -13601,10 +14373,261 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	bool questIsHarder = questIsDungeon | questIsElite | questIsRaid | questIsLegendary | questIsEscort;
 
 
+
+	//si c'est = a true, ca veut dire qu'une quete verte ou grises donnera des youhaicoi comme si c'etait une quete jaune
+	//on fait ca pour les event
+	bool rewardGreyAndGreenAsYellow_event = false;
+
+
+	//
+	//
+	//
+	//
+	// Cette longue liste est en 2 exemplaires : un dans __RICHARD_ALL.txt et un dans Player.cpp
+	// donc IMPORTANT de maintenanir LA MEME liste des 2 cotés
+	// toutefois attention a pas la copier coller betement - les 2 listes ne sont pas communes pour les comment-out
+	// en effet, celle de __RICHARD_ALL.txt va comment-out les quete qu'on ne doit pas reset regulierement
+	// alors que la liste de Player.cpp ca comment-out les quetes qui ne merite pas les youhaicoin bonus
+	//
+	//
+	if ( questID==0
+	//
+	// Ci Dessous - les quetes ouverture des cadeaux de Noel   2
+	//	
+	||questID==8767 //quest "A Gently Shaken Gift"
+	||questID==6984 //quete ou faut retrouver le bonhomme de neige - 3
+	||questID==7045 //quete Alliance - ou faut retrouver le bonhomme de neige - 3
+	||questID==6961 //
+	||questID==7021 //
+	||questID==7024 //
+	||questID==7022 //demande d'aller voir pere noel
+	||questID==7023 //demande d'aller voir pere noel
+	||questID==8746 //quete de Metzen le cerf
+	||questID==6963 //quete ou faut retrouver le bonhomme de neige - 1
+	||questID==7042 //quete Alliance - ou faut retrouver le bonhomme de neige - 1
+	||questID==7061 //noel Horde - quite de 6964
+	||questID==7063 //noel Alliance - suite de 7062
+	||questID==8763 //quest : The Hero of the Day
+	||questID==6964 //noel Horde
+	||questID==7062 //noel Alliance
+	||questID==6962 //
+	||questID==7025
+	||questID==6983 //quete ou faut retrouver le bonhomme de neige - 2
+	||questID==7043 //quete Alliance - ou faut retrouver le bonhomme de neige - 2
+	||questID==8762 //quete de Metzen le cerf, coté Alliance qui est pas listée sur internet. la quete horde est 8746
+	||questID==8799 //quest : "The Hero of the Day" 
+	||questID==8827 //quest : "Winter's Presents"
+	||questID==8828 //quest : "Winter's Presents"
+	||questID==8861
+	//
+	//  Ci Dessous - les quetes ouverture des cadeaux de Noel   21
+	//
+	//||questID==8744 //PAS DE BONUS YOUHAICOIN
+	//||questID==8768 //PAS DE BONUS YOUHAICOIN
+	//||questID==8769 //PAS DE BONUS YOUHAICOIN <-- on a deja plein de youhaicoin dans les cadeaux qu'on ouvre !
+	//||questID==8788 //PAS DE BONUS YOUHAICOIN
+	//||questID==8803 //PAS DE BONUS YOUHAICOIN
+	//
+	//  Ci Dessous - les quetes de la saint valentin  8
+	//
+	||questID==8903 //
+	||questID==9024 // suite de 8903
+	||questID==9025
+	||questID==9026
+	||questID==9027
+	||questID==9028
+	||questID==8899
+	||questID==8897
+	||questID==8898
+	||questID==8900
+	||questID==8901
+	||questID==8902
+	||questID==8979
+	||questID==8982
+	||questID==8981
+	||questID==8984
+	||questID==8983
+	||questID==8980
+	||questID==9029
+	//
+	//  Ci Dessous - les quetes de la fete des morts
+	//
+	||questID==8149
+	||questID==8150
+	//
+	//  Ci Dessous - les quetes pour halloween  12
+	//
+	||questID==1658  // Alliance
+	||questID==8373  // Alliance  
+	||questID==8311  // Alliance
+	||questID==8353  // Alliance
+	||questID==8355  // Alliance
+	||questID==8356  // Alliance
+	||questID==8357  // Alliance
+	||questID==1657  // Horde
+	||questID==8322  // Horde
+	||questID==8409  // Horde
+	||questID==8312  // Horde
+	||questID==8354  // Horde
+	||questID==8358  // Horde
+	||questID==8359  // Horde
+	||questID==8360  // Horde
+	//
+	//  Ci Dessous - les quetes pour Lunar Festival  (nouvel an chinois)  7
+	//
+	||questID==8868
+	||questID==8619
+	||questID==8635
+	||questID==8636
+	||questID==8642
+	||questID==8643
+	||questID==8644
+	||questID==8646
+	||questID==8647
+	||questID==8648
+	||questID==8649
+	||questID==8650
+	||questID==8652
+	||questID==8653
+	||questID==8654
+	||questID==8670
+	||questID==8671
+	||questID==8672
+	||questID==8673
+	||questID==8674
+	||questID==8675
+	||questID==8676
+	||questID==8677
+	||questID==8678
+	||questID==8679
+	||questID==8680
+	||questID==8681
+	||questID==8682
+	||questID==8683
+	||questID==8684
+	||questID==8685
+	||questID==8686
+	||questID==8688
+	||questID==8713
+	||questID==8714
+	||questID==8715
+	||questID==8716
+	||questID==8717
+	||questID==8718
+	||questID==8719
+	||questID==8720
+	||questID==8721
+	||questID==8722
+	||questID==8723
+	||questID==8724
+	||questID==8725
+	||questID==8726
+	||questID==8866
+	||questID==8872
+	||questID==8875
+	||questID==8882
+	||questID==8883
+	//
+	//  Ci Dessous - les quetes du nouvel an occidental
+	//
+	||questID==8860
+	||questID==8861
+	||questID==8827
+	//
+	//  Ci Dessous - les quetes de la semaine de l'enfant (10)
+	//
+	||questID==172  // - quete coté Horde
+	||questID==1468 // - quete coté Alliance
+	||questID==171
+	||questID==5502
+	||questID==3861
+	||questID==925
+	||questID==910
+	||questID==911
+	||questID==558
+	||questID==1800
+	||questID==1687
+	||questID==1479
+	||questID==1558
+	||questID==915
+	||questID==4822
+	//
+	//  Ci Dessous - les quetes de la fete du feu (1)
+	//
+	||questID==9386
+	||questID==9319
+	||questID==9322
+	||questID==9323
+	||questID==9324
+	||questID==9325
+	||questID==9326
+	||questID==9330
+	||questID==9368
+	||questID==9365
+	||questID==9339
+	||questID==9332
+	||questID==9331
+	||questID==9367
+	||questID==9389
+	//
+	//  Ci Dessous - les quetes de l ouverture des portes anquiraj  22
+	//
+	//||questID==8795  //PAS DE BONUS YOUHAICOIN
+	//||questID==8796  //PAS DE BONUS YOUHAICOIN
+	//||questID==8831  //PAS DE BONUS YOUHAICOIN
+	//||questID==8833  //PAS DE BONUS YOUHAICOIN
+	//||questID==8835  //PAS DE BONUS YOUHAICOIN
+	//||questID==8837  //PAS DE BONUS YOUHAICOIN
+	//||questID==8839  //PAS DE BONUS YOUHAICOIN
+	//||questID==8841  //PAS DE BONUS YOUHAICOIN
+	//||questID==8843  //PAS DE BONUS YOUHAICOIN
+	//||questID==8845  //PAS DE BONUS YOUHAICOIN
+	//
+	// Ci Dessous - les quetes de la foire de sombre lune ( 4 et 5 )
+	//
+	||questID==7929
+	||questID==7926
+	||questID==7939
+	||questID==7941
+	||questID==7942
+	||questID==7946
+	||questID==7981
+	||questID==8223
+	//
+	// Ci Dessous - les quetes du concours de peche   14   15
+	//
+	//||questID==8229  //PAS DE BONUS YOUHAICOIN
+	//||questID==8194  //PAS DE BONUS YOUHAICOIN
+	//||questID==8225  //PAS DE BONUS YOUHAICOIN
+	//||questID==8193  //PAS DE BONUS YOUHAICOIN
+	//
+	// Ci Dessous - la quete d'arene de strongleronce  16
+	//
+	//||questID==7838  //PAS DE BONUS YOUHAICOIN
+	//
+	//
+	// FIN LISTE
+	//
+		)
+	{
+		rewardGreyAndGreenAsYellow_event = true;
+	}
+
 	
 	if (
-		//expection des quetes qui raportent pas de youhaicoin :
-		questID < 20000 // les quetes du vendeur youhainy
+		//ici mettre la liste d'exception 
+		// des quetes qui raportent PAS de youhaicoin :
+
+		// les quetes du vendeur youhainy
+		questID < 20000 
+
+		//je retire les 5 quetes d'ouverture de cadeaux de noel.
+		//on a deja plein de youhaicoin dans les cadeaux qu'on ouvre !
+		&& questID != 8744 
+		&& questID != 8768
+		&& questID != 8769 
+		&& questID != 8788 
+		&& questID != 8803 
 		)
 	
 	{
@@ -13647,9 +14670,21 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			nbCoinToReceiveMax = 0;
 		}
 
+
+
+		if ( rewardGreyAndGreenAsYellow_event )
+		{
+			if ( nbCoinToReceiveMax < 2 )
+			{
+				nbCoinToReceiveMax = 2;
+			}
+		}
+
+
+
 		int nbCoinToReceiveReally = rand() % (nbCoinToReceiveMax + 1);     //  0 to nbCoinToReceive
 
-		BASIC_LOG("RICHARD:  add coin in quest reward - player=%d questLvl=%d quest=%s nbCoin=%d/%d",
+		BASIC_LOG("RICHAR:  add coin in quest reward - player=%d questLvl=%d quest=%s nbCoin=%d/%d",
 			playerLevel,
 			questLevel,
 			typeQuestChar,
@@ -13659,6 +14694,18 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			// id dans la base de donnée
 		const uint32 coinItemID1 = 30000; 
 		const uint32 coinItemID2 = 30007;
+
+
+		
+		char prefix[32];
+		prefix[0] = 0;
+
+		if ( rewardGreyAndGreenAsYellow_event )
+		{
+			//rajouter ca me permet de voir si les quete sont dans la bonne catégorie :  event ou pas  event
+			sprintf_s(prefix,"event - ");
+		}
+
 
 		if (nbCoinToReceiveReally > 0)
 		{
@@ -13672,23 +14719,24 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			}
 
 
+
 			if ( newCoin_ == coinItemID1 )
 			{
 				char messageOut[256];
-				sprintf(messageOut, "+%d/%d youhaicoin paragon!", nbCoinToReceiveReally, nbCoinToReceiveMax);
+				sprintf(messageOut, "%s+%d/%d youhaicoin paragon!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
 				Say(messageOut, LANG_UNIVERSAL);
 			}
 			else
 			{
 				char messageOut[256];
-				sprintf(messageOut, "+%d/%d youhaicoin cadeau!", nbCoinToReceiveReally, nbCoinToReceiveMax);
+				sprintf(messageOut, "%s+%d/%d youhaicoin cadeau!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
 				Say(messageOut, LANG_UNIVERSAL);
 			}
 		}
 		else if (nbCoinToReceiveReally == 0 && nbCoinToReceiveMax > 0)
 		{
 			char messageOut[256];
-			sprintf(messageOut, "+%d/%d youhaicoin :(", nbCoinToReceiveReally, nbCoinToReceiveMax);
+			sprintf(messageOut, "%s+%d/%d youhaicoin :(",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
 			Say(messageOut, LANG_UNIVERSAL);
 		}
 
@@ -13728,23 +14776,29 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	////  RICHARD : pour le paragon, on s'assure que GiveXP est tout le temps appelé
 	/////
-    //////  if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
-   ////     GiveXP(xp, nullptr);
-   ///// else
-   //////     ModifyMoney(int32(pQuest->GetRewMoneyMaxLevel() * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)));
+
+	//ca c'est l'original :
+      if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+        GiveXP(xp, nullptr);
+    else
+        ModifyMoney(int32(pQuest->GetRewMoneyMaxLevel() * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)));
 		
-		if ( quest_id == 20001 ) // custom XP win pour la quete qui donne des niveau de paragon
-		{
-			const float coeffXPToParagon = 21000.0f/371336.0f; // ATTENTION, CE NOMBRE EST COPIE COLLE 2 FOIS DANS LE CODE
 
-			float nbParagonToWin = 100.0f;
+	// en fait je vais revenir en arriere - le plus simple, c'est que SEUL les youhaicoin paragon peuvent faire monter le paragon
+	// #NO_XP_FOR_PARAGON
 
-			GiveXP(  (int)(nbParagonToWin / coeffXPToParagon)   , nullptr);
-		}
-		else
-		{
-			GiveXP(xp, nullptr);
-		}
+		//if ( quest_id == 20001 ) // custom XP win pour la quete qui donne des niveau de paragon
+		//{
+		//	const float coeffXPToParagon = 21000.0f/371336.0f; // ATTENTION, CE NOMBRE EST COPIE COLLE 2 FOIS DANS LE CODE
+		//
+		//	float nbParagonToWin = 100.0f;
+		//
+		//	GiveXP(  (int)(nbParagonToWin / coeffXPToParagon)   , nullptr);
+		//}
+		//else
+		//{
+		//	GiveXP(xp, nullptr);
+		//}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -14771,7 +15825,7 @@ bool Player::HasQuestForItem(uint32 itemid) const
 			{
 				if (itemid == qinfo->ReqItemId[j])
 				{
-					BASIC_LOG("RICHARD: DEBUG LOOT QUEST - quest[%d/%d]=%d itemIndex=%d/%d  player=%s objet:%d - joueur a quete: %s",
+					BASIC_LOG("RICHAR: DEBUG LOOT QUEST - quest[%d/%d]=%d itemIndex=%d/%d  player=%s objet:%d - joueur a quete: %s",
 						i, MAX_QUEST_LOG_SIZE, questid,
 						j, QUEST_ITEM_OBJECTIVES_COUNT,
 						playerName,
@@ -14783,7 +15837,7 @@ bool Player::HasQuestForItem(uint32 itemid) const
 
 					if (q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
 					{
-						BASIC_LOG("     RICHARD: DEBUG LOOT QUEST - on lui donne car %d / %d - doubleCheckRichard=%d",
+						BASIC_LOG("     RICHAR: DEBUG LOOT QUEST - on lui donne car %d / %d - doubleCheckRichard=%d",
 							q_status.m_itemcount[j],
 							qinfo->ReqItemCount[j],
 							richardDoubleCheck
@@ -14793,7 +15847,7 @@ bool Player::HasQuestForItem(uint32 itemid) const
 					{
 
 
-						BASIC_LOG("     RICHARD: DEBUG LOOT QUEST - on lui donne PAS car %d / %d - doubleCheckRichard=%d",
+						BASIC_LOG("     RICHAR: DEBUG LOOT QUEST - on lui donne PAS car %d / %d - doubleCheckRichard=%d",
 							q_status.m_itemcount[j],
 							qinfo->ReqItemCount[j],
 							richardDoubleCheck
@@ -14810,7 +15864,7 @@ bool Player::HasQuestForItem(uint32 itemid) const
 							richardDoubleCheck < qinfo->ReqItemCount[j] // si le vrai recompte d'objet est plus petit que le nombre d'objet demandé par la quete
 							)
 						{
-							BASIC_LOG("     RICHARD: WARNING : on va forcer le loot de l'objet");
+							BASIC_LOG("     RICHAR: WARNING : on va forcer le loot de l'objet");
 							richardForceGive = true;
 						}
 

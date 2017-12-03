@@ -184,6 +184,7 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
 		uint32 sender_account = sObjectMgr.GetPlayerAccountIdByGUID(guiiddd);
 		uint32 receiver_account = sObjectMgr.GetPlayerAccountIdByGUID(rc);
 
+		// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
 		if (    sender_account == 5 && receiver_account == 10  // richard vers richard2
 			||  sender_account == 6 && receiver_account == 9  // diane vers diane2
 

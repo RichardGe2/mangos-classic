@@ -438,7 +438,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     Player* pCurrChar = new Player(this);
 
-	pCurrChar->richard_importVariables(playerGuid.GetRawValue());
+	pCurrChar->richard_importVariables_START(playerGuid.GetRawValue());
 
 
     pCurrChar->GetMotionMaster()->Initialize();
@@ -661,6 +661,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     if (!pCurrChar->IsStandState() && !pCurrChar->hasUnitState(UNIT_STAT_STUNNED))
         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);
+
+
+	pCurrChar->richard_importVariables_END(playerGuid.GetRawValue());
+
 
     m_playerLoading = false;
     delete holder;

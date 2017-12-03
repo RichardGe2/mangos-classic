@@ -61,6 +61,7 @@ typedef std::deque<Mail*> PlayerMails;
 #define PLAYER_MAX_SKILLS           127
 #define PLAYER_EXPLORED_ZONES_SIZE  64
 
+
 // Note: SPELLMOD_* values is aura types in fact
 enum SpellModType
 {
@@ -851,7 +852,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         ~Player();
 
 		void richard_saveToLog();
-		void richard_importVariables(uint64 guid__);
+		void richard_importVariables_START(uint64 guid__);
+		void richard_importVariables_END(uint64 guid__);
 
         void CleanupsBeforeDelete() override;
 
@@ -1103,7 +1105,9 @@ class MANGOS_DLL_SPEC Player : public Unit
         Item* GetItemFromBuyBackSlot(uint32 slot);
         void RemoveItemFromBuyBackSlot(uint32 slot, bool del);
 
-        uint32 GetMaxKeyringSize() const { return KEYRING_SLOT_END - KEYRING_SLOT_START; }
+        uint32 GetMaxKeyringClientSize() const ; // number of slots available depending on the Player's level - limited by Client GUI
+
+
         void SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2 = nullptr, uint32 itemid = 0) const;
         void SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param) const;
         void SendSellError(SellResult msg, Creature* pCreature, ObjectGuid itemGuid, uint32 param) const;
@@ -2387,7 +2391,42 @@ class MANGOS_DLL_SPEC Player : public Unit
 		
 		void Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECONDA>  >& mapsList,   int&  nbAreaExplored,  int&  nbAreaTotal);
 		
-		int m_richar_paragon;
+
+
+
+
+		int m_richar_paragon; // variable specifique a ce Player : Bouillot, Boulette....
+		int m_richar_paragonProgressFromFile; // only USED during loading, after that, it's always 0
+		
+		static std::vector<unsigned int> m_richa_StatALL__elitGrisKilled;
+		
+		struct RICHA_NPC_KILLED_STAT
+		{
+			RICHA_NPC_KILLED_STAT(unsigned int npc_id_ , unsigned int nb_killed_)
+			{
+				npc_id = npc_id_ ;
+				nb_killed = nb_killed_;
+			}
+
+			unsigned int npc_id;
+			unsigned int nb_killed;
+		};
+		std::vector<RICHA_NPC_KILLED_STAT> m_richa_NpcKilled;
+
+		struct RICHA_PAGE_DISCO_STAT
+		{
+			RICHA_PAGE_DISCO_STAT(unsigned int pageId_ , unsigned int objectID_, unsigned int itemID_)
+			{
+				pageId = pageId_ ;
+				objectID = objectID_;
+				itemID = itemID_;
+			}
+
+			unsigned int pageId;
+			unsigned int objectID;
+			unsigned int itemID;
+		};
+		std::vector<RICHA_PAGE_DISCO_STAT> m_richa_pageDiscovered;
 		///////////////////////////////////////////////////////////////////////////////////
 
 
