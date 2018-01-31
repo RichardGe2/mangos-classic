@@ -993,11 +993,11 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 	}
 	else if (  strcmp(store.GetName() , "disenchant_loot_template") == 0 )
 	{
-
+		int aaa=0;
 	}
 	else if (  strcmp(store.GetName() , "fishing_loot_template") == 0 )
 	{
-
+		int aaa=0;
 	}
 	else if (  strcmp(store.GetName() , "gameobject_loot_template") == 0 )
 	{
@@ -1009,11 +1009,15 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 	}
 	else if (  strcmp(store.GetName() , "pickpocketing_loot_template") == 0 )
 	{
-
+		int aaa=0;
 	}
 	else if (  strcmp(store.GetName() , "skinning_loot_template") == 0 )
 	{
 		lootOrigin = 4;
+	}
+	else if (  strcmp(store.GetName() , "mail_loot_template") == 0 )
+	{
+		int aaa=0;
 	}
 	else
 	{

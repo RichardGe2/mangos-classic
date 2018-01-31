@@ -854,6 +854,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 		void richard_saveToLog();
 		void richard_importVariables_START(uint64 guid__);
 		void richard_importVariables_END(uint64 guid__);
+		
 
         void CleanupsBeforeDelete() override;
 
@@ -2427,6 +2428,27 @@ class MANGOS_DLL_SPEC Player : public Unit
 			unsigned int itemID;
 		};
 		std::vector<RICHA_PAGE_DISCO_STAT> m_richa_pageDiscovered;
+
+
+		struct RICHA_LUNARFESTIVAL_ELDERFOUND
+		{
+			RICHA_LUNARFESTIVAL_ELDERFOUND(unsigned int year_ , unsigned int questId_)
+			{
+				year = year_ ;
+				questId = questId_;
+			}
+
+			unsigned int year;
+			unsigned int questId;
+		};
+		std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND> m_richa_lunerFestivalElderFound;
+
+		static void richard_importFrom_richaracter_(
+			uint64 guid__,
+			std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
+			std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
+			std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound);
+
 		///////////////////////////////////////////////////////////////////////////////////
 
 

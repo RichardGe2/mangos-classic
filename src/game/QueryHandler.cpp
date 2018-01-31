@@ -490,113 +490,19 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 
 			for(int i=0; i<associatedPlayerGUID.size(); i++)
 			{
-				std::vector<Player::RICHA_PAGE_DISCO_STAT> pageFromOtherCharater;
+				std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+				Player::richard_importFrom_richaracter_(
+					associatedPlayerGUID[i],
+					richa_NpcKilled,
+					richa_pageDiscovered,
+					richa_lunerFestivalElderFound
+					);
 
-				char nameFile2[2048];
-				//const char* playerName = GetName();
-				sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",associatedPlayerGUID[i]);
-
-				std::ifstream infile(nameFile2);
-
-				std::string line;
-				int lineCount=0;
-				int nbNpcKilled = 0;
-				int nbPageDiscoverd = -1;
-				bool error = false;
-				while (std::getline(infile, line))
+				for(int j=0; j<richa_pageDiscovered.size(); j++)
 				{
-
-					if ( lineCount == 0 )
-					{
-						if ( line != "CHARACTER_STAT" )
-						{
-							error = true; break;
-						}
-					}
-
-					else if ( lineCount == 1 )
-					{
-						if ( line != "VERSION_4" ) // version
-						{
-							error = true; break;
-						}
-					}
-
-					else if ( lineCount == 2 )
-					{
-						int aa=0;
-					}
-
-					else if ( lineCount == 3 )
-					{
-						if ( line != "LIST_NPC_KILLED" ) // version
-						{
-							error = true; break;
-						}
-					}
-
-					else if ( lineCount == 4 )
-					{
-						int nb = atoi(line.c_str());
-						nbNpcKilled = nb;
-					}
-
-					else if ( lineCount >= 5 && lineCount <= 5+nbNpcKilled-1 )
-					{
-
-					}
-
-
-					else if ( lineCount == 5+nbNpcKilled-1+1 )
-					{
-						if ( line != "LIST_PAGE_DISCOVERED" ) // version
-						{
-							error = true; break;
-						}
-					}
-
-					else if ( lineCount == 5+nbNpcKilled-1+2 )
-					{
-						int nb = atoi(line.c_str());
-						nbPageDiscoverd = nb;
-					}
-
-					else if ( lineCount >= 5+nbNpcKilled-1+3 && lineCount <= (5+nbNpcKilled-1+3)+nbPageDiscoverd-1 )
-					{
-						int pageid=0;
-						int objectid=0;
-						int itemid=0;
-						int unusedddddd=0;
-						sscanf(line.c_str(),"%d,%d,%d,%d",&pageid,&objectid,&itemid,&unusedddddd);
-						pageFromOtherCharater.push_back(Player::RICHA_PAGE_DISCO_STAT(pageid,objectid,itemid));
-					}
-
-
-					//pas la peine de lire la suite, on peut quitter direct
-					else if ( lineCount >= ((5+nbNpcKilled-1+3)+nbPageDiscoverd-1)+1 )
-					{
-						break;
-					}
-
-
-
-					lineCount++;
-				}
-
-				if ( nbPageDiscoverd != pageFromOtherCharater.size() )
-				{
-					error = true;
-				}
-
-				if ( error )
-				{
-					pageFromOtherCharater.clear();
-				}
-
-
-				for(int j=0; j<pageFromOtherCharater.size(); j++)
-				{
-					if ( pageFromOtherCharater[j].pageId == pageID )
+					if ( richa_pageDiscovered[j].pageId == pageID )
 					{
 						knownByOtherPerso = true;
 						break;
@@ -609,7 +515,7 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 					break;
 				}
 
-				infile.close();
+
 			}//pour chaque perso associé
 
 

@@ -3801,13 +3801,29 @@ void Unit::_UpdateSpells(uint32 time)
         }
     }
 
+	int iiDebug = 0;
+	int debug_sizeBefore_01 = m_spellAuraHolders.size();
+
     // update auras
     // m_AurasUpdateIterator can be updated in inderect called code at aura remove to skip next planned to update but removed auras
     for (m_spellAuraHoldersUpdateIterator = m_spellAuraHolders.begin(); m_spellAuraHoldersUpdateIterator != m_spellAuraHolders.end();)
     {
         SpellAuraHolder* i_holder = m_spellAuraHoldersUpdateIterator->second;
+
+		//pour debugger le crash que j'ai ici quand mon walker meurt
+		char debug_casterName[2048]  ;
+		char debug_targetName[2048] ;
+		strcpy_s(debug_casterName ,  i_holder->GetCaster()->GetName()  );
+		strcpy_s(debug_targetName ,  i_holder->GetTarget()->GetName()  );
+
+
         ++m_spellAuraHoldersUpdateIterator;                 // need shift to next for allow update if need into aura update
-        i_holder->UpdateHolder(time);
+        
+		int debug_sizeBefore_02 = m_spellAuraHolders.size();
+		
+		i_holder->UpdateHolder(time);
+
+		iiDebug++;
     }
 
     // remove expired auras

@@ -4660,6 +4660,14 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
 				scalePet = 2.0f;
 			}
 
+
+			//ici, au cas par cas, on va gerer la scale des youhaimon :
+			if ( pet_entry == 3917 )  // youhaimon 203917 - Elementaire d'eau
+			{
+				scalePet *= 0.5f;
+			}
+
+
 			Pet* old_critter = player->GetMiniPet();
 			if (!old_critter )
 			{

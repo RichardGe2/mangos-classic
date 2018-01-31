@@ -767,6 +767,224 @@ void Player::richard_importVariables_END(uint64 guid__)
 
 }
 
+void Player::richard_importFrom_richaracter_(uint64 guid__,
+	std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
+	std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
+	std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound
+	
+	)
+{
+	
+	char nameFile2[2048];
+	//const char* playerName = GetName();
+	sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid__);
+
+	std::ifstream infile(nameFile2);
+
+	int nbOk = 0;
+	bool error = false;
+
+
+	if ( richa_NpcKilled.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3265 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+	if ( richa_pageDiscovered.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3266 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+	if ( richa_lunerFestivalElderFound.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3267 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+
+	richa_NpcKilled.clear();
+	richa_pageDiscovered.clear();
+	richa_lunerFestivalElderFound.clear();
+
+	std::string line;
+	int lineCount = 0; // ne compte PAS les ligne ignorées par le lecteur (ligne vides, commentaires....)
+	int nbNpcKilled = 0;
+	int nbPageDiscoverd = 0;
+	std::string currentSectionName = ""; // string vide si on est pas dans une section
+	int currentSectionLine = 0; //  line 0 = 1ere ligne de la section, sans compter la ligne de titre de la section
+	while (std::getline(infile, line))
+	{
+		//std::istringstream iss(line);
+		//int a, b;
+		//if (!(iss >> a >> b)) { break; } // error
+
+		// process pair (a,b)
+
+		if ( line == "#FIN_DOCUMENT" ) // critere d'arret
+		{
+			nbOk++;
+			break;
+		}
+
+		else if ( line == "" ) // on ignore les ligne vide
+		{
+			lineCount--;
+		}
+
+		else if (  line.size() >= 2 &&  line[0] == '/' &&  line[1] == '/' ) // on ignore les ligne qui commencent par //
+		{
+			lineCount--;
+		}
+
+		else if ( lineCount == 0 )
+		{
+			if ( line != "CHARACTER_STAT" )
+			{
+				error = true; break;
+			}
+			else
+			{
+				nbOk++;
+			}
+		}
+
+		else if ( lineCount == 1 )
+		{
+			if ( line != "VERSION_254" ) // version
+			{
+				error = true; break;
+			}
+			else
+			{
+				nbOk++;
+			}
+		}
+
+		else if ( lineCount == 2 )
+		{
+			// character name
+			int aa=0;
+		}
+
+		else if ( lineCount == 3 )
+		{
+			if ( line != "#LIST_NPC_KILLED" ) // version
+			{
+				error = true; break;
+			}
+		}
+
+		else if ( lineCount == 4 )
+		{
+			int nb = atoi(line.c_str());
+			nbNpcKilled = nb;
+		}
+
+		else if ( lineCount >= 5 && lineCount <= 5+nbNpcKilled-1 )
+		{
+			int npcid=0;
+			int npckilled=0;
+			sscanf(line.c_str(),"%d,%d",&npcid,&npckilled);
+			richa_NpcKilled.push_back(RICHA_NPC_KILLED_STAT(npcid,npckilled));
+		}
+
+
+		else if ( lineCount == 5+nbNpcKilled-1+1 )
+		{
+			if ( line != "#LIST_PAGE_DISCOVERED" ) // version
+			{
+				error = true; break;
+			}
+		}
+
+		else if ( lineCount == 5+nbNpcKilled-1+2 )
+		{
+			int nb = atoi(line.c_str());
+			nbPageDiscoverd = nb;
+		}
+
+		else if ( lineCount >= 5+nbNpcKilled-1+3 && lineCount <= (5+nbNpcKilled-1+3)+nbPageDiscoverd-1 )
+		{
+			int pageid=0;
+			int objectid=0;
+			int itemid=0;
+			int unuseddd=0;
+			sscanf(line.c_str(),"%d,%d,%d,%d",&pageid,&objectid,&itemid,&unuseddd);
+
+			if ( objectid == 0 && itemid == 0 )
+			{
+				error = true; break;
+			}
+			if ( objectid != 0 && itemid != 0 )
+			{
+				error = true; break;
+			}
+			if ( unuseddd != 0  )
+			{
+				error = true; break;
+			}
+
+			richa_pageDiscovered.push_back(RICHA_PAGE_DISCO_STAT(pageid,objectid,itemid));
+		}
+
+
+		else if ( line == "#LIST_LUNARFESTIVAL_ELDERFOUND" )
+		{
+			currentSectionName = line;
+			currentSectionLine = 0;
+		}
+
+		else if ( currentSectionName == "#LIST_LUNARFESTIVAL_ELDERFOUND" )
+		{
+			int year=0;
+			int questid=0;
+			sscanf(line.c_str(),"%d,%d",&year,&questid);
+			richa_lunerFestivalElderFound.push_back(RICHA_LUNARFESTIVAL_ELDERFOUND(year,questid));
+			currentSectionLine++;
+		}
+
+		else
+		{
+			error = true;
+			break;
+		}
+
+
+		lineCount++;
+	}
+
+	if ( richa_NpcKilled.size() != nbNpcKilled )
+	{
+		error = true;
+	}
+	if ( richa_pageDiscovered.size() != nbPageDiscoverd )
+	{
+		error = true;
+	}
+
+
+	if ( nbOk != 3 || error )
+	{
+		if ( error )
+		{
+			int aaaaa=0;
+		}
+
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE (%d) !!!!!!!!!!!", guid__ );
+		Sleep(5000);
+
+
+		//si on arrive dans cette erreur, ca veut dire que    _ri_character_%d.txt
+		//n'a pas été chargé correctment... ou n'existe pas . le seul cas ou c'est normal, c'est quand on cree un nouveau personnage
+		
+
+		// 1) on RESET toutes la variables importées par ce TXT :
+		richa_NpcKilled.clear();
+		richa_pageDiscovered.clear();
+		richa_lunerFestivalElderFound.clear();
+
+		// 2) un nouveau fichier sera créé lors du premier log out du perso
+	}
+
+
+	infile.close();
+}
 
 void Player::richard_importVariables_START(uint64 guid__)
 {
@@ -1094,193 +1312,13 @@ void Player::richard_importVariables_START(uint64 guid__)
 
 	//////////////////////////////////////////////////////////////////////
 
+	richard_importFrom_richaracter_(
+		guid__,
+		m_richa_NpcKilled,
+		m_richa_pageDiscovered,
+		m_richa_lunerFestivalElderFound
+		);
 
-	char nameFile2[2048];
-	//const char* playerName = GetName();
-	sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid__);
-
-	std::ifstream infile(nameFile2);
-
-	int nbOk = 0;
-	bool error = false;
-
-	int lineConsts = 0;
-	const int Line_First = lineConsts; lineConsts++;
-	const int Line_Version = lineConsts; lineConsts++;
-	const int Line_Name = lineConsts; lineConsts++;
-	//const int Line_Paragon = lineConsts; lineConsts++;
-	//const int Line_End = lineConsts; lineConsts++;
-
-	if ( m_richa_NpcKilled.size() != 0 )
-	{
-		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3265 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
-	}
-	if ( m_richa_pageDiscovered.size() != 0 )
-	{
-		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3266 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
-	}
-
-	m_richa_NpcKilled.clear();
-	m_richa_pageDiscovered.clear();
-
-	std::string line;
-	int lineCount = 0;
-	int nbNpcKilled = 0;
-	int nbPageDiscoverd = 0;
-	while (std::getline(infile, line))
-	{
-		//std::istringstream iss(line);
-		//int a, b;
-		//if (!(iss >> a >> b)) { break; } // error
-
-		// process pair (a,b)
-
-
-		if ( lineCount == Line_First )
-		{
-			if ( line != "CHARACTER_STAT" )
-			{
-				error = true; break;
-			}
-			else
-			{
-				nbOk++;
-			}
-		}
-
-		else if ( lineCount == Line_Version )
-		{
-			if ( line != "VERSION_4" ) // version
-			{
-				error = true; break;
-			}
-			else
-			{
-				nbOk++;
-			}
-		}
-
-		else if ( lineCount == Line_Name )
-		{
-			int aa=0;
-		}
-
-		else if ( lineCount == 3 )
-		{
-			if ( line != "LIST_NPC_KILLED" ) // version
-			{
-				error = true; break;
-			}
-		}
-
-		else if ( lineCount == 4 )
-		{
-			int nb = atoi(line.c_str());
-			nbNpcKilled = nb;
-		}
-
-		else if ( lineCount >= 5 && lineCount <= 5+nbNpcKilled-1 )
-		{
-			int npcid=0;
-			int npckilled=0;
-			sscanf(line.c_str(),"%d,%d",&npcid,&npckilled);
-			m_richa_NpcKilled.push_back(RICHA_NPC_KILLED_STAT(npcid,npckilled));
-		}
-
-
-		else if ( lineCount == 5+nbNpcKilled-1+1 )
-		{
-			if ( line != "LIST_PAGE_DISCOVERED" ) // version
-			{
-				error = true; break;
-			}
-		}
-
-		else if ( lineCount == 5+nbNpcKilled-1+2 )
-		{
-			int nb = atoi(line.c_str());
-			nbPageDiscoverd = nb;
-		}
-
-		else if ( lineCount >= 5+nbNpcKilled-1+3 && lineCount <= (5+nbNpcKilled-1+3)+nbPageDiscoverd-1 )
-		{
-			int pageid=0;
-			int objectid=0;
-			int itemid=0;
-			int unuseddd=0;
-			sscanf(line.c_str(),"%d,%d,%d,%d",&pageid,&objectid,&itemid,&unuseddd);
-
-			if ( objectid == 0 && itemid == 0 )
-			{
-				error = true; break;
-			}
-			if ( objectid != 0 && itemid != 0 )
-			{
-				error = true; break;
-			}
-			if ( unuseddd != 0  )
-			{
-				error = true; break;
-			}
-
-			m_richa_pageDiscovered.push_back(RICHA_PAGE_DISCO_STAT(pageid,objectid,itemid));
-		}
-
-
-		else if ( lineCount == ((5+nbNpcKilled-1+3)+nbPageDiscoverd-1)+1 )
-		{
-			if ( line != "FIN_DOCUMENT" ) // version
-			{
-				error = true; break;
-			}
-			break;
-		}
-
-		else
-		{
-			error = true;
-			break;
-		}
-
-
-		lineCount++;
-	}
-
-	if ( m_richa_NpcKilled.size() != nbNpcKilled )
-	{
-		error = true;
-	}
-	if ( m_richa_pageDiscovered.size() != nbPageDiscoverd )
-	{
-		error = true;
-	}
-
-
-	if ( nbOk != 2 || error )
-	{
-		if ( error )
-		{
-			int aaaaa=0;
-		}
-
-		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE (%d) !!!!!!!!!!!", guid__ );
-		Sleep(5000);
-
-
-		//si on arrive dans cette erreur, ca veut dire que    _ri_character_%d.txt
-		//n'a pas été chargé correctment... ou n'existe pas . le seul cas ou c'est normal, c'est quand on cree un nouveau personnage
-		
-
-		// 1) on RESET toutes la variables importées par ce TXT :
-		m_richa_NpcKilled.clear();
-		m_richa_pageDiscovered.clear();
-
-
-		// 2) un nouveau fichier sera créé lors du premier log out du perso
-	}
-
-
-	infile.close();
 
 	BASIC_LOG("FINISH richard_importVariables");
 }
@@ -1361,10 +1399,14 @@ void Player::richard_saveToLog()
 		char nameFile2[2048];
 		sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid);
 		FILE* fcustom = fopen(nameFile2, "wb");
+		
+		sprintf(outt, "// generated on %02d/%02d/%d \r\n", now->tm_mday ,now->tm_mon+1,  now->tm_year + 1900 );
+		fwrite(outt, 1, strlen(outt), fcustom);
+		
 		sprintf(outt, "CHARACTER_STAT\r\n"); // juste un code pour savoir si tout est ok
 		fwrite(outt, 1, strlen(outt), fcustom);
 	
-		sprintf(outt, "VERSION_4\r\n"); // la version
+		sprintf(outt, "VERSION_254\r\n"); // la version
 		fwrite(outt, 1, strlen(outt), fcustom);
 
 		sprintf(outt, "%s\r\n",GetName()); // name
@@ -1373,8 +1415,10 @@ void Player::richard_saveToLog()
 		//sprintf(outt, "%d\r\n",m_richar_paragon);  // <--- TODO : retirer lui car il est save dans  _ri_human_%s
 		//fwrite(outt, 1, strlen(outt), fcustom);    //
 
+		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
 
-		sprintf(outt, "LIST_NPC_KILLED\r\n");
+		sprintf(outt, "#LIST_NPC_KILLED\r\n");
 		fwrite(outt, 1, strlen(outt), fcustom);
 
 		sprintf(outt, "%d\r\n", m_richa_NpcKilled.size());
@@ -1387,8 +1431,10 @@ void Player::richard_saveToLog()
 		}
 
 
+		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
 
-		sprintf(outt, "LIST_PAGE_DISCOVERED\r\n");
+		sprintf(outt, "#LIST_PAGE_DISCOVERED\r\n");
 		fwrite(outt, 1, strlen(outt), fcustom);
 
 		sprintf(outt, "%d\r\n", m_richa_pageDiscovered.size());
@@ -1400,9 +1446,22 @@ void Player::richard_saveToLog()
 			fwrite(outt, 1, strlen(outt), fcustom);
 		}
 
+		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		sprintf(outt, "#LIST_LUNARFESTIVAL_ELDERFOUND\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
+		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+		{
+			sprintf(outt, "%d,%d\r\n", m_richa_lunerFestivalElderFound[i].year , m_richa_lunerFestivalElderFound[i].questId);
+			fwrite(outt, 1, strlen(outt), fcustom);
+		}
 
 
-		sprintf(outt, "FIN_DOCUMENT\r\n");
+		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+		fwrite(outt, 1, strlen(outt), fcustom);
+
+		sprintf(outt, "#FIN_DOCUMENT\r\n");
 		fwrite(outt, 1, strlen(outt), fcustom);
 
 		//sprintf(outt, "3146\r\n"); // juste un code pour savoir si tout est ok
@@ -2421,7 +2480,6 @@ void Player::richard_saveToLog()
 		fwrite(outt, 1, strlen(outt), fout);
 	}
 
-
 	{
 
 		sprintf(outt, "\r\n#LIST_PAGE_DISCOVERED =================================\r\n");
@@ -2440,6 +2498,23 @@ void Player::richard_saveToLog()
 		fwrite(outt, 1, strlen(outt), fout);
 	}
 
+	{
+
+		sprintf(outt, "\r\n#LIST_LUNARFESTIVAL_ELDERFOUND =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "%d\r\n", m_richa_lunerFestivalElderFound.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+		{
+			sprintf(outt, "%d,%d\r\n", m_richa_lunerFestivalElderFound[i].year , m_richa_lunerFestivalElderFound[i].questId);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
 
 	 sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
@@ -14394,39 +14469,38 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	//
 	// Ci Dessous - les quetes ouverture des cadeaux de Noel   2
 	//	
-	||questID==8767 //quest "A Gently Shaken Gift"
-	||questID==6984 //quete ou faut retrouver le bonhomme de neige - 3
-	||questID==7045 //quete Alliance - ou faut retrouver le bonhomme de neige - 3
-	||questID==6961 //
-	||questID==7021 //
-	||questID==7024 //
-	||questID==7022 //demande d'aller voir pere noel
-	||questID==7023 //demande d'aller voir pere noel
-	||questID==8746 //quete de Metzen le cerf
-	||questID==6963 //quete ou faut retrouver le bonhomme de neige - 1
-	||questID==7042 //quete Alliance - ou faut retrouver le bonhomme de neige - 1
-	||questID==7061 //noel Horde - quite de 6964
-	||questID==7063 //noel Alliance - suite de 7062
-	||questID==8763 //quest : The Hero of the Day
-	||questID==6964 //noel Horde
-	||questID==7062 //noel Alliance
-	||questID==6962 //
-	||questID==7025
-	||questID==6983 //quete ou faut retrouver le bonhomme de neige - 2
-	||questID==7043 //quete Alliance - ou faut retrouver le bonhomme de neige - 2
-	||questID==8762 //quete de Metzen le cerf, coté Alliance qui est pas listée sur internet. la quete horde est 8746
-	||questID==8799 //quest : "The Hero of the Day" 
-	||questID==8827 //quest : "Winter's Presents"
-	||questID==8828 //quest : "Winter's Presents"
-	||questID==8861
+	||questID==6963 //# Horde    - faut retrouver le bonhomme de neige - 1 - demarré par "Kaymard Copperpinch"
+	||questID==6983 //# Horde    - faut retrouver le bonhomme de neige - 2
+	||questID==6984 //# Horde    - faut retrouver le bonhomme de neige - 3
+	||questID==7042 //# Alliance - ou faut retrouver le bonhomme de neige - 1 - demarré par Wulmort Jinglepocket a Ironforge
+	||questID==7043 //# Alliance - ou faut retrouver le bonhomme de neige - 2
+	||questID==7045 //# Alliance - ou faut retrouver le bonhomme de neige - 3
+	||questID==6961 //# Horde    - Great-father Winter is Here! - demarré par "Kaymard Copperpinch"
+	||questID==7021 //# Horde    - Great-father Winter is Here! - demarré par "Whulwert Copperpinch"
+	||questID==7024 //# Horde    - Great-father Winter is Here! - demarré par  Nardstrum Copperpinch a Under City
+	||questID==7022 //# Horde    - Great-father Winter is Here! - demarré par  Nardstrum Copperpinch a Under City
+	||questID==7023 //# Horde    - Great-father Winter is Here! - demarré par  Nardstrum Copperpinch a Under City
+	||questID==8746 //# Horde    - quete de Metzen le cerf - demarré par "Kaymard Copperpinch"
+	||questID==8762 //# Alliance - quete de Metzen le cerf -
+	||questID==6964 //# Horde    - Speak with Sagorne Creststrider in the Valley of Wisdom of Orgrimmar
+	||questID==7061 //# Horde    - suite de 6964 - deliver it to Cairne Bloodhoof in Thunder Bluff
+	||questID==7062 //# Alliance - "The reason for the season" - Speak with Historian Karnik at the Explorer's League in Ironforge
+	||questID==7063 //# Alliance - suite de 7062 - deliver it to King Magni Bronzebeard in Ironforge
+	||questID==8763 //# Alliance - "The Hero of the Day" - demande 300 en cooking - il faut donner du "Deeprock Salt" a une machine et en echange elle donne du "Preserved Holly" - donne par Wulmort a IronForge
+	||questID==8799 //# Horde    - "The Hero of the Day"  version Horde de 8763
+	||questID==6962 //# Horde    - "Treats for Great-father Winter" - Faut donner des cookie et du lait ai pere noel - donné par pere noel
+	||questID==7025 //# Alliance - version Alliance de 6962
 	//
 	//  Ci Dessous - les quetes ouverture des cadeaux de Noel   21
 	//
-	//||questID==8744 //PAS DE BONUS YOUHAICOIN
-	//||questID==8768 //PAS DE BONUS YOUHAICOIN
-	//||questID==8769 //PAS DE BONUS YOUHAICOIN <-- on a deja plein de youhaicoin dans les cadeaux qu'on ouvre !
-	//||questID==8788 //PAS DE BONUS YOUHAICOIN
-	//||questID==8803 //PAS DE BONUS YOUHAICOIN
+	||questID==8827 //# Alliance - "Winter's Presents" - je crois que c'est juste pour aller voir le pere noel pour ouvrir les cadeaux - donné par "Wonderform Operator" trouvable un peu partout
+	||questID==8828 //# Horde    - version Horde de 8827
+	//||questID==8744 //# A Carefully Wrapped Present
+	//||questID==8768 //# A Gaily Wrapped Present
+	//||questID==8769 //# A Ticking Present  
+	//||questID==8788 //# A Gently Shaken Gift    <----- PAS DE BONUS YOUHAICOIN - car sont deja dans les cadeaux
+	//||questID==8803 //# A Festive Gift
+	//||questID==8767 //# A Gently Shaken Gift
 	//
 	//  Ci Dessous - les quetes de la saint valentin  8
 	//
@@ -14475,58 +14549,75 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	//
 	//  Ci Dessous - les quetes pour Lunar Festival  (nouvel an chinois)  7
 	//
-	||questID==8868
-	||questID==8619
-	||questID==8635
-	||questID==8636
-	||questID==8642
-	||questID==8643
-	||questID==8644
-	||questID==8646
-	||questID==8647
-	||questID==8648
-	||questID==8649
-	||questID==8650
-	||questID==8652
-	||questID==8653
-	||questID==8654
-	||questID==8670
-	||questID==8671
-	||questID==8672
-	||questID==8673
-	||questID==8674
-	||questID==8675
-	||questID==8676
-	||questID==8677
-	||questID==8678
-	||questID==8679
-	||questID==8680
-	||questID==8681
-	||questID==8682
-	||questID==8683
-	||questID==8684
-	||questID==8685
-	||questID==8686
-	||questID==8688
-	||questID==8713
-	||questID==8714
-	||questID==8715
-	||questID==8716
-	||questID==8717
-	||questID==8718
-	||questID==8719
-	||questID==8720
-	||questID==8721
-	||questID==8722
-	||questID==8723
-	||questID==8724
-	||questID==8725
-	||questID==8726
-	||questID==8866
-	||questID==8872
-	||questID==8875
-	||questID==8882
-	||questID==8883
+	|| questID == 8868 // Elune's Blessing - donné par Valadar a Moonglade - Raid ? - il faut tuer Omen - en récompense, donne une lenterne qui permet de placer des rayons de lumiere sur la map
+	//|| questID == 8619 // Morndeep the Elder 
+	//|| questID == 8635 // Splitrock the Elder 
+	//|| questID == 8636 // Rumblerock the Elder 
+	//|| questID == 8642 // Silvervein the Elder
+	//|| questID == 8651 // Ironband the Elder
+	//|| questID == 8727 // Farwhisper the Elder
+	//|| questID == 8645 // Obsidian the Elder
+	//|| questID == 8643 // Highpeak the Elder
+	//|| questID == 8644 // Stonefort the Elder
+	//|| questID == 8646 // Hammershout the Elder
+	//|| questID == 8647 // Bellowrage the Elder
+	//|| questID == 8648 // Darkcore the Elder
+	//|| questID == 8649 // Stormbrow the Elder
+	//|| questID == 8650 // Snowcrown the Elder
+	//|| questID == 8652 // Graveborn the Elder
+	//|| questID == 8653 // Goldwell the Elder
+	//|| questID == 8654 // Primestone the Elder
+	//|| questID == 8670 // Runetotem the Elder
+	//|| questID == 8671 // Ragetotem the Elder
+	//|| questID == 8672 // Stonespire the Elder
+	//|| questID == 8673 // Bloodhoof the Elder    <----- PAS DE YOUHAICOIN CADEAU POUR LES 50 ELDER - ca fait trop
+	//|| questID == 8674 // Winterhoof the Elder
+	//|| questID == 8675 // Skychaser the Elder
+	//|| questID == 8676 // Wildmane the Elder
+	//|| questID == 8677 // Darkhorn the Elder
+	//|| questID == 8678 // Elder Proudhorn
+	//|| questID == 8679 // Grimtotem the Elder
+	//|| questID == 8680 // Windtotem the Elder
+	//|| questID == 8681 // Thunderhorn the Elder
+	//|| questID == 8682 // Skyseer the Elder
+	//|| questID == 8683 // Dawnstrider the Elder
+	//|| questID == 8684 // Dreamseer the Elder
+	//|| questID == 8685 // Mistwalker the Elder
+	//|| questID == 8686 // High Mountain the Elder
+	//|| questID == 8688 // Windrun the Elder
+	//|| questID == 8713 // Starsong the Elder
+	//|| questID == 8714 // Moonstrike the Elder
+	//|| questID == 8715 // Bladeleaf the Elder
+	//|| questID == 8716 // Starglade the Elder
+	//|| questID == 8717 // Moonwarden the Elder
+	//|| questID == 8718 // Bladeswift the Elder
+	//|| questID == 8719 // Bladesing the Elder
+	//|| questID == 8720 // Skygleam the Elder
+	//|| questID == 8721 // Starweave the Elder
+	//|| questID == 8722 // Meadowrun the Elder
+	//|| questID == 8723 // Nightwind the Elder
+	//|| questID == 8724 // Morningdew the Elder
+	//|| questID == 8725 // Riversong the Elder
+	//|| questID == 8726 // Brightspear the Elder
+	//|| questID == 8866 // Bronzebeard the Elder
+	|| questID == 8872 // The Lunar Festival - demande d'aller voir un responsable du Lunar festival dans une des capitale
+	|| questID == 8870 // comme 8872
+	|| questID == 8871 // comme 8872
+	|| questID == 8873 // comme 8872
+	|| questID == 8875 // comme 8872
+	|| questID == 8867 // suite de 8872 - demande de lancer des feu d'artifices
+	|| questID == 8883 // suite de 8867 - demande d'aller voir Valadar a Moonglade
+	|| questID == 8878 // quete donnée par Fariel Chantétoile a Moonglade : echange des coin of ancestry contre des cadeaux
+	|| questID == 8882 // comme 8878
+	|| questID == 8877 // comme 8878
+	|| questID == 8880 // comme 8878
+	|| questID == 8881 // comme 8878
+	|| questID == 8879 // comme 8878
+	|| questID == 8876 // comme 8878
+	|| questID == 8863 // donné par Valadar a Moonglade
+	|| questID == 8862 // donné par Valadar a Moonglade
+	|| questID == 8865 // donné par Valadar a Moonglade
+	|| questID == 8864 // donné par Valadar a Moonglade
 	//
 	//  Ci Dessous - les quetes du nouvel an occidental
 	//
@@ -14628,6 +14719,60 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 		&& questID != 8769 
 		&& questID != 8788 
 		&& questID != 8803 
+		&& questID != 8767
+
+		// pas de youhaicoin pour les 50 Elder du nouvel an chinois
+		&& questID != 8619 // Morndeep the Elder 
+		&& questID != 8635 // Splitrock the Elder 
+		&& questID != 8636 // Rumblerock the Elder 
+		&& questID != 8642 // Silvervein the Elder
+		&& questID != 8651 // Ironband the Elder
+		&& questID != 8727 // Farwhisper the Elder
+		&& questID != 8645 // Obsidian the Elder
+		&& questID != 8643 // Highpeak the Elder
+		&& questID != 8644 // Stonefort the Elder
+		&& questID != 8646 // Hammershout the Elder
+		&& questID != 8647 // Bellowrage the Elder
+		&& questID != 8648 // Darkcore the Elder
+		&& questID != 8649 // Stormbrow the Elder
+		&& questID != 8650 // Snowcrown the Elder
+		&& questID != 8652 // Graveborn the Elder
+		&& questID != 8653 // Goldwell the Elder
+		&& questID != 8654 // Primestone the Elder
+		&& questID != 8670 // Runetotem the Elder
+		&& questID != 8671 // Ragetotem the Elder
+		&& questID != 8672 // Stonespire the Elder
+		&& questID != 8673 // Bloodhoof the Elder
+		&& questID != 8674 // Winterhoof the Elder
+		&& questID != 8675 // Skychaser the Elder
+		&& questID != 8676 // Wildmane the Elder
+		&& questID != 8677 // Darkhorn the Elder
+		&& questID != 8678 // Elder Proudhorn
+		&& questID != 8679 // Grimtotem the Elder
+		&& questID != 8680 // Windtotem the Elder
+		&& questID != 8681 // Thunderhorn the Elder
+		&& questID != 8682 // Skyseer the Elder
+		&& questID != 8683 // Dawnstrider the Elder
+		&& questID != 8684 // Dreamseer the Elder
+		&& questID != 8685 // Mistwalker the Elder
+		&& questID != 8686 // High Mountain the Elder
+		&& questID != 8688 // Windrun the Elder
+		&& questID != 8713 // Starsong the Elder
+		&& questID != 8714 // Moonstrike the Elder
+		&& questID != 8715 // Bladeleaf the Elder
+		&& questID != 8716 // Starglade the Elder
+		&& questID != 8717 // Moonwarden the Elder
+		&& questID != 8718 // Bladeswift the Elder
+		&& questID != 8719 // Bladesing the Elder
+		&& questID != 8720 // Skygleam the Elder
+		&& questID != 8721 // Starweave the Elder
+		&& questID != 8722 // Meadowrun the Elder
+		&& questID != 8723 // Nightwind the Elder
+		&& questID != 8724 // Morningdew the Elder
+		&& questID != 8725 // Riversong the Elder
+		&& questID != 8726 // Brightspear the Elder
+		&& questID != 8866 // Bronzebeard the Elder
+
 		)
 	
 	{
@@ -14741,6 +14886,178 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 		}
 
 	}
+
+
+	//dans le cas des 50 Elder, pour le nouvel an chinois, on sauvegarde 
+	if ( 
+		   questID == 8619 // Morndeep the Elder 
+		|| questID == 8635 // Splitrock the Elder 
+		|| questID == 8636 // Rumblerock the Elder 
+		|| questID == 8642 // Silvervein the Elder
+		|| questID == 8651 // Ironband the Elder
+		|| questID == 8727 // Farwhisper the Elder
+		|| questID == 8645 // Obsidian the Elder
+		|| questID == 8643 // Highpeak the Elder
+		|| questID == 8644 // Stonefort the Elder
+		|| questID == 8646 // Hammershout the Elder
+		|| questID == 8647 // Bellowrage the Elder
+		|| questID == 8648 // Darkcore the Elder
+		|| questID == 8649 // Stormbrow the Elder
+		|| questID == 8650 // Snowcrown the Elder
+		|| questID == 8652 // Graveborn the Elder
+		|| questID == 8653 // Goldwell the Elder
+		|| questID == 8654 // Primestone the Elder
+		|| questID == 8670 // Runetotem the Elder
+		|| questID == 8671 // Ragetotem the Elder
+		|| questID == 8672 // Stonespire the Elder
+		|| questID == 8673 // Bloodhoof the Elder
+		|| questID == 8674 // Winterhoof the Elder
+		|| questID == 8675 // Skychaser the Elder
+		|| questID == 8676 // Wildmane the Elder
+		|| questID == 8677 // Darkhorn the Elder
+		|| questID == 8678 // Elder Proudhorn
+		|| questID == 8679 // Grimtotem the Elder
+		|| questID == 8680 // Windtotem the Elder
+		|| questID == 8681 // Thunderhorn the Elder
+		|| questID == 8682 // Skyseer the Elder
+		|| questID == 8683 // Dawnstrider the Elder
+		|| questID == 8684 // Dreamseer the Elder
+		|| questID == 8685 // Mistwalker the Elder
+		|| questID == 8686 // High Mountain the Elder
+		|| questID == 8688 // Windrun the Elder
+		|| questID == 8713 // Starsong the Elder
+		|| questID == 8714 // Moonstrike the Elder
+		|| questID == 8715 // Bladeleaf the Elder
+		|| questID == 8716 // Starglade the Elder
+		|| questID == 8717 // Moonwarden the Elder
+		|| questID == 8718 // Bladeswift the Elder
+		|| questID == 8719 // Bladesing the Elder
+		|| questID == 8720 // Skygleam the Elder
+		|| questID == 8721 // Starweave the Elder
+		|| questID == 8722 // Meadowrun the Elder
+		|| questID == 8723 // Nightwind the Elder
+		|| questID == 8724 // Morningdew the Elder
+		|| questID == 8725 // Riversong the Elder
+		|| questID == 8726 // Brightspear the Elder
+		|| questID == 8866 // Bronzebeard the Elder
+		)
+	{
+		// 1ere etape, on sauvegarde que ce personnage a rendu la quete pour cette année
+
+		time_t t = time(0);   // get time now
+		struct tm * now = localtime(&t);
+		int day = now->tm_mday;
+		int mon = now->tm_mon+1;
+		int yea = now->tm_year + 1900;
+
+
+		//on verifie qu'il existe pas deja
+		bool trouvee = false;
+		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+		{
+			if ( m_richa_lunerFestivalElderFound[i].year == yea && 
+				m_richa_lunerFestivalElderFound[i].questId == questID )
+			{
+				trouvee = true;
+				break;
+			}
+		}
+
+		if ( !trouvee )
+		{
+			m_richa_lunerFestivalElderFound.push_back(RICHA_LUNARFESTIVAL_ELDERFOUND(yea,questID));
+		}
+		else
+		{
+			char messageOut[256];
+			sprintf(messageOut, "ERREUR 5321 - existe deja cette annee ???");
+			Say(messageOut, LANG_UNIVERSAL);
+		}
+
+		// 2ieme etape, on ecrit un feedback au joueur pour savoir si d'autre perso a lui on deja fait cette quete d'autre années
+		//
+
+		
+		std::vector<int>  associatedPlayerGUID;
+
+		// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( this->GetGUID() == 4 )// boulette
+		{
+			associatedPlayerGUID.push_back(27); // Bouzigouloum
+		}
+		if ( this->GetGUID() == 27 )//  Bouzigouloum 
+		{
+			associatedPlayerGUID.push_back(4); // boulette
+		}
+		if ( this->GetGUID() == 5 )// Bouillot
+		{
+			associatedPlayerGUID.push_back(28); // Adibou
+		}
+		if ( this->GetGUID() == 28 )// Adibou 
+		{
+			associatedPlayerGUID.push_back(5); //  Bouillot
+		}
+
+		//juste pour le debug je vais lier grandjuge et grandtroll
+		if ( this->GetGUID() == 19 )// grandjuge
+		{
+			associatedPlayerGUID.push_back(29); // grandtroll
+		}
+		if ( this->GetGUID() == 29 )// grandtroll 
+		{
+			associatedPlayerGUID.push_back(19); //  grandjuge
+		}
+
+
+		std::map<int,int> queteConnuEnTout; // sans prendre en compte l annee  -  je n'utilise pas le right
+		std::map<int,int> queteConnuCetteAnnee; // cette l annee   -  je n'utilise pas le right
+
+		// on rempli deja avec le perso courant
+		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+		{
+			queteConnuEnTout[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
+
+			if ( m_richa_lunerFestivalElderFound[i].year == yea )
+			{
+				queteConnuCetteAnnee[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
+			}
+		}
+
+		// ensuite on rempli avec son / ses perso associé au meme joueur
+		for(int i=0; i<associatedPlayerGUID.size(); i++)
+		{
+			std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+			std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+			std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+			Player::richard_importFrom_richaracter_(
+				associatedPlayerGUID[i],
+				richa_NpcKilled,
+				richa_pageDiscovered,
+				richa_lunerFestivalElderFound
+				);
+
+
+			for(int i=0; i<richa_lunerFestivalElderFound.size(); i++)
+			{
+				queteConnuEnTout[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
+
+				if ( richa_lunerFestivalElderFound[i].year == yea )
+				{
+					queteConnuCetteAnnee[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
+				}
+			}
+
+		}//pour chaque perso associé
+
+		char messageOut[256];
+		sprintf(messageOut, "Cette annee : %d/50 / En tout %d/50", queteConnuCetteAnnee.size(), queteConnuEnTout.size()  );
+		Say(messageOut, LANG_UNIVERSAL);
+
+
+
+
+	}
+
 
 	////////////////////////////////////////////////////////////////////////////////
 
