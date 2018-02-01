@@ -17,21 +17,21 @@
  */
 
 #include "Common.h"
-#include "SharedDefines.h"
-#include "Player.h"
+#include "Globals/SharedDefines.h"
+#include "Entities/Player.h"
 #include "BattleGroundMgr.h"
 #include "BattleGroundAV.h"
 #include "BattleGroundAB.h"
 #include "BattleGroundWS.h"
-#include "MapManager.h"
-#include "Map.h"
-#include "ObjectMgr.h"
+#include "Maps/MapManager.h"
+#include "Maps/Map.h"
+#include "Globals/ObjectMgr.h"
 #include "ProgressBar.h"
-#include "Chat.h"
-#include "World.h"
+#include "Chat/Chat.h"
+#include "World/World.h"
 #include "WorldPacket.h"
-#include "Language.h"
-#include "GameEventMgr.h"
+#include "Tools/Language.h"
+#include "GameEvents/GameEventMgr.h"
 
 #include "Policies/Singleton.h"
 
@@ -63,7 +63,7 @@ BattleGroundQueue::~BattleGroundQueue()
         for (uint8 j = 0; j < BG_QUEUE_GROUP_TYPES_COUNT; ++j)
         {
             for (GroupsQueueType::iterator itr = m_QueuedGroups[i][j].begin(); itr != m_QueuedGroups[i][j].end(); ++itr)
-                delete(*itr);
+                delete (*itr);
             m_QueuedGroups[i][j].clear();
         }
     }
@@ -1255,7 +1255,7 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket& data, ObjectGuid 
             data << uint32(*itr);
             ++count;
         }
-        data.put<uint32>(count_pos , count);
+        data.put<uint32>(count_pos, count);
     }
 }
 

@@ -28,7 +28,6 @@
 #include "Master.h"
 #include "SystemConfig.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
-#include "revision.h"
 
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
@@ -39,7 +38,7 @@
 #include <iostream>
 #include <string>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "ServiceWin32.h"
 char serviceName[] = "mangosd";
 char serviceLongName[] = "MaNGOS world service";
@@ -68,7 +67,7 @@ void usage(const char* prog)
                    "    -v, --version            print version and exist\n\r"
                    "    -c config_file           use config_file as configuration file\n\r"
                    "    -a, --ahbot config_file  use config_file as ahbot configuration file\n\r"
-#ifdef WIN32
+#ifdef _WIN32
                    "    Running as service functions:\n\r"
                    "    -s run                   run as service\n\r"
                    "    -s install               install service\n\r"
@@ -82,20 +81,20 @@ void usage(const char* prog)
 }
 
 /// Launch the mangos server
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     std::string auctionBotConfig, configFile, serviceParameter;
 
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
-        ("ahbot,a", boost::program_options::value<std::string>(&auctionBotConfig), "ahbot configuration file")
-        ("config,c", boost::program_options::value<std::string>(&configFile)->default_value(_MANGOSD_CONFIG), "configuration file")
-        ("help,h", "prints usage")
-        ("version,v", "print version and exit")
-#ifdef WIN32
-        ("s", boost::program_options::value<std::string>(&serviceParameter), "<run, install, uninstall> service");
+    ("ahbot,a", boost::program_options::value<std::string>(&auctionBotConfig), "ahbot configuration file")
+    ("config,c", boost::program_options::value<std::string>(&configFile)->default_value(_MANGOSD_CONFIG), "configuration file")
+    ("help,h", "prints usage")
+    ("version,v", "print version and exit")
+#ifdef _WIN32
+    ("s", boost::program_options::value<std::string>(&serviceParameter), "<run, install, uninstall> service");
 #else
-        ("s", boost::program_options::value<std::string>(&serviceParameter), "<run, stop> service");
+    ("s", boost::program_options::value<std::string>(&serviceParameter), "<run, stop> service");
 #endif
 
     boost::program_options::variables_map vm;
@@ -118,7 +117,7 @@ int main(int argc, char *argv[])
             return 0;
         }
     }
-    catch (boost::program_options::error const &e)
+    catch (boost::program_options::error const& e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -129,7 +128,7 @@ int main(int argc, char *argv[])
     if (vm.count("ahbot"))
         sAuctionBotConfig.SetConfigFileName(auctionBotConfig);
 
-#ifdef WIN32                                                // windows service command need execute before config read
+#ifdef _WIN32                                                // windows service command need execute before config read
     if (vm.count("s"))
     {
         switch (::tolower(serviceParameter[0]))
@@ -145,7 +144,7 @@ int main(int argc, char *argv[])
             case 'r':
                 WinServiceRun();
                 break;
-}
+        }
     }
 #endif
 
@@ -156,7 +155,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-#ifndef WIN32                                               // posix daemon commands need apply after config read
+#ifndef _WIN32                                               // posix daemon commands need apply after config read
     if (vm.count("s"))
     {
         switch (::tolower(serviceParameter[0]))

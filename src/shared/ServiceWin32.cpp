@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #include "Common.h"
 #include "Log.h"
@@ -248,7 +248,7 @@ void WINAPI ServiceMain(DWORD argc, char* argv[])
 
         m_ServiceStatus = 1;
         argc = 1;
-        main(argc , argv);
+        main(argc, argv);
 
         // service was stopped
         serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
