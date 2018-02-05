@@ -266,7 +266,6 @@ namespace MaNGOS
         assert(m_writeState == WriteState::Sending);
         assert(length <= m_outBuffer->m_writePosition);
 
-
         // if there is data left to write, move it to the start of the buffer
         if (length < m_outBuffer->m_writePosition)
         {
@@ -276,7 +275,6 @@ namespace MaNGOS
         // if not, reset the write pointer
         else
             m_outBuffer->m_writePosition = 0;
-
 
         // if there is data in the secondary buffer, append it to the primary buffer
         if (m_secondaryOutBuffer->m_writePosition > 0)

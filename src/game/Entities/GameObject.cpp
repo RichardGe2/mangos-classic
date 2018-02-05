@@ -81,41 +81,6 @@ void GameObject::AddToWorld()
     if (!IsInWorld())
         GetMap()->GetObjectsStore().insert<GameObject>(GetObjectGuid(), (GameObject*)this);
 
-
-
-
-
-
-	////////////////////////////////////////////////////////////////////////////
-	//// RICHARD DEBUG TEMPORARY
-
-	ObjectGuid guid__ = GetObjectGuid();
-	std::string strr = guid__.GetString();
-	uint32 entryyy = guid__.GetEntry();
-	if (
-		    entryyy == 161456 
-		||  entryyy == 161457 
-		||  entryyy == 161458
-		||  entryyy == 161459
-		||  entryyy == 164818
-		||  entryyy == 164819
-		)
-	{
-
-		int zzzzz=0;
-
-	}
-
-
-	////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
     if (m_model)
         GetMap()->InsertGameObjectModel(*m_model);
 

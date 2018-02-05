@@ -133,7 +133,6 @@ enum CharacterFlags
 
 static const uint32 corpseReclaimDelay[MAX_DEATH_COUNT] = {30, 60, 120};
 
-
 // Number of slots in keyring depending on the player's level
 // Values taken from Vanilla 1.11 / 1.12 Client :
 static const uint32 LevelUpKeyringSize[DEFAULT_MAX_LEVEL / 10 + 1] =
@@ -146,10 +145,6 @@ static const uint32 LevelUpKeyringSize[DEFAULT_MAX_LEVEL / 10 + 1] =
 	12, // level 50 -> 59
 	12, // level 60 -> 69
 };
-
-
-
-
 
 //== PlayerTaxi ================================================
 

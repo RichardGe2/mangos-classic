@@ -51,14 +51,7 @@ void GuardianAI::UpdateAI(const uint32 diff)
     {
         case REACT_AGGRESSIVE:
         case REACT_DEFENSIVE:
-            if (!m_creature->isInCombat() && owner->isInCombat() 
-				
-
-				//RICHARD temp fix CREATURE - issue submitted : 1350
-				&& ((Pet*)m_creature)->getPetType() != MINI_PET
-
-				
-				)
+            if (!m_creature->isInCombat() && owner->isInCombat())
                 AttackStart(owner->getAttackerForHelper());   // check for getAttackerForHelper() == nullpter in AttackStart()
             break;
         default:
