@@ -1316,20 +1316,44 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 		{
 			
 		
+			
+			std::vector<int>  mainPlayerGUID;
+			std::vector<std::string>  mainPlayerNames;
 
-
-			//on chercher si  Victime_entry  est dans  m_richa_StatALL__elitGrisKilled
-			bool existInDataBase = false;
-			for(int i=0; i<thisPLayer->m_richa_StatALL__elitGrisKilled.size(); i++)
+			// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+			//
+			//list de tous les perso principaux de tout le monde
+			mainPlayerGUID.push_back(4);  mainPlayerNames.push_back("Boulette"); 
+			mainPlayerGUID.push_back(5);  mainPlayerNames.push_back("Bouillot"); 
+			mainPlayerGUID.push_back(27); mainPlayerNames.push_back("Bouzigouloum"); 
+			mainPlayerGUID.push_back(28);  mainPlayerNames.push_back("Adibou"); 
+					
+			int existInDataBaseV2 = -1;
+			for(int jj=0; jj<mainPlayerGUID.size(); jj++)
 			{
-				if ( thisPLayer->m_richa_StatALL__elitGrisKilled[i] == Victime_entry )
+				std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+				Player::richa_importFrom_richaracter_(
+					mainPlayerGUID[jj],
+					richa_NpcKilled,
+					richa_pageDiscovered,
+					richa_lunerFestivalElderFound
+					);
+
+				for(int kk=0; kk<richa_NpcKilled.size(); kk++)
 				{
-					existInDataBase = true;
-					break;
+					if ( richa_NpcKilled[kk].npc_id == Victime_entry )
+					{
+						existInDataBaseV2 = jj;
+						break;
+					}
 				}
+
+				if ( existInDataBaseV2 != -1 ) {  break; }
 			}
 
-			if ( !existInDataBase )
+			if ( existInDataBaseV2 == -1 )
 			{
 				bool pushedDone = false;
 
@@ -1364,7 +1388,7 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 
 					uint32 groupMember_account = sObjectMgr.GetPlayerAccountIdByGUID(groupMembers[i]->GetGUID());
 
-
+					/*
 					// #LISTE_ACCOUNT_HERE
 					// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
 					if ( 			
@@ -1382,24 +1406,29 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 							pushedDone = true;
 						}
 
-						char messageOut[256];
+						char messageOut[2048];
 						sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d !",nbpo,nbpa,nbpc);
 						groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
 					}
 					else
 					{
-						char messageOut[256];
+						char messageOut[2048];
 						sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d ! - mais PAS ajoute a la liste.",nbpo,nbpa,nbpc);
 						groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
 					}
-			
+					*/
+					
+					char messageOut[2048];
+					sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d !",nbpo,nbpa,nbpc);
+					groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
+
 				}
 
 			}
 			else
 			{
-				char messageOut[256];
-				sprintf(messageOut, "On connait deja cet Elite Gris");
+				char messageOut[2048];
+				sprintf(messageOut, "Cet Elite Gris a DEJA ete decouvert par %s" , mainPlayerNames[existInDataBaseV2].c_str() );
 				thisPLayer->Say(messageOut, LANG_UNIVERSAL);
 			}
 
@@ -3786,8 +3815,10 @@ void Unit::_UpdateSpells(uint32 time)
 		//pour debugger le crash que j'ai ici quand mon walker meurt
 		char debug_casterName[2048]  ;
 		char debug_targetName[2048] ;
-		strcpy_s(debug_casterName ,  i_holder->GetCaster()->GetName()  );
-		strcpy_s(debug_targetName ,  i_holder->GetTarget()->GetName()  );
+		debug_casterName[0] = 0;
+		debug_targetName[0] = 0;
+		if ( i_holder && i_holder->GetCaster() && i_holder->GetCaster()->GetName() ) { strcpy_s(debug_casterName ,  i_holder->GetCaster()->GetName()  ); }
+		if ( i_holder && i_holder->GetTarget() && i_holder->GetTarget()->GetName() ) { strcpy_s(debug_targetName ,  i_holder->GetTarget()->GetName()  ); }
 
 
         ++m_spellAuraHoldersUpdateIterator;                 // need shift to next for allow update if need into aura update

@@ -3810,7 +3810,7 @@ bool ChatHandler::Richar_listeventquest(char* /*args*/)
 
 	//on peut lister :
 	std::ofstream myfile;
-	myfile.open ("RICHARDS/___OUT_listeventquest.txt");
+	myfile.open ("RICHARDS/___OUT_listeventquest_ASUP.txt");
 	myfile <<"## START -----------------";
 	for (const auto& elem1 : event_MERGED_quest)
 	{
@@ -3837,7 +3837,7 @@ bool ChatHandler::Richar_listeventquest(char* /*args*/)
 	myfile.close();
 
 
-	BASIC_LOG("list even quest generated with success in  RICHARD/___OUT_listeventquest.txt ");
+	BASIC_LOG("list even quest generated with success in  RICHARD/___OUT_listeventquest_ASUP.txt ");
 
 
 	return true;
@@ -3978,18 +3978,47 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 
 				if ( cinfo->Rank == CREATURE_ELITE_RARE )
 				{
-					//on chercher si  Victime_entry  est dans  m_richa_StatALL__elitGrisKilled
-					bool existInDataBase = false;
-					for(int i=0; i<Player::m_richa_StatALL__elitGrisKilled.size(); i++)
+
+
+					std::vector<int>  mainPlayerGUID;
+					std::vector<std::string>  mainPlayerNames;
+
+					// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+					//
+					//list de tous les perso principaux de tout le monde
+					mainPlayerGUID.push_back(4);  mainPlayerNames.push_back("Boulette"); 
+					mainPlayerGUID.push_back(5);  mainPlayerNames.push_back("Bouillot"); 
+					mainPlayerGUID.push_back(27); mainPlayerNames.push_back("Bouzigouloum"); 
+					mainPlayerGUID.push_back(28);  mainPlayerNames.push_back("Adibou"); 
+					
+					int existInDataBaseV2 = -1;
+					for(int jj=0; jj<mainPlayerGUID.size(); jj++)
 					{
-						if ( Player::m_richa_StatALL__elitGrisKilled[i] == cinfo->Entry )
+						std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+						std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+						std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+						Player::richa_importFrom_richaracter_(
+							mainPlayerGUID[jj],
+							richa_NpcKilled,
+							richa_pageDiscovered,
+							richa_lunerFestivalElderFound
+							);
+
+						for(int kk=0; kk<richa_NpcKilled.size(); kk++)
 						{
-							existInDataBase = true;
-							break;
+							if ( richa_NpcKilled[kk].npc_id == cinfo->Entry )
+							{
+								existInDataBaseV2 = jj;
+								break;
+							}
 						}
+
+						if ( existInDataBaseV2 != -1 ) {  break; }
 					}
 
-					if ( !existInDataBase )
+
+
+					if ( existInDataBaseV2 == -1 )
 					{
 						sprintf(messageee, "Cet Elite Gris n'a PAS ete decouvert."  );
 						BASIC_LOG(messageee);
@@ -3997,12 +4026,93 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 					}
 					else
 					{
-						sprintf(messageee, "Cet Elite Gris a DEJA ete decouvert."  );
+						sprintf(messageee, "Cet Elite Gris a DEJA ete decouvert par %s" , mainPlayerNames[existInDataBaseV2].c_str()  );
 						BASIC_LOG(messageee);
 						PSendSysMessage(messageee);
 					}
-		
+
 				}
+
+
+
+
+
+
+
+				// TEMP ASUP
+				/*{
+
+					for(int i=0; i<Player::m_richa_StatALL__elitGrisKilled.size(); i++)
+					{
+						//if ( Player::m_richa_StatALL__elitGrisKilled[i] == cinfo->Entry )
+						//{
+							std::vector<int>  mainPlayerGUID;
+
+							// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+							//
+							//list de tous les perso principaux de tout le monde
+							mainPlayerGUID.push_back(4); // boulette
+							mainPlayerGUID.push_back(5);// Bouillot
+							mainPlayerGUID.push_back(27); // Bouzigouloum
+							mainPlayerGUID.push_back(28); // Adibou
+					
+							bool existInDataBaseV2 = false;
+							for(int k=0; k<mainPlayerGUID.size(); k++)
+							{
+								std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+								std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+								std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+								Player::richa_importFrom_richaracter_(
+									mainPlayerGUID[k],
+									richa_NpcKilled,
+									richa_pageDiscovered,
+									richa_lunerFestivalElderFound
+									);
+
+								for(int j=0; j<richa_NpcKilled.size(); j++)
+								{
+									if ( richa_NpcKilled[j].npc_id == Player::m_richa_StatALL__elitGrisKilled[i] )
+									{
+										existInDataBaseV2 = true;
+										break;
+									}
+								}
+
+								if ( existInDataBaseV2 ) {  break; }
+							}
+
+							if ( !existInDataBaseV2 )
+							{
+								sprintf(messageee, "%d EXISTE PAS" , Player::m_richa_StatALL__elitGrisKilled[i] );
+								BASIC_LOG(messageee);
+							}
+							else
+							{
+								sprintf(messageee, "%d existe" , Player::m_richa_StatALL__elitGrisKilled[i] );
+								BASIC_LOG(messageee);
+							}
+						//}
+					}
+				}
+				*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 			}

@@ -505,7 +505,7 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 				std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
 				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
-				Player::richard_importFrom_richaracter_(
+				Player::richa_importFrom_richaracter_(
 					associatedPlayerGUID[i],
 					richa_NpcKilled,
 					richa_pageDiscovered,

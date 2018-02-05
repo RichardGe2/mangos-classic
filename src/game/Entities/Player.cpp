@@ -149,7 +149,6 @@ static const uint32 LevelUpKeyringSize[DEFAULT_MAX_LEVEL / 10 + 1] =
 
 
 
-std::vector<unsigned int> Player::m_richa_StatALL__elitGrisKilled;
 
 
 //== PlayerTaxi ================================================
@@ -779,7 +778,107 @@ void Player::richard_importVariables_END(uint64 guid__)
 
 }
 
-void Player::richard_importFrom_richaracter_(uint64 guid__,
+
+void Player::richa_exportTo_richaracter_(
+			uint64 guid,
+			const std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
+			const std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
+			const std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+			const char* characterName
+			)
+{
+	char outt[4096];
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	//// sauvegarde des custom variables - pour les CHARACTER (bouillot, boulette, Inge, Herbo ...etc...)
+
+	//ObjectGuid const& guiiddd = GetObjectGuid();
+	//uint32 entryy = guiiddd.GetEntry();
+	//uint64 guid = guiiddd.GetRawValue();
+
+	char nameFile2[2048];
+	sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid);
+	FILE* fcustom = fopen(nameFile2, "wb"); // w : create an empty file - if file already exist content are discarded , and treated as new empty file
+		
+	sprintf(outt, "// generated on %02d/%02d/%d \r\n", now->tm_mday ,now->tm_mon+1,  now->tm_year + 1900 );
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "// but de ce fichier : sauvegarder des donnees en plus (qui ne sont pas sauvegardee par la vraie database) propres aux PERSONNAGES.\r\n"); 
+	fwrite(outt, 1, strlen(outt), fcustom);
+		
+	sprintf(outt, "CHARACTER_STAT\r\n"); // juste un code pour savoir si tout est ok
+	fwrite(outt, 1, strlen(outt), fcustom);
+	
+	sprintf(outt, "VERSION_254\r\n"); // la version
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%s\r\n",characterName);//GetName()); // name
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	//sprintf(outt, "%d\r\n",m_richar_paragon);  // <--- TODO : retirer lui car il est save dans  _ri_human_%s
+	//fwrite(outt, 1, strlen(outt), fcustom);    //
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_NPC_KILLED\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%d\r\n", richa_NpcKilled.size());
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	for(int i=0; i<richa_NpcKilled.size(); i++)
+	{
+		sprintf(outt, "%d,%d\r\n", richa_NpcKilled[i].npc_id , richa_NpcKilled[i].nb_killed);
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_PAGE_DISCOVERED\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%d\r\n", richa_pageDiscovered.size());
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	for(int i=0; i<richa_pageDiscovered.size(); i++)
+	{
+		sprintf(outt, "%d,%d,%d,%d\r\n", richa_pageDiscovered[i].pageId, richa_pageDiscovered[i].objectID, richa_pageDiscovered[i].itemID , 0);
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_LUNARFESTIVAL_ELDERFOUND\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+	for(int i=0; i<richa_lunerFestivalElderFound.size(); i++)
+	{
+		sprintf(outt, "%d,%d\r\n", richa_lunerFestivalElderFound[i].year , richa_lunerFestivalElderFound[i].questId);
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#FIN_DOCUMENT\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	//sprintf(outt, "3146\r\n"); // juste un code pour savoir si tout est ok
+	//fwrite(outt, 1, strlen(outt), fcustom);
+	fclose(fcustom); fcustom=0;
+	
+
+}
+
+
+
+void Player::richa_importFrom_richaracter_(uint64 guid__,
 	std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
 	std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
 	std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound
@@ -1004,151 +1103,6 @@ void Player::richard_importVariables_START(uint64 guid__)
 
 
 
-
-	///////////////////////////////////////////////////////////////
-	// IMPORTATION DES VARIABLE Commune a tous les joueurs (sauf maitre du jeu)
-	
-	
-	if ( m_richa_StatALL__elitGrisKilled.size() == 0 ) //si ca a pas ete init
-	{
-		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid__);
-
-		if ( 
-
-			// #LISTE_ACCOUNT_HERE
-			// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
-			
-			//si c'est pas un Maitre du Jeu
-			//player_account == 5 ||  // richard
-			//player_account == 10  || // richard2
-			//player_account == 6 || // diane
-			//player_account == 9 // diane2
-			
-			//j'ai comment-out  :  on s'en fou que ce soit le grandJuge qui lance le chargement de ces variables, non ?
-			
-			
-			true
-			)
-		{
-
-			char nameFile2[2048];
-			sprintf(nameFile2, "RICHARDS/_ri_all_dianerichard.txt");
-
-
-			{
-				std::ifstream infile(nameFile2);
-
-				if ( infile.fail() || !infile.is_open() )
-				{
-					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! read _ri_all_dianerichard fail" );
-				}
-				else
-				{
-					int nbEliteGris= 0;
-					bool error = false;
-					std::string line;
-					int lineCount = 0;
-					while (std::getline(infile, line))
-					{
-						if ( lineCount == 0 )
-						{
-							if ( line != "DIANE_ET_RICHARD_STAT" )
-							{
-								BASIC_LOG("RICHAR ERROR 46630 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								error = true;
-								break;
-							}
-						}
-
-						else if ( lineCount == 1 )
-						{
-							if ( line != "VERSION_1" )
-							{
-								BASIC_LOG("RICHAR ERROR 46631 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								error = true;
-								break;
-							}
-						}
-
-						else if ( lineCount == 2 )
-						{
-							if ( line != "ELITE_GRIS_TUES_COMMUN" )
-							{
-								BASIC_LOG("RICHAR ERROR 46632 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								error = true;
-								break;
-							}
-						}
-
-						else if ( lineCount == 3 )
-						{
-							nbEliteGris=atoi(line.c_str());
-							int aaaa=0;
-						}
-
-						else if ( lineCount >= 4 && lineCount <= 4+nbEliteGris-1  )
-						{
-							int newEliteGris=atoi(line.c_str());
-							m_richa_StatALL__elitGrisKilled.push_back(newEliteGris);
-
-							int aaa=0;
-						}
-
-						else if ( lineCount == (4+nbEliteGris-1) +1 )
-						{
-							if ( line != "FIN_DOCUMENT" )
-							{
-								BASIC_LOG("RICHAR ERROR 46633 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								error = true;
-								break;
-							}
-
-							break;
-						}
-
-						else
-						{
-							BASIC_LOG("RICHAR ERROR 46635!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-							error = true;
-							break;
-						}
-
-
-						lineCount++;
-					}
-
-					if ( m_richa_StatALL__elitGrisKilled.size() != nbEliteGris )
-					{
-						error = true;
-					}
-
-					if ( error )
-					{
-						BASIC_LOG("RICHAR ERROR 46634 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-						BASIC_LOG("RICHAR ERROR 46634 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-						Sleep(10000);
-						int aaa=0;
-						
-					}
-
-					infile.close();
-				}
-
-			}
-		}
-
-	}
-
-
-
-
-
-
-
-
-
-
-
 	//on set toute les valeurs par default - au cas ou la variable existe pas
 	m_richar_paragon = 0;
 	m_richar_paragonProgressFromFile = 0;
@@ -1324,7 +1278,7 @@ void Player::richard_importVariables_START(uint64 guid__)
 
 	//////////////////////////////////////////////////////////////////////
 
-	richard_importFrom_richaracter_(
+	richa_importFrom_richaracter_(
 		guid__,
 		m_richa_NpcKilled,
 		m_richa_pageDiscovered,
@@ -1335,322 +1289,12 @@ void Player::richard_importVariables_START(uint64 guid__)
 	BASIC_LOG("FINISH richard_importVariables");
 }
 
-
-
-void Player::richard_saveToLog()
+void Player::richa_exportTo_ristat_()
 {
-
-
-
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// richard : generation outfile :
-
-	BASIC_LOG("Start Save custom outfile....");
-
 	time_t t = time(0);   // get time now
 	struct tm * now = localtime(&t);
 
-	
-
-
 	char outt[4096];
-
-
-	//////////////////////////////////////////////////////////////////////////////
-	//// sauvegarde des custom variables - pour TOUT LE MONDE
-	{
-
-		// note : meme quand le grandjuge se deco, ca va save les valeur 
-		//alors que ces valeur pour lui doivent rester en read-only
-		//-  mais on s'en moque je pense
-
-		if ( m_richa_StatALL__elitGrisKilled.size() > 0 ) // si les donnée generale on été chargées
-		{
-			char nameFile2[2048];
-			sprintf(nameFile2, "RICHARDS/_ri_all_dianerichard.txt");
-
-			FILE* fcustom = fopen(nameFile2, "wb");
-			sprintf(outt, "DIANE_ET_RICHARD_STAT\r\n");
-			fwrite(outt, 1, strlen(outt), fcustom);
-
-			sprintf(outt, "VERSION_1\r\n");
-			fwrite(outt, 1, strlen(outt), fcustom);
-
-			sprintf(outt, "ELITE_GRIS_TUES_COMMUN\r\n");
-			fwrite(outt, 1, strlen(outt), fcustom);
-
-			sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled.size());
-			fwrite(outt, 1, strlen(outt), fcustom);
-
-			for(int i=0; i<m_richa_StatALL__elitGrisKilled.size(); i++)
-			{
-				sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled[i]);
-				fwrite(outt, 1, strlen(outt), fcustom);
-			}
-
-			
-
-			sprintf(outt, "FIN_DOCUMENT\r\n");
-			fwrite(outt, 1, strlen(outt), fcustom);
-
-			fclose(fcustom); fcustom=0;
-			int zzzzz=0;
-		}
-	}
-
-
-
-	//////////////////////////////////////////////////////////////////////////////
-	//// sauvegarde des custom variables - pour les CHARACTER (bouillot, boulette, Inge, Herbo ...etc...)
-	{
-		ObjectGuid const& guiiddd = GetObjectGuid();
-		uint32 entryy = guiiddd.GetEntry();
-		uint64 guid = guiiddd.GetRawValue();
-
-		char nameFile2[2048];
-		sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid);
-		FILE* fcustom = fopen(nameFile2, "wb");
-		
-		sprintf(outt, "// generated on %02d/%02d/%d \r\n", now->tm_mday ,now->tm_mon+1,  now->tm_year + 1900 );
-		fwrite(outt, 1, strlen(outt), fcustom);
-		
-		sprintf(outt, "CHARACTER_STAT\r\n"); // juste un code pour savoir si tout est ok
-		fwrite(outt, 1, strlen(outt), fcustom);
-	
-		sprintf(outt, "VERSION_254\r\n"); // la version
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		sprintf(outt, "%s\r\n",GetName()); // name
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		//sprintf(outt, "%d\r\n",m_richar_paragon);  // <--- TODO : retirer lui car il est save dans  _ri_human_%s
-		//fwrite(outt, 1, strlen(outt), fcustom);    //
-
-		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		sprintf(outt, "#LIST_NPC_KILLED\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		sprintf(outt, "%d\r\n", m_richa_NpcKilled.size());
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		for(int i=0; i<m_richa_NpcKilled.size(); i++)
-		{
-			sprintf(outt, "%d,%d\r\n", m_richa_NpcKilled[i].npc_id , m_richa_NpcKilled[i].nb_killed);
-			fwrite(outt, 1, strlen(outt), fcustom);
-		}
-
-
-		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		sprintf(outt, "#LIST_PAGE_DISCOVERED\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		sprintf(outt, "%d\r\n", m_richa_pageDiscovered.size());
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		for(int i=0; i<m_richa_pageDiscovered.size(); i++)
-		{
-			sprintf(outt, "%d,%d,%d,%d\r\n", m_richa_pageDiscovered[i].pageId, m_richa_pageDiscovered[i].objectID, m_richa_pageDiscovered[i].itemID , 0);
-			fwrite(outt, 1, strlen(outt), fcustom);
-		}
-
-		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		sprintf(outt, "#LIST_LUNARFESTIVAL_ELDERFOUND\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
-		{
-			sprintf(outt, "%d,%d\r\n", m_richa_lunerFestivalElderFound[i].year , m_richa_lunerFestivalElderFound[i].questId);
-			fwrite(outt, 1, strlen(outt), fcustom);
-		}
-
-
-		sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		sprintf(outt, "#FIN_DOCUMENT\r\n");
-		fwrite(outt, 1, strlen(outt), fcustom);
-
-		//sprintf(outt, "3146\r\n"); // juste un code pour savoir si tout est ok
-		//fwrite(outt, 1, strlen(outt), fcustom);
-		fclose(fcustom); fcustom=0;
-	}
-
-	//////////////////////////////////////////////////////////////////////////////
-
-
-	//////////////////////////////////////////////////////////////////////////////
-	//// sauvegarde des custom variables - pour aux humain IRL (Richard, Diane )
-	{
-		ObjectGuid const& guiiddd = GetObjectGuid();
-		uint32 entryy = guiiddd.GetEntry();
-		uint64 guid = guiiddd.GetRawValue();
-		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid);
-		
-		char irlName[256];
-		// #LISTE_ACCOUNT_HERE
-		// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
-		if ( player_account == 5 || player_account == 10 )
-		{
-			strcpy_s(irlName,"richard");
-		}
-		else if ( player_account == 6 || player_account == 9 )
-		{
-			strcpy_s(irlName,"diane");
-		}
-		else if ( player_account == 7  ) // grandjuge
-		{
-			strcpy_s(irlName,"dieu");
-		}
-		else
-		{
-			irlName[0] = 0;
-		}
-
-
-		if ( irlName[0] != 0 )
-		{
-
-			int paragonBeforeSave = 0;
-			int paragonProgressBeforeSave = 0;
-
-
-			char nameFile2[2048];
-			sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
-
-			//Deja, avant de supprimer le fichier, on regarde les anciennes valeurs
-			{
-				std::ifstream infile(nameFile2);
-
-				int nbOk = 0;
-				bool error = false;
-
-				int lineConsts = 0;
-				const int Line_First = lineConsts; lineConsts++;
-				const int Line_Version = lineConsts; lineConsts++;
-				const int Line_Name = lineConsts; lineConsts++;
-				const int Line_Paragon = lineConsts; lineConsts++;
-				const int Line_ParagonProgress = lineConsts; lineConsts++;
-				//const int Line_End = lineConsts; lineConsts++;
-
-				std::string line;
-				int lineCount = 0;
-				while (std::getline(infile, line))
-				{
-					if ( lineCount == Line_First )
-					{
-						if ( line != "HUMAIN_STAT" )
-						{
-							error = true; break;
-						}
-						else
-						{
-							nbOk++;
-						}
-					}
-
-					else if ( lineCount == Line_Version )
-					{
-						if ( line != "VERSION_4" ) // version
-						{
-							error = true; break;
-						}
-						else
-						{
-							nbOk++;
-						}
-					}
-					else if ( lineCount == Line_Name )
-					{
-						int aa=0;
-					}
-					else if ( lineCount == Line_Paragon )
-					{
-						int value = atoi(line.c_str());
-						paragonBeforeSave = value;
-					}
-					else if ( lineCount == Line_ParagonProgress )
-					{
-						int value = atoi(line.c_str());
-						paragonProgressBeforeSave = value;
-					}
-					else
-					{
-						error = true;
-						break;
-					}
-
-
-					lineCount++;
-				}
-
-
-
-				if ( nbOk != 2 || error )
-				{
-					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE HUMAN (%s) !!!!!!!!!!!", irlName );
-
-					//si erreur, on reset tout
-					paragonBeforeSave = 0;
-					paragonProgressBeforeSave = 0;
-				}
-
-
-				infile.close();
-
-			}
-
-
-
-
-			//char nameFile2[2048];
-			//sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
-			FILE* fcustom = fopen(nameFile2, "wb");
-			
-			sprintf(outt, "HUMAIN_STAT\r\n"); // juste un code pour savoir si tout est ok
-			fwrite(outt, 1, strlen(outt), fcustom);
-	
-			sprintf(outt, "VERSION_4\r\n"); // la version
-			fwrite(outt, 1, strlen(outt), fcustom);
-
-			sprintf(outt, "%s\r\n",irlName); // name
-			fwrite(outt, 1, strlen(outt), fcustom);
-
-			if (
-				//m_richar_paragon >= m_richar_paragon_COMMUN 
-				getLevel() == 60// seul un niveau 60 peut updater le niveau courant de paragon
-				)
-			{
-				sprintf(outt, "%d\r\n",m_richar_paragon);
-				fwrite(outt, 1, strlen(outt), fcustom);
-
-				int32 currentRepParagon = GetReputationMgr().GetReputation(93) - 21000;
-				sprintf(outt, "%d\r\n",currentRepParagon);
-				fwrite(outt, 1, strlen(outt), fcustom);
-			}
-			else
-			{
-				sprintf(outt, "%d\r\n",paragonBeforeSave);
-				fwrite(outt, 1, strlen(outt), fcustom);
-
-				sprintf(outt, "%d\r\n",paragonProgressBeforeSave);
-				fwrite(outt, 1, strlen(outt), fcustom);
-			}
-
-			fclose(fcustom); fcustom=0;
-		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////////
-
-
-
-
 
 	// id dans la base de donnée
 	const uint32 coinItemID1 = 30000; 
@@ -1691,6 +1335,74 @@ void Player::richard_saveToLog()
 	sprintf(outt, "paragon,%d\r\n", m_richar_paragon);
 	fwrite(outt, 1, strlen(outt), fout);
 
+	sprintf(outt, "timenow,%d_%02d_%02d_%02d_%02d_%02d\r\n",
+		now->tm_year + 1900,
+		now->tm_mon+1,
+		now->tm_mday,
+		now->tm_hour,
+		now->tm_min,
+		now->tm_sec);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	//get & save GPS info
+	{ 
+		uint32 zone_id, area_id;
+		GetZoneAndAreaId(zone_id, area_id);
+
+		MapEntry const* mapEntry = sMapStore.LookupEntry(GetMapId());
+		AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+		AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(area_id);
+
+		float zone_x = GetPositionX();
+		float zone_y = GetPositionY();
+
+		if (!Map2ZoneCoordinates(zone_x, zone_y, zone_id))
+		{
+			zone_x = 0;
+			zone_y = 0;
+		}
+
+		Map const* map = GetMap();
+		float ground_z = map->GetHeight(GetPositionX(), GetPositionY(), MAX_HEIGHT);
+		float floor_z = map->GetHeight(GetPositionX(), GetPositionY(), GetPositionZ());
+
+		GridPair p = MaNGOS::ComputeGridPair(GetPositionX(), GetPositionY());
+
+		int gx = 63 - p.x_coord;
+		int gy = 63 - p.y_coord;
+
+		uint32 have_map = GridMap::ExistMap(GetMapId(), gx, gy) ? 1 : 0;
+		uint32 have_vmap = GridMap::ExistVMap(GetMapId(), gx, gy) ? 1 : 0;
+
+		TerrainInfo const* terrain = GetTerrain();
+
+		//if (have_vmap)
+		//{
+		//	if (terrain->IsOutdoors(GetPositionX(), GetPositionY(), GetPositionZ()))
+		//		PSendSysMessage("You are OUTdoor");
+		//	else
+		//		PSendSysMessage("You are INdoor");
+		//}
+		//else PSendSysMessage("no VMAP available for area info");
+
+
+		sprintf(outt, "GPS_GetPositionXYZ,%f,%f,%f\r\n", GetPositionX() , GetPositionY() , GetPositionZ());
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_GetMapId,%d\r\n", GetMapId());
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_zoneID,%d\r\n", zone_id);
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_areaID,%d\r\n", area_id);
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_mapEntry,\"%s\"\r\n",  mapEntry ? mapEntry->name[0] : "<unknown>" );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_zoneEntry,\"%s\"\r\n",  zoneEntry ? zoneEntry->area_name[0] : "<unknown>" );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_areaEntry,\"%s\"\r\n",  areaEntry ? areaEntry->area_name[0] : "<unknown>" );
+		fwrite(outt, 1, strlen(outt), fout);
+
+	}
 	
 	int nbGryphonss = 0;
 	//sprintf(outt, "GryphonList,");
@@ -2249,7 +1961,7 @@ void Player::richard_saveToLog()
 					int erer=0;
 				}
 
-				sprintf(outt, "%d,%s,%d\r\n", spell_id__ ,  spellNameStr.c_str(),  maxRank+1   );
+				sprintf(outt, "%d,\"%s\",%d\r\n", spell_id__ ,  spellNameStr.c_str(),  maxRank+1   );
 				fwrite(outt, 1, strlen(outt), fout);
 
 				nbTotalPoint += maxRank+1;
@@ -2461,14 +2173,8 @@ void Player::richard_saveToLog()
 		sprintf(outt, "\r\n#ELITE_GRIS_TUES_COMMUN =================================\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled.size());
+		sprintf(outt, "0\r\n"); // NOT USED ANYMORE
 		fwrite(outt, 1, strlen(outt), fout);
-
-		for(int i=0; i<m_richa_StatALL__elitGrisKilled.size(); i++)
-		{
-			sprintf(outt, "%d\r\n", m_richa_StatALL__elitGrisKilled[i]);
-			fwrite(outt, 1, strlen(outt), fout);
-		}
 
 		sprintf(outt, "\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
@@ -2533,6 +2239,209 @@ void Player::richard_saveToLog()
 
 
 	fclose(fout);
+
+
+	// pour faciliter le debug, je vais copier coller le fichier quotidien dans des fichiers qui vont tout garder
+	// du coup je pourrai me permettre de regulierement effacer l'interieur du dossier TEMP qui va grossir vite
+	char nameFile2[2048];
+	sprintf(nameFile2, "RICHARDS/TEMP/_ri_stat_%s_%d_%02d_%02d_%02d_%02d_%02d.txt",
+		playerName,
+		now->tm_year + 1900,
+		now->tm_mon+1,
+		now->tm_mday,
+		now->tm_hour,
+		now->tm_min,
+		now->tm_sec
+		);
+	BOOL succesCopy = CopyFileA(nameFile,nameFile2,TRUE);
+	if ( !succesCopy )
+	{
+		BASIC_LOG("WARNING FAIL COPY FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		Sleep(20000);
+	}
+
+}
+
+void Player::richard_saveToLog()
+{
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// richard : generation outfile :
+
+	BASIC_LOG("Start Save custom outfile....");
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	char outt[4096];
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//// sauvegarde des custom variables - pour aux humain IRL (Richard, Diane )
+	{
+		ObjectGuid const& guiiddd = GetObjectGuid();
+		uint32 entryy = guiiddd.GetEntry();
+		uint64 guid = guiiddd.GetRawValue();
+		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid);
+		
+		char irlName[256];
+		// #LISTE_ACCOUNT_HERE
+		// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( player_account == 5 || player_account == 10 )
+		{
+			strcpy_s(irlName,"richard");
+		}
+		else if ( player_account == 6 || player_account == 9 )
+		{
+			strcpy_s(irlName,"diane");
+		}
+		else if ( player_account == 7  ) // grandjuge
+		{
+			strcpy_s(irlName,"dieu");
+		}
+		else
+		{
+			irlName[0] = 0;
+		}
+
+
+		if ( irlName[0] != 0 )
+		{
+
+			int paragonBeforeSave = 0;
+			int paragonProgressBeforeSave = 0;
+
+
+			char nameFile2[2048];
+			sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+
+			//Deja, avant de supprimer le fichier, on regarde les anciennes valeurs
+			{
+				std::ifstream infile(nameFile2);
+
+				int nbOk = 0;
+				bool error = false;
+
+				int lineConsts = 0;
+				const int Line_First = lineConsts; lineConsts++;
+				const int Line_Version = lineConsts; lineConsts++;
+				const int Line_Name = lineConsts; lineConsts++;
+				const int Line_Paragon = lineConsts; lineConsts++;
+				const int Line_ParagonProgress = lineConsts; lineConsts++;
+				//const int Line_End = lineConsts; lineConsts++;
+
+				std::string line;
+				int lineCount = 0;
+				while (std::getline(infile, line))
+				{
+					if ( lineCount == Line_First )
+					{
+						if ( line != "HUMAIN_STAT" )
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+
+					else if ( lineCount == Line_Version )
+					{
+						if ( line != "VERSION_4" ) // version
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+					else if ( lineCount == Line_Name )
+					{
+						int aa=0;
+					}
+					else if ( lineCount == Line_Paragon )
+					{
+						int value = atoi(line.c_str());
+						paragonBeforeSave = value;
+					}
+					else if ( lineCount == Line_ParagonProgress )
+					{
+						int value = atoi(line.c_str());
+						paragonProgressBeforeSave = value;
+					}
+					else
+					{
+						error = true;
+						break;
+					}
+
+
+					lineCount++;
+				}
+
+
+
+				if ( nbOk != 2 || error )
+				{
+					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE HUMAN (%s) !!!!!!!!!!!", irlName );
+
+					//si erreur, on reset tout
+					paragonBeforeSave = 0;
+					paragonProgressBeforeSave = 0;
+				}
+
+
+				infile.close();
+
+			}
+
+
+
+
+			//char nameFile2[2048];
+			//sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+			FILE* fcustom = fopen(nameFile2, "wb");
+			
+			sprintf(outt, "HUMAIN_STAT\r\n"); // juste un code pour savoir si tout est ok
+			fwrite(outt, 1, strlen(outt), fcustom);
+	
+			sprintf(outt, "VERSION_4\r\n"); // la version
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			sprintf(outt, "%s\r\n",irlName); // name
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			if (
+				//m_richar_paragon >= m_richar_paragon_COMMUN 
+				getLevel() == 60// seul un niveau 60 peut updater le niveau courant de paragon
+				)
+			{
+				sprintf(outt, "%d\r\n",m_richar_paragon);
+				fwrite(outt, 1, strlen(outt), fcustom);
+
+				int32 currentRepParagon = GetReputationMgr().GetReputation(93) - 21000;
+				sprintf(outt, "%d\r\n",currentRepParagon);
+				fwrite(outt, 1, strlen(outt), fcustom);
+			}
+			else
+			{
+				sprintf(outt, "%d\r\n",paragonBeforeSave);
+				fwrite(outt, 1, strlen(outt), fcustom);
+
+				sprintf(outt, "%d\r\n",paragonProgressBeforeSave);
+				fwrite(outt, 1, strlen(outt), fcustom);
+			}
+
+			fclose(fcustom); fcustom=0;
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////
+
+
+
 
 	BASIC_LOG("END Save custom outfile.");
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -15201,7 +15110,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
 			std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 			std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
-			Player::richard_importFrom_richaracter_(
+			Player::richa_importFrom_richaracter_(
 				associatedPlayerGUID[i],
 				richa_NpcKilled,
 				richa_pageDiscovered,
@@ -18345,6 +18254,28 @@ void Player::SaveToDB()
     // save pet (hunter pet level and experience and all type pets health/mana).
     if (Pet* pet = GetPet())
         pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+
+
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	//RICHARD - auto save of _ri_character_
+	ObjectGuid const& guiiddd = GetObjectGuid();
+	//uint32 entryy = guiiddd.GetEntry();
+	uint64 guid = guiiddd.GetRawValue();
+	richa_exportTo_richaracter_(
+		guiiddd,
+		m_richa_NpcKilled,
+		m_richa_pageDiscovered,
+		m_richa_lunerFestivalElderFound,
+		GetName()
+		);
+
+	richa_exportTo_ristat_();
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 
