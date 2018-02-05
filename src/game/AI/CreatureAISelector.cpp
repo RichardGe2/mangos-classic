@@ -48,7 +48,8 @@ namespace FactorySelector
         // select by NPC flags
         if (creature->IsPet())
         {
-            if (static_cast<Pet*>(creature)->isControlled())
+            if (static_cast<Pet*>(creature)->isControlled()
+                || static_cast<Pet*>(creature)->getPetType() == MINI_PET)
                 ai_factory = ai_registry.GetRegistryItem("PetAI");
             else                            // For guardians and creature pets in general
                 ai_factory = ai_registry.GetRegistryItem("GuardianAI");
