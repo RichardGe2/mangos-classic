@@ -5054,6 +5054,11 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
         m_originalCaster->AI()->JustSummoned(critter);
     else if (m_caster->AI())
         m_caster->AI()->JustSummoned(critter);
+
+    //for MINI_PET we ensure to set a passive react
+    CreatureAI* critterAI = critter->AI();
+    if ( critterAI ) { critterAI->SetReactState(REACT_PASSIVE); }
+
 }
 
 void Spell::EffectKnockBack(SpellEffectIndex eff_idx)
