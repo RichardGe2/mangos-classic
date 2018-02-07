@@ -14580,25 +14580,27 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	//
 	//  Ci Dessous - les quetes de la saint valentin  8
 	//
-	||questID==8903 //
-	||questID==9024 // suite de 8903
-	||questID==9025
-	||questID==9026
-	||questID==9027
-	||questID==9028
-	||questID==8899
-	||questID==8897
-	||questID==8898
-	||questID==8900
-	||questID==8901
-	||questID==8902
-	||questID==8979
-	||questID==8982
-	||questID==8981
-	||questID==8984
-	||questID==8983
-	||questID==8980
-	||questID==9029
+	||questID==8903 // Alliance - suite de quete Alliance qui se commence aupre de Mottar a SW
+	||questID==9024 // Alliance - suite de 8903
+	||questID==9025 // Alliance - suite de 9024
+	||questID==9026 // Alliance - suite de 9025
+	||questID==9027 // Alliance - suite de 9026
+	||questID==9028 // Alliance - suite de 9027
+	||questID==8899 // Alliance - transmettre une lettre de Aldris (Darnassus) -> Colara ( SW )
+	||questID==8897 // Alliance - transmettre une lettre de                    -> Colara ( SW )
+	||questID==8898 // Alliance - transmettre une lettre de                    -> Colara ( SW )
+	||questID==8900 // Horde    - transmettre une lettre de                    -> Elenia ( UC ) 
+	||questID==8901 // Horde    - transmettre une lettre de                    -> Elenia ( UC ) 
+	||questID==8902 // Horde    - transmettre une lettre de                    -> Elenia ( UC ) 
+	||questID==8904 // Horde    - suite de quete Horde qui se commence aupre de Fenstad Argyle a UC
+	||questID==8979 // Horde    - suite de 8904
+	||questID==8980 // Horde    - suite de 8979
+	||questID==8982 // Horde    - suite de 8980
+	||questID==8983 // Horde    - suite de 8982
+	||questID==8984 // Horde    - suite de 8983
+	||questID==8981 // Horde    - quete : Faire des cadeaux
+	||questID==8993 // Alliance - quete : Faire des cadeaux
+	||questID==9029 // quete: un chaudron Bouillonnant - je crois que c'est la quete de fin Horde/Alliance de la suite de 6 quetes. récompense : des beaux habits
 	//
 	//  Ci Dessous - les quetes de la fete des morts
 	//
