@@ -1122,6 +1122,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 						//maintenanir la meme liste en ici et  _______richard_ALL.txt
 						strcmp(nameGo , "Solid Chest" ) == 0  
 					||  strcmp(nameGo , "Battered Chest" ) == 0 
+					||  strcmp(nameGo , "Locked Chest" ) == 0 
 					||  strcmp(nameGo , "Large Solid Chest" ) == 0 
 					||  strcmp(nameGo , "Large Mithril Bound Chest" ) == 0 
 					||  strcmp(nameGo , "Ancient Treasure" ) == 0 

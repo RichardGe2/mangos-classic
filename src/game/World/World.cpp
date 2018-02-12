@@ -1307,12 +1307,8 @@ void World::SetInitialWorldSettings()
 
 	////////////////////////////////////////////////////////
 	//richard - init message
-	BASIC_LOG("MODE RICHARD VERSION 11  ");
-	#ifdef NDEBUG
-	BASIC_LOG("(release)");
-	#else 
-	BASIC_LOG("!! NOT RELEASE !!");
-	#endif
+	BASIC_LOG("MODE RICHARD VERSION 12 -  version youhai2 ");
+	BASIC_LOG("CMAKE_INTDIR = "  CMAKE_INTDIR);
 	////////////////////////////////////////////////////////
 
 

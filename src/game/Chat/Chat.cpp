@@ -316,8 +316,8 @@ ChatCommand* ChatHandler::getCommandTable()
 
     static ChatCommand instanceCommandTable[] =
     {
-        { "listbinds",      SEC_PLAYER,  false, &ChatHandler::HandleInstanceListBindsCommand,   "", nullptr }, // Richard : j'ai passé cette commande en  SEC_PLAYER
-        { "unbind",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleInstanceUnbindCommand,      "", nullptr },
+        { "listbinds",      SEC_PLAYER,  false, &ChatHandler::HandleInstanceListBindsCommand,   "", nullptr }, // RICHARD : j'ai passé la commande listbinds en  SEC_PLAYER
+        { "unbind",         SEC_PLAYER,  false, &ChatHandler::HandleInstanceUnbindCommand,      "", nullptr }, // RICHARD : j'ai passé la commande unbind    en  SEC_PLAYER
         { "stats",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleInstanceStatsCommand,       "", nullptr },
         { "savedata",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleInstanceSaveDataCommand,    "", nullptr },
         { nullptr,          0,                  false, nullptr,                                        "", nullptr }

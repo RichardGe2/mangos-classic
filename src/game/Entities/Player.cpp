@@ -2229,11 +2229,76 @@ void Player::richa_exportTo_ristat_()
 		fwrite(outt, 1, strlen(outt), fout);
 	}
 
-	 sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
+
+
+	{
+		sprintf(outt, "\r\n#LIST_INSTANCES_SAVES =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		Player* player = this;
+		if (!player) player = m_session->GetPlayer();
+		uint32 counter = 0;
+
+		Player::BoundInstancesMap& binds = player->GetBoundInstances();
+		for (Player::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
+		{
+			DungeonPersistentState* state = itr->second.state;
+			std::string timeleft = secsToTimeString(state->GetResetTime() - time(nullptr), true);
+			if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
+			{
+				sprintf(outt, "map: %d (%s) inst: %d perm: %s canReset: %s TTR: %s\r\n",
+								itr->first, entry->name[0], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+								state->CanReset() ? "yes" : "no", timeleft.c_str());
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+			else
+			{
+				sprintf(outt, "bound for a nonexistent map %u\r\n", itr->first);
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+			counter++;
+		}
+
+		sprintf(outt, "player binds: %d\r\n", counter);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		counter = 0;
+
+		if (Group* group = player->GetGroup())
+		{
+			Group::BoundInstancesMap& binds = group->GetBoundInstances();
+			for (Group::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
+			{
+				DungeonPersistentState* state = itr->second.state;
+				std::string timeleft = secsToTimeString(state->GetResetTime() - time(nullptr), true);
+
+				if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
+				{
+					sprintf(outt, "map: %d (%s) inst: %d perm: %s canReset: %s TTR: %s\r\n",
+									itr->first, entry->name[0], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+									state->CanReset() ? "yes" : "no", timeleft.c_str());
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+				else
+				{
+					sprintf(outt, "bound for a nonexistent map %u\r\n", itr->first);
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+				counter++;
+			}
+		}
+		sprintf(outt, "group binds: %d\r\n", counter);
+		fwrite(outt, 1, strlen(outt), fout);
+
+	}
+	
+
+	sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
 
 
 	fclose(fout);
+	fout = NULL;
 
 
 	// pour faciliter le debug, je vais copier coller le fichier quotidien dans des fichiers qui vont tout garder

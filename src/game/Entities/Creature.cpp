@@ -1352,6 +1352,8 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner)
 {
 
+	// RICHARD - ajustement des coeff de difficulté on fonction de la position du mob
+
 	//j ai rajouté ca quand je me suis rendu compte que le pet demoniste etait affaiblie dans les donjons
 	const Unit* ownerrr = richaOwner; //GetOwner();
 	if ( ownerrr )
@@ -1390,6 +1392,14 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	{
 		int gggf=0;
 	}
+
+
+	//liste d'exception ici - j'ai en tete les mobs gentils dans les donjons qui vont se battre a nos coté.
+	//style les quetes d'escorte.
+	//d'un coté je me dis que je pourrais prendre tous les mob avec faction gentil.
+	//mais de l'autre je pense que c'est BEACOUP plus safe de faire du cas par cas.
+	//par exemple imaginons un boss mechant qui est gentil a la creation du donjon
+	if ( mobName == "Disciple of Naralex" ) { return 1.0; } // quete d'escorte dans les cavernes des lamentation
 
 
 	static bool messageSaidDungeaon = false;

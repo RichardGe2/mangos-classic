@@ -192,6 +192,7 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
 			||  sender_account == 6 && receiver_account == 10  // diane vers richard2
 			)
 		{
+			pl->Say("Interdit par regle Youhainy", LANG_UNIVERSAL);
 			pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_NOT_YOUR_TEAM);
 			 return;
 		}

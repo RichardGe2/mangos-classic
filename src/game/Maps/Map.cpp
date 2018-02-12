@@ -1460,10 +1460,9 @@ bool DungeonMap::Add(Player* player)
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// RICHARD : INSTANCES PERMANENTES - PAS DE RESET DES SAUVEGARDES - 
-			// pour l'utiliser : richard rentre (SANS etre groupé !) , une premiere fois dans l'instance.
-			// verifier dans l'historique de Chat Général que le le perso de Richard a bien Say("Sauvegarde permanante ACTIVE")
-			// juste pour valider la sauvegarde, richard selectionne un petit mob et le tue avec la commande:  .killrichard  (c'est la seule fois ou un joueur peu utiliser cette commande cheatée )
-			// puis il ressort, il invite diane
+			//
+			// j'ai noté la procédure a faire la premiere fois qu'on commence l'instance - voir vers la fin de ____richard_ALL.txt
+			//
 			bool permanennt = false;
 			const char* nameplayer = player->GetName();
 

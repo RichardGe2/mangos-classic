@@ -38,7 +38,11 @@ class Player;
 class Group;
 class Map;
 
-#define NORMAL_INSTANCE_RESET_TIME 30 * MINUTE
+
+// RICHARD : changement du temps de reset d'instance, qui etait a 30 minute - je le mets a 2 ans
+#define NORMAL_INSTANCE_RESET_TIME (2*365*24*60) * MINUTE
+
+
 
 typedef std::set<uint32> CellGuidSet;
 
