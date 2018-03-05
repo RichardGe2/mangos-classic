@@ -196,14 +196,8 @@ void Creature::RemoveFromWorld()
 
 void Creature::RemoveCorpse(bool inPlace)
 {
-    if (!inPlace)
-    {
-        // since pool system can fail to roll unspawned object, this one can remain spawned, so must set respawn nevertheless
-        if (uint16 poolid = sPoolMgr.IsPartOfAPool<Creature>(GetGUIDLow()))
-            sPoolMgr.UpdatePool<Creature>(*GetMap()->GetPersistentState(), poolid, GetGUIDLow());
-        if (!IsInWorld())                            // can be despawned by update pool
-            return;
-    }
+    if (!inPlace && !IsInWorld())
+       return;
 
     if ((getDeathState() != CORPSE && !m_isDeadByDefault) || (getDeathState() != ALIVE && m_isDeadByDefault))
         return;
@@ -364,6 +358,7 @@ bool Creature::InitEntry(uint32 Entry, Team team, CreatureData const* data /*=nu
 
     // checked at loading
     m_defaultMovementType = MovementGeneratorType(cinfo->MovementType);
+    SetMeleeDamageSchool(SpellSchools(cinfo->DamageSchool));
 
     SetCanParry(!(cinfo->ExtraFlags & CREATURE_EXTRA_FLAG_NO_PARRY));
     SetCanBlock(!(cinfo->ExtraFlags & CREATURE_EXTRA_FLAG_NO_BLOCK));
@@ -555,6 +550,9 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                     GetMap()->GetCreatureLinkingHolder()->DoCreatureLinkingEvent(LINKING_EVENT_RESPAWN, this);
 
                 GetMap()->Add(this);
+
+                if (uint16 poolid = sPoolMgr.IsPartOfAPool<Creature>(GetGUIDLow()))
+                    sPoolMgr.UpdatePool<Creature>(*GetMap()->GetPersistentState(), poolid, GetGUIDLow());
             }
             break;
         }
@@ -1917,8 +1915,6 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
     SetHealth(m_deathState == ALIVE ? curhealth : 0);
     SetPower(POWER_MANA, data->curmana);
 
-    SetMeleeDamageSchool(SpellSchools(GetCreatureInfo()->DamageSchool));
-
     // checked at creature_template loading
     m_defaultMovementType = MovementGeneratorType(data->movementType);
 
@@ -2376,12 +2372,12 @@ bool Creature::CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction /
     }
     else
     {
-        if (!IsFriendlyTo(u))
+        if (CanAttack(u))
             return false;
     }
 
     // skip non hostile to caster enemy creatures
-    if (enemy && !IsHostileTo(enemy))
+    if (enemy && CanAttack(enemy) && !IsEnemy(enemy))
         return false;
 
     return true;
@@ -2435,9 +2431,11 @@ bool Creature::IsOutOfThreatArea(Unit* pVictim) const
     float AttackDist = GetAttackDistance(pVictim);
     float ThreatRadius = sWorld.getConfig(CONFIG_FLOAT_THREAT_RADIUS);
 
+    float x, y, z, ori;
+    GetCombatStartPosition(x, y, z, ori);
+
     // Use AttackDistance in distance check if threat radius is lower. This prevents creature bounce in and out of combat every update tick.
-    return !pVictim->IsWithinDist3d(m_combatStartX, m_combatStartY, m_combatStartZ,
-                                    ThreatRadius > AttackDist ? ThreatRadius : AttackDist);
+    return !pVictim->IsWithinDist3d(x, y, z, ThreatRadius > AttackDist ? ThreatRadius : AttackDist);
 }
 
 CreatureDataAddon const* Creature::GetCreatureAddon() const
@@ -2541,7 +2539,7 @@ void Creature::SetInCombatWithZone()
             if (pPlayer->isGameMaster())
                 continue;
 
-            if (pPlayer->isAlive() && !IsFriendlyTo(pPlayer))
+            if (pPlayer->isAlive() && CanAttack(pPlayer))
             {
                 pPlayer->SetInCombatWith(this);
                 AddThreat(pPlayer);
@@ -2573,6 +2571,9 @@ bool Creature::MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* 
             return false;
 
         if ((selectFlags & SELECT_FLAG_IN_LOS) && !IsWithinLOSInMap(pTarget))
+            return false;
+
+        if (!pTarget->isAlive())
             return false;
 
         if ((selectFlags & SELECT_FLAG_RANGE_RANGE))

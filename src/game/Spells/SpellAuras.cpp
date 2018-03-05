@@ -1420,7 +1420,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     // Some appear to be used depending on creature location, in water, at solid ground, in air/suspended, etc
                     // For now, just handle all the same way
                     if (target->GetTypeId() == TYPEID_UNIT)
-                        target->SetFeignDeath(apply);
+                        target->SetFeignDeath(apply, GetCasterGuid(), GetId());
 
                     return;
                 }
@@ -2204,7 +2204,42 @@ void Aura::HandleFeignDeath(bool apply, bool Real)
     if (!Real)
         return;
 
-    GetTarget()->SetFeignDeath(apply, GetCasterGuid());
+    Unit* target = GetTarget();
+
+    // Do not remove it yet if more effects are up, do it for the last effect
+    if (!apply && target->HasAuraType(SPELL_AURA_FEIGN_DEATH))
+        return;
+
+    if (apply)
+    {
+        bool success = true;
+
+        if (target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED))
+        {
+            // Players and player-controlled units do an additional success roll for this aura on application
+            const SpellEntry* entry = GetSpellProto();
+            const SpellSchoolMask schoolMask = GetSpellSchoolMask(entry);
+            auto attackers = target->getAttackers();
+            for (auto i = attackers.begin(); i != attackers.end(); ++i)
+            {
+                if ((*i) && !(*i)->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED))
+                {
+                    if (target->MagicSpellHitResult((*i), entry, schoolMask) != SPELL_MISS_NONE)
+                    {
+                        success = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (success)
+            target->InterruptSpellsCastedOnMe();
+
+        target->SetFeignDeath(apply, GetCasterGuid(), GetId(), true, success);
+    }
+    else
+        target->SetFeignDeath(false);
 }
 
 void Aura::HandleAuraModDisarm(bool apply, bool Real)
@@ -5327,33 +5362,6 @@ void SpellAuraHolder::Update(uint32 diff)
                             caster->ModifyHealth(-manaPerSecond);
                         else
                             caster->ModifyPower(powertype, -manaPerSecond);
-                    }
-                }
-            }
-
-            // Channeled aura required check distance from caster
-            if (IsChanneledSpell(m_spellProto) && GetCasterGuid() != m_target->GetObjectGuid())
-            {
-                Unit* caster = GetCaster();
-                if (!caster)
-                {
-                    m_target->RemoveAurasByCasterSpell(GetId(), GetCasterGuid());
-                    return;
-                }
-
-                // need check distance for channeled target only
-                if (caster->HasChannelObject(m_target->GetObjectGuid()))
-                {
-                    // Get spell range
-                    float max_range = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellProto->rangeIndex));
-
-                    if (Player* modOwner = caster->GetSpellModOwner())
-                        modOwner->ApplySpellMod(GetId(), SPELLMOD_RANGE, max_range, nullptr);
-
-                    if (!caster->IsWithinDistInMap(m_target, max_range))
-                    {
-                        caster->InterruptSpell(CURRENT_CHANNELED_SPELL);
-                        return;
                     }
                 }
             }
