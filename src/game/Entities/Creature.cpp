@@ -1192,6 +1192,22 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     float damageMulti = cinfo->DamageMultiplier * damageMod;
     bool usedDamageMulti = false;
 
+
+	
+	// richa ASUP
+	if ( GetEntry() ==  7895  ||  GetEntry() ==  4968 )
+	{
+		int aaa=0;
+		const char*  naamee = GetName();
+
+
+		int aaaa=0;
+	}
+
+
+
+
+
     if (CreatureClassLvlStats const* cCLS = sObjectMgr.GetCreatureClassLvlStats(level, cinfo->UnitClass))
     {
         // Use Creature Stats to calculate stat values
@@ -1224,6 +1240,11 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
             rangedAttackPwr = cCLS->BaseRangedAttackPower;
         }
     }
+
+
+
+
+
 
     if (!usedDamageMulti || health == -1 || mana == -1 || armor == -1.f) // some field needs to default to old db fields
     {
@@ -1294,6 +1315,14 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     SetCreateHealth(health);
     SetMaxHealth(health);
     SetHealth(health);
+
+
+
+	
+
+
+
+
 
     SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, float(health));
 
@@ -1634,7 +1663,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	else if ( cPosRicha == "Stratholme" )			{ outNumber =  6.0f/5.0f; }      // 58-60   5
 	else if ( cPosRicha == "Scholomance" )			{ outNumber =  6.0f/5.0f; }      // 58-60   5
 
-	else if ( cPosRicha == "Molten core" )			{ outNumber =  7.0f/40.0f; }	// 60+     40
+	else if ( cPosRicha == "Molten Core" )			{ outNumber =  7.0f/40.0f; }	// 60+     40
 
 	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  8.0f/20.0f; }	// 60+     20
 
@@ -1647,14 +1676,23 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	else if ( cPosRicha == "Naxxramas" )			{ outNumber =  11.0f/40.0f; }	// 60++++  40
 
 
-	else if ( cPosRicha == "???" )
+	else if ( cPosRicha == "??POSRICH??" )
 	{
-		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
+		// diane a deja eu ce warning pdt qu'elle survollait en griphon entre Darnassus  et Theramor
+		// a l'epoque j'avais pas le nom du mob, donc a refaire le vol
+		// j'ai pas eussi a revoir le message en faisant le vol
+		// peut etre que Diane a survolé un bateau ? ca fait ptete ca quand on rentre dans bateau.
+		// je sais pas... ca doit pas etre bien grave mais a surveiller, ca sertai cool de le repro
+		// 
+		// c'est fort probable que ce soit un totem, car j'avais pas rajouté la position pour le totem
+		// example de mob a aller voir :   "Foulweald Warrior"   qui invoque un   "Strength of Earth Totem II"
+
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region A - mob=%s : '%s'" , mobName.c_str() ,  cPosRicha.c_str()  );
 		outNumber =  1.0;
 	}
 	else if ( cPosRicha == "" )
 	{
-		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region B - mob=%s : '%s'" , mobName.c_str() , cPosRicha.c_str()  );
 		outNumber =  1.0;
 	}
 	else
@@ -1663,7 +1701,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 
 
-		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region : '%s'" ,  cPosRicha.c_str()  );
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region C - mob=%s : '%s'" , mobName.c_str() , cPosRicha.c_str()  );
 
 
 		if ( !messageDisplayed )

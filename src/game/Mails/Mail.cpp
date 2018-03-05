@@ -312,8 +312,8 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
 
 
 
-	/// RICHARD je passe le delay des courriers a 60 jours tout le temps :
-	expire_delay = 60 * DAY;
+	/// RICHARD je passe le delay des courriers a 300 jours tout le temps :
+	expire_delay = 300 * DAY;
 
 
 

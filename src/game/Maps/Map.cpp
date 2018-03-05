@@ -1479,6 +1479,9 @@ bool DungeonMap::Add(Player* player)
 				// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
 				   strcmp(nameplayer, "Bouillot") == 0
 				|| strcmp(nameplayer, "Adibou") == 0
+
+				|| strcmp(nameplayer, "Fghghhopykj") == 0 // je fais des tests d'instances HL avec lui, donc lui il fait sa vie - ne pas le mélanger avec nos perso de game
+
 				)
 			{
 				permanennt = true;

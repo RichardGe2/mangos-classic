@@ -583,7 +583,7 @@ void Player::Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECO
 			AreaEntry->zone; // parent area ID
 
 
-			std::string parentName = "???";
+			std::string parentName = "?? parent name inconnu ??";
 
 			AreaTableEntry const* AreaEntryParent = sAreaStore.LookupEntry(AreaEntry->zone);
 			if ( AreaEntryParent )
@@ -1838,7 +1838,7 @@ void Player::richa_exportTo_ristat_()
 
 		std::string nameeeee = std::string(factionEntry->name[0]);
 
-		std::string rank_str = "???";
+		std::string rank_str = "??rank inconnu??";
 
 		if ( rank == REP_HATED ) { rank_str = "HATED";            reput = 36000 + 3000 + 3000 + reput; }
 		if ( rank == REP_HOSTILE ) { rank_str = "HOSTILE";        reput = 3000 + 3000        + reput ;  }

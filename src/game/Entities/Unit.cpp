@@ -299,7 +299,7 @@ Unit::Unit() :
 	
 	
 	
-	m_richar_lieuOrigin = "???";
+	m_richar_lieuOrigin = "??POSRICH??";
 
 
 
@@ -6772,7 +6772,37 @@ float Unit::GetStat(Stats stat) const
 					if ( stat == STAT_STAMINA ) { sprintf(statName,"STAMINA"); }
 					if ( stat == STAT_INTELLECT ) { sprintf(statName,"INTELLECT"); }
 					if ( stat == STAT_SPIRIT ) { sprintf(statName,"SPIRIT"); }
-					BASIC_LOG("RICHAR: PARAGON %s - %s  %f->%f",play->GetName(),statName,   before,valueToReturn);
+					
+					static std::map<std::string,float>  messageSaid;
+
+					char messs[2048];
+					sprintf(messs, "%s - %s  ", play->GetName(),statName );
+
+					std::string newMessage = std::string(messs);
+
+					bool displayMessage = false;
+					if (   messageSaid.find(newMessage) != messageSaid.end() 
+						&& messageSaid[newMessage] == before )
+					{
+
+					}
+					else if (   messageSaid.find(newMessage) != messageSaid.end() 
+						&& messageSaid[newMessage] != before )
+					{
+						messageSaid[newMessage] = before;
+						displayMessage = true;
+					}
+					else if (   messageSaid.find(newMessage) == messageSaid.end()  )
+					{
+						messageSaid[newMessage] = before;
+						displayMessage = true;
+					}
+					
+
+					if ( displayMessage )
+					{
+						BASIC_LOG("RICHAR: PARAGON %s %f.0f->%f.1f", messs  ,   before,valueToReturn );
+					}
 
 					int erereredfdr=0;
 				}
@@ -6819,7 +6849,10 @@ uint32  Unit::GetResistance(SpellSchools school) const
 				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
 				float coeffParagon = ((float)play->m_richar_paragon + 1.0) / 2.0;
 
-				valueToReturn *= coeffParagon;
+				//valueToReturn *= coeffParagon;
+
+				valueToReturn =  (uint32_t)((float)valueToReturn  *  coeffParagon);
+
 
 				char statName[128];
 				statName[0] = 0;
@@ -6831,7 +6864,36 @@ uint32  Unit::GetResistance(SpellSchools school) const
 				if ( school == SPELL_SCHOOL_SHADOW ) { sprintf(statName,"SCHOOL_SHADOW"); }
 				if ( school == SPELL_SCHOOL_ARCANE ) { sprintf(statName,"SCHOOL_ARCANE"); }
 
-				//BASIC_LOG("RICHAR: PARAGON %s - %s  %d->%d",play->GetName(),statName,   before,valueToReturn);
+				static std::map<std::string,uint32_t>  messageSaid;
+
+				char messs[2048];
+				sprintf(messs, "%s - %s  ", play->GetName(),statName );
+
+				std::string newMessage = std::string(messs);
+
+				bool displayMessage = false;
+				if (   messageSaid.find(newMessage) != messageSaid.end() 
+					&& messageSaid[newMessage] == before )
+				{
+
+				}
+				else if (   messageSaid.find(newMessage) != messageSaid.end() 
+					&& messageSaid[newMessage] != before )
+				{
+					messageSaid[newMessage] = before;
+					displayMessage = true;
+				}
+				else if (   messageSaid.find(newMessage) == messageSaid.end()  )
+				{
+					messageSaid[newMessage] = before;
+					displayMessage = true;
+				}
+					
+
+				if ( displayMessage )
+				{
+					BASIC_LOG("RICHAR: PARAGON %s  %d->%d",messs,   before,valueToReturn);
+				}
 			}
 
 		}
@@ -8688,10 +8750,22 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 	//exemple : Arcan intellect qui augmente l'intelligence - l'intelligence globale sera deja multipliée par le paragon dans Unit::GetStat - donc pas la peine de la multiplier ici.
 	
 
-	if ( unitPlayer 
-		&& unitPlayer->m_richar_paragon > 1 
+	if ( 
 		
-		//&& value != 0 
+		
+		unitPlayer 
+		
+		
+		// TEMPORAIREMENT je retire ce check, cela veut dire que TOUT les persos vont rentrer dans ce IF
+		// ce qui devrait etre sans danger
+		//&& unitPlayer->m_richar_paragon > 1 
+		
+
+		//si value = 0, ca sert a rien de rentrer dans cette fonction, puisque c'est juste une multiplication
+		&& value != 0 
+
+
+
 		//&& value > 1  //si c'est negatif, c'est etrange  -  si c'est 0 ou 1,  c'est etrange aussi
 		
 		//list de sort dont je ne veux pas modifier le value
@@ -8705,11 +8779,18 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 		uint32 auraNamee = spellProto->EffectApplyAuraName[effect_index];
 
 		//juste pour le debug
-		std::string effectStrr = "???";
+		std::string effectStrr = "?????";
 			 if ( effectttt == SPELL_EFFECT_NONE ) { effectStrr = "SPELL_EFFECT_NONE"; }
 		else if ( effectttt == SPELL_EFFECT_APPLY_AURA ) 
 		{ 
-			effectStrr = "SPELL_EFFECT_APPLY_AURA->" + std::to_string(auraNamee); 
+				 if ( auraNamee == SPELL_AURA_NONE )				{ effectStrr = "SPELL_EFFECT_APPLY_AURA->SPELL_AURA_NONE";  }
+			else if ( auraNamee == SPELL_AURA_BIND_SIGHT )			{ effectStrr = "SPELL_EFFECT_APPLY_AURA->SPELL_AURA_BIND_SIGHT";  }
+			else if ( auraNamee == SPELL_AURA_MOD_POSSESS )			{ effectStrr = "SPELL_EFFECT_APPLY_AURA->SPELL_AURA_MOD_POSSESS";  }
+			else if ( auraNamee == SPELL_AURA_PERIODIC_DAMAGE )		{ effectStrr = "SPELL_EFFECT_APPLY_AURA->SPELL_AURA_PERIODIC_DAMAGE";  }
+			else
+			{
+				effectStrr = "SPELL_EFFECT_APPLY_AURA->" + std::to_string(auraNamee); 
+			}
 		
 		}
 		else if ( effectttt == SPELL_EFFECT_SKILL_STEP ) { effectStrr = "SPELL_EFFECT_SKILL_STEP"; }
@@ -8722,21 +8803,25 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 		else if ( effectttt == SPELL_EFFECT_DUMMY ) { effectStrr = "SPELL_EFFECT_DUMMY"; }
 		else if ( effectttt == SPELL_EFFECT_BLOCK ) { effectStrr = "SPELL_EFFECT_BLOCK"; }
 		else if ( effectttt == SPELL_EFFECT_SPAWN ) { effectStrr = "SPELL_EFFECT_SPAWN"; }
+		else if ( effectttt == SPELL_EFFECT_SKILL ) { effectStrr = "SPELL_EFFECT_SKILL"; }
 		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
 		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
 		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
-		//else if ( effectttt == XXXXXXX ) { effectStrr = "XXXXXXX"; }
-		else { effectStrr =  "???" +  std::to_string(effectttt) + "???"; }
+		else { effectStrr =  "????" +  std::to_string(effectttt) + "????"; }
 
 
 
 		// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
 		//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
-		float coeffParagon = ((float)unitPlayer->m_richar_paragon + 1.0) / 2.0;
-
+		float coeffParagon = 1.0f;
+		if ( unitPlayer->m_richar_paragon > 1 )
+		{
+			coeffParagon = ((float)unitPlayer->m_richar_paragon + 1.0) / 2.0;
+		}
 
 
 		//je me rends compte que c'est plus safe de faire une whitelist plutot qu'une black list
+		// si un sort est White listé, cela veut dire que le Paragon va avoir une influence sur ce sort
 		bool whitelistedSpell = false;
 	
 
@@ -8759,278 +8844,234 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 		
 		
 		
+		// dans mes formules, ce que j'appelle  X  est  value  qui est la variable qui va etre retournée, et eventuellement multiplié par Paragon 
+		// donc quand l'unité de X n'est pas un domage ou un health.  ca va surement dans la black list
+		// si X est un %, de meme ca n'as pas de sens de le multiplier par le paragon
 
 
 		if (
 			//ici la liste des type de sort a multiplier
                effectttt == SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL 
+			
 			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PERIODIC_DAMAGE
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PERIODIC_HEAL  // ca fait restore +X health every 5 secs ( je sais pas si c'est toujours 5 sec - mais ca change rien )
+			
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PERIODIC_LEECH &&  strcmp( spellProto->SpellName[0] , "Drain Life" ) == 0   // comme c'est un soin on l'améliore, mais il y a surement d'autre Leach a ne PAS améliorer
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_HEALTH_REGEN_IN_COMBAT  //  "Vitality"  restore X health every Y seconds																																				   
+			
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_DAMAGE_SHIELD  // "Thorns" :  a chaque fois qu'on me touche, ca va infliger X damage
+
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXXXXX  //
+			
 			|| effectttt == SPELL_EFFECT_HEAL
 			|| effectttt == SPELL_EFFECT_SCHOOL_DAMAGE
-			//|| effectttt == SPELL_EFFECT_WEAPON_DAMAGE  //  je sais pas pour lui ?
-			//  || effectttt == XXXXXX 
-			//  || effectttt == XXXXXX 
+
+			|| effectttt == SPELL_EFFECT_WEAPON_DAMAGE  //  "Claw"  "Maul"  "Shred"   en gros ca rajoute  +X  dammage au degat causé par le corp a corp
+
+
+			|| effectttt == SPELL_EFFECT_PERSISTENT_AREA_AURA && auraNamee == SPELL_AURA_PERIODIC_DAMAGE //  sort de zone - genre rain of Fire de demoniste
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX //
+			//|| effectttt == XXXXXX //
+			//|| effectttt == XXXXXX //
+			//|| effectttt == XXXXXX //
 			)
 		{
 			whitelistedSpell = true;
 		}
 		else if ( 
-			// ici la list des type de sort dont je suis sur qu'il ne faut PAS les multipler
+			// ici la liste des type de sort dont je suis sur qu'il ne faut PAS les multipler
 				 effectttt == SPELL_EFFECT_NONE
-			  //|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX
-			  || effectttt == SPELL_EFFECT_SKILL_STEP 
-			  || effectttt == SPELL_EFFECT_PARRY 
-			  || effectttt == SPELL_EFFECT_LEARN_SPELL 
-			  || effectttt == SPELL_EFFECT_WEAPON 
-			  || effectttt == SPELL_EFFECT_PROFICIENCY 
-			  || effectttt == SPELL_EFFECT_DUAL_WIELD 
-			  || effectttt == SPELL_EFFECT_DUMMY 
-			  || effectttt == SPELL_EFFECT_BLOCK 
-			  || effectttt == SPELL_EFFECT_SPAWN 
-			//  || effectttt == XXXXXX 
-			//  || effectttt == XXXXXX 
-			//  || effectttt == XXXXXX 
-			//  || effectttt == XXXXXX 
-			)
-		{
-			whitelistedSpell = false;
-		}
-		else if ( 
-			  effectttt == SPELL_EFFECT_APPLY_AURA 
-			)
-		{
-			//le cas particluer les auras, il y en a plein de type :  SPELL_AURA_PERIODIC_DAMAGE , .....	
-			//je pense que la majorité ne dois pas etre white listé.
 
+			////
+			//les discutables :
+			//ce la j'ai des doutes, je pense que c'est plus logique de ne pas les mettre.
+			//en effet, c'est des AMELIORATIONS, et pas un sort qui va effeectivement soigner ou faire du damage
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DAMAGE_DONE_CREATURE  // genre +X damage on beast
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DAMAGE_DONE  // passif qui va augmenter les damage de X.
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_HEALING_DONE  //  "Increase Spell Dam X"
+
+			//////
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_ADD_FLAT_MODIFIER   // augmente des durée, des stats... on va pas y toucher
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_STAT   // modifie  Strength,Stamina... typiquement le truc a pas modifier ici
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PROC_TRIGGER_SPELL  // ce qui est sur les item, et qui a genre 2% de declancher un sort. vaut mieux pas y toucher car il y a de tout
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN  //   X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_MECHANIC_RESISTANCE  //  X est un % donc on y touche pas   -  resistance au Charm..etc..
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_ADD_PCT_MODIFIER  //  X est un % donc on y touche pas 
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_BLOCK_PERCENT  // X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SKILL_TALENT  // augmente genre la defense, donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_BASE_RESISTANCE_PCT  // X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_THREAT  //  X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_PARRY_PERCENT  //  X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DAMAGE_PERCENT_DONE  //  X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE  // X est un % donc on y touche pas  -  augmente genre Spirit
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_REPUTATION_GAIN  //  reputation on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_INCREASE_HEALTH  //  genre  +50 health
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_RESISTANCE  // example :  +X a toutes les resistance des ecoles de magies
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_OVERRIDE_CLASS_SCRIPTS  // chelou, pas touche
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_CRIT_PERCENT  //  X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL  // X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SKILL  //  ghenre increase defense  - on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DODGE_PERCENT  //  X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_ATTACK_POWER  //  genre +X attack power, donc on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_DUMMY  // je pense qu'on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_SCHOOL_ABSORB  // je pense on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PERIODIC_ENERGIZE  //  genre Generate +X Rage en 10 secondes
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_STUN  //  Stun on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SILENCE  // Silence on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOUNTED  //  ajoute le sort  Mounted
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SHAPESHIFT  //  quand on change de forme,  genre guerrier passe  en battle strance
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_REGEN   &&  strcmp( spellProto->SpellName[0] , "Food" ) == 0 //  peut etre que certain regen doivent etre white listé ..
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_TRACK_RESOURCES  //  detect minerai
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_INVISIBILITY_DETECTION  // detect invisible
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_WATER_BREATHING  //  respirer sous l'eau
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_CASTING_SPEED_NOT_STACK  //  genre reduire la temps de cast
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_FEAR  // le fear
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_HEALING_PCT  //  X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_CHANNEL_DEATH_ITEM  //  genre on pourrait eventuellement le mettre en white list, je le vois avec  "Drain Soul",  mais j'ai X=1 ca n'a pas de sens
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_STATE_IMMUNITY  // je sais pas ce que c'est mais ca a pas l'air d'etre du dega ou heal. example de spell : "zzOLDPlayer Immunities"
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_STEALTH_LEVEL  //  niveau de caché, on s'en fou
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_INCREASE_ENERGY_PERCENT  // genre augmente mana de +X%  -  X est un % donc on y touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_CRITICAL_THREAT  //   "zzOLDArcane Subtlety"   -  on s'en fou je pense
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_MANA_REGEN_INTERRUPT  //  "Meditation"  allow X% of your mana regeneration while casting
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT  //  "Spiritual Guidance"  increase spell damage and healing up to X% of your total spirit  -   % donc on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SPELL_HEALING_OF_STAT_PERCENT  //  "Spiritual Guidance"    % donc on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_ADD_TARGET_TRIGGER  //  "Shadow Weaving"   X est un pourcentage..  ca declanche un sort sur la target, donc on s'en fou de lui
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED  //  "Black War Tiger"  monture
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_TOTAL_THREAT  //  "Fade"  menace changée
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_EFFECT_IMMUNITY  //  "zzOLDPlayer Immunities"
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_TARGET_RESISTANCE  //  "zzOLDArcane Subtlety"	
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_HIT_CHANCE  //  "Increased Hit Chance X"  
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_SHIELD_BLOCKVALUE  //  "Block Value X"  
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_HEALTH_REGEN_PERCENT  //  "Regeneration" ( passif des trolls )- c'est un % donc on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DAMAGE_DONE_VERSUS  //  "Beast Slaying" ( passif des trolls )  +X % damage dealt versus Beasts.  c'est un % donc on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_RANGED_ATTACK_POWER  //  "Attack Power X"  -   modification de stat, donc on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_INCREASE_HEALTH_PERCENT  //  "Endurance" (passif tauren +5 % life) .  pourcentage donc on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_REGEN_DURING_COMBAT  // "Regeneration"  ( passif des trolls )- c'est un % donc on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_RANGED_AMMO_HASTE  //  "Haste" item"Light Quiver"  +X% attack speed. -  c'est un % donc pas touche
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_NONE  //  "Command" chelou, mais vaut mieux pas toucher.
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_INCREASE_SWIM_SPEED  //  "Aquatic Form (Passive)"
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_POWER_REGEN_PERCENT  //  "Soul Siphon"
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_INCREASE_SPEED  //  "Dash"  augmente de X% la vitesse de marche
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_STEALTH  //  "Prowl"  augmente le STEALTH
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_POWER_REGEN  // "Drink"  regen du mana
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DECREASE_SPEED  // "Prowl"  reduire vitesse de marche
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_GHOST  // "Ghost"		
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PERIODIC_MANA_LEECH  // "Drain Mana"  le leech de vie, je pense l'ameliorer, car c'est considerer comme un soin. par contre le leech de mana, on le whitelist pas 
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+
+
+			|| effectttt == SPELL_EFFECT_SKILL_STEP 
+			|| effectttt == SPELL_EFFECT_PARRY 
+			|| effectttt == SPELL_EFFECT_LEARN_SPELL 
+			|| effectttt == SPELL_EFFECT_WEAPON 
+			|| effectttt == SPELL_EFFECT_PROFICIENCY 
+			|| effectttt == SPELL_EFFECT_DUAL_WIELD 
+			|| effectttt == SPELL_EFFECT_DUMMY 
+			|| effectttt == SPELL_EFFECT_BLOCK 
+			|| effectttt == SPELL_EFFECT_SPAWN 
+			|| effectttt == SPELL_EFFECT_TRIGGER_SPELL // "bloodrage" 
+			|| effectttt == SPELL_EFFECT_SUMMON_GUARDIAN  // "Summon Skeleton"
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Riding" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Tiger Riding" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Ram Riding" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Mechanostrider Piloting" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Kodo Riding" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Horse Riding" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Wolf Riding" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Raptor Riding" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Undead Horsemanship" ) == 0  // monture je crois
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Mining" ) == 0
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Herb Gathering" ) == 0	
+			|| effectttt == SPELL_EFFECT_SKILL &&  strcmp( spellProto->SpellName[0] , "Skinning" ) == 0	
+			|| effectttt == SPELL_EFFECT_ENERGIZE  // genre +X de rage d'un coup
+			|| effectttt == SPELL_EFFECT_INTERRUPT_CAST  // interrompre le sort, 
+			|| effectttt == SPELL_EFFECT_ATTACK_ME // taunt, on s'en fou
+			|| effectttt == SPELL_EFFECT_SUMMON_CRITTER  // invoquer
+			|| effectttt == SPELL_EFFECT_TELEPORT_UNITS  //  teleport, hearthstone...
+			|| effectttt == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE  // genre se faire bruler par les flammes
+			|| effectttt == SPELL_EFFECT_SUMMON_PET  //
+			|| effectttt == SPELL_EFFECT_CREATE_ITEM  //
+			|| effectttt == SPELL_EFFECT_DISENCHANT  //
+			|| effectttt == SPELL_EFFECT_TRANS_DOOR  //  ouvrir un portail
+			|| effectttt == SPELL_EFFECT_SCRIPT_EFFECT  //  genre quand je cree une pierre de soin avec mon demo
+			|| effectttt == SPELL_EFFECT_SKINNING //  "Skinning"
+			|| effectttt == SPELL_EFFECT_RESURRECT_NEW  //  "Rebirth"
+			|| effectttt == SPELL_EFFECT_ADD_COMBO_POINTS //  "Rake"  -  ajouter X point de Combo
+			|| effectttt == SPELL_EFFECT_SELF_RESURRECT  //  "Use Soulstone"
+			|| effectttt == SPELL_EFFECT_SUMMON_OBJECT_WILD //  "Summon Karang's Banner"
+			|| effectttt == SPELL_EFFECT_OPEN_LOCK  //  "Herb Gathering"  "Opening"
+			|| effectttt == SPELL_EFFECT_WEAPON_PERCENT_DAMAGE  //  "Shred"   -  % donc on touche pas
+			|| effectttt == SPELL_EFFECT_DISPEL  //   "Abolish Poison"   enlever un poison 
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			//|| effectttt == XXXXXX  //
+			)
+		{
 			whitelistedSpell = false;
 		}
 		else
 		{
-			BASIC_LOG("RICHAR: PARAGON - \"%s\" - %s -  ON LE WHITE LIST OU PAS ?????????????????????????????????????",spellProto->SpellName[0],effectStrr.c_str());
-			whitelistedSpell = false;
-		}
 
-
-
-
-
-
-
-/*
-		if ( false
+			static std::map<uint32,int>  warningTold;
 			
-			|| strcmp( spellProto->SpellName[0] , "LOGINEFFECT" ) == 0  
-
-			|| strcmp( spellProto->SpellName[0] , "Ice Shards" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Arcane Instability" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Darkness" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Fade" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Mind Blast" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Shadow Word: Pain" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Shadow Affinity" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Blackout" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Shadow Focus" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Shadow Weaving" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Spirit Tap" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Spiritual Healing" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Inspiration" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Psychic Scream" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Arctic Reach" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Frostbolt" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Arcane Missiles" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Leader of the Pack" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Renew" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Shadow Reach" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Stealth 5" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Increase Fire Dam 23" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Incinerate" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "zzOLDArcane Meditation" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "zzOLDImproved Arcane Explosion" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Divine Fury" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Divine Fury" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Force of Will" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Mental Strength" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Mental Strength" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Battle Stance Passive" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Holy Reach" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Blessed Recovery" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Improved Vampiric Embrace" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Spell Warding" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Spell Warding" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Sword Specialization" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "The Human Spirit" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "The Human Spirit" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Diplomacy" ) == 0  
-			|| strcmp( spellProto->SpellName[0] , "Mace Specialization" ) == 0  
+			if ( warningTold.find(spellProto->Id) == warningTold.end() )
+			{
+				warningTold[spellProto->Id] = 1;
+				BASIC_LOG("RICHAR: PARAGON - %s - \"%s\" - %s -  ON LE WHITE LIST OU PAS ??????? (damage=%d) ????????????????????????????????????????????????????????????????????????",
+					unitPlayer->GetName(),
+					spellProto->SpellName[0],  // nom du sort
+					effectStrr.c_str(),  // nom de l'effet - pour m'aider a debugger
+					value
+				);
+			}
 
 
-|| strcmp( spellProto->SpellName[0] , "Gazban Water Form") == 0  
-|| strcmp( spellProto->SpellName[0] , "Wand Specialization") == 0  
-|| strcmp( spellProto->SpellName[0] , "Lockpicking") == 0  
-|| strcmp( spellProto->SpellName[0] , "Defensive Stance Passive") == 0  
-|| strcmp( spellProto->SpellName[0] , "Berserker Stance Passive") == 0  
-|| strcmp( spellProto->SpellName[0] , "Journeyman Enchanting") == 0  
-|| strcmp( spellProto->SpellName[0] , "Expert Enchanting") == 0  
-|| strcmp( spellProto->SpellName[0] , "Frost Warding") == 0  
-|| strcmp( spellProto->SpellName[0] , "Critical Mass") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Pummel") == 0  
-|| strcmp( spellProto->SpellName[0] , "Anger Management") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Challenging Shout") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Fireball") == 0  
-|| strcmp( spellProto->SpellName[0] , "zzOLDImproved Fire Blast") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Flamestrike") == 0  
-|| strcmp( spellProto->SpellName[0] , "zzOLDBurning Soul") == 0  
-|| strcmp( spellProto->SpellName[0] , "Flame Throwing") == 0  
-|| strcmp( spellProto->SpellName[0] , "Fire Power") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Frost Nova") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Cone of Cold") == 0  
-|| strcmp( spellProto->SpellName[0] , "Arcane Mind") == 0  
-|| strcmp( spellProto->SpellName[0] , "Frost Channeling") == 0  
-|| strcmp( spellProto->SpellName[0] , "zzOLDPermafrost") == 0  
-|| strcmp( spellProto->SpellName[0] , "zzOLDWinter's Chill") == 0  
-|| strcmp( spellProto->SpellName[0] , "zzOLDArcane Subtlety") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Mana Shield") == 0  
-|| strcmp( spellProto->SpellName[0] , "Magic Attunement") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Rend") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Heroic Strike") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Thunder Clap") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Charge") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Pummel") == 0  
-|| strcmp( spellProto->SpellName[0] , "Two-Handed Weapon Specialization") == 0  
-|| strcmp( spellProto->SpellName[0] , "Shield Specialization") == 0  
-|| strcmp( spellProto->SpellName[0] , "Anticipation") == 0  
-|| strcmp( spellProto->SpellName[0] , "Toughness") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Taunt") == 0  
-|| strcmp( spellProto->SpellName[0] , "Axe Specialization") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Revenge") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Shield Wall") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Disarm") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Sunder Armor") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Bloodrage") == 0  
-|| strcmp( spellProto->SpellName[0] , "Polearm Specialization") == 0  
-|| strcmp( spellProto->SpellName[0] , "Booming Voice") == 0  
-|| strcmp( spellProto->SpellName[0] , "Arcane Focus") == 0  
-|| strcmp( spellProto->SpellName[0] , "Cruelty") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Battle Shout") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Demoralizing Shout") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Challenging Shout") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Shield Block") == 0  
-|| strcmp( spellProto->SpellName[0] , "Piercing Ice") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Shield Bash") == 0  
-|| strcmp( spellProto->SpellName[0] , "Iron Will") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Overpower") == 0  
-|| strcmp( spellProto->SpellName[0] , "Unbridled Wrath") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Fire Ward") == 0  
-|| strcmp( spellProto->SpellName[0] , "Artisan Enchanting") == 0  
-|| strcmp( spellProto->SpellName[0] , "Deflection") == 0  
-|| strcmp( spellProto->SpellName[0] , "Impale") == 0  
-|| strcmp( spellProto->SpellName[0] , "One-Handed Weapon Specialization") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Cleave") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Slam") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Berserker Rage") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Execute") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Intercept") == 0  
-|| strcmp( spellProto->SpellName[0] , "Dual Wield Specialization") == 0  
-|| strcmp( spellProto->SpellName[0] , "Improved Hamstring") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Spirit 13") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Stamina 13") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Stamina 09") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Strength 10") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Stamina 14") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Strength 13") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Stamina 08") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Strength 09") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Stamina 13") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Strength 13") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Defense") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Spirit 07") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Strength 07") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Agility 10") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Strength 10") == 0  
-|| strcmp( spellProto->SpellName[0] , "Increased Strength 12") == 0  
-
-
-
-|| strcmp( spellProto->SpellName[0] , "Improved Power Word: Fortitude") == 0
-|| strcmp( spellProto->SpellName[0] , "Improved Power Word: Shield") == 0
-|| strcmp( spellProto->SpellName[0] , "Improved Inner Fire") == 0
-|| strcmp( spellProto->SpellName[0] , "Improved Mana Burn") == 0
-|| strcmp( spellProto->SpellName[0] , "Meditation") == 0
-|| strcmp( spellProto->SpellName[0] , "Mental Agility") == 0
-|| strcmp( spellProto->SpellName[0] , "Silent Resolve") == 0
-|| strcmp( spellProto->SpellName[0] , "Unbreakable Will") == 0
-|| strcmp( spellProto->SpellName[0] , "Holy Specialization") == 0
-|| strcmp( spellProto->SpellName[0] , "Healing Focus") == 0
-|| strcmp( spellProto->SpellName[0] , "Improved Healing") == 0
-|| strcmp( spellProto->SpellName[0] , "Searing Light") == 0
-|| strcmp( spellProto->SpellName[0] , "Improved Prayer of Healing") == 0
-|| strcmp( spellProto->SpellName[0] , "Spiritual Guidance") == 0
-
-|| strcmp( spellProto->SpellName[0] , "Stealth 1") == 0
-|| strcmp( spellProto->SpellName[0] , "Improved Blizzard") == 0
-|| strcmp( spellProto->SpellName[0] , "Shatter") == 0
-|| strcmp( spellProto->SpellName[0] , "Parry") == 0
-|| strcmp( spellProto->SpellName[0] , "Block") == 0
-
-			)
-		{
-			// black listed spell
-
-			int a=0;
-		}
-		else if (  false
-
-		//	|| strcmp( spellProto->SpellName[0] , "Arcane Explosion" ) == 0  
-
-
-			// guerrier
-			|| strcmp( spellProto->SpellName[0] , "Rend") == 0
-			|| strcmp( spellProto->SpellName[0] , "Sunder Armor") == 0
-			|| strcmp( spellProto->SpellName[0] , "Deep Wound") == 0
-			|| strcmp( spellProto->SpellName[0] , "Flurry") == 0
-			|| strcmp( spellProto->SpellName[0] , "Heroic Strike") == 0
-			|| strcmp( spellProto->SpellName[0] , "Enrage") == 0
-			|| strcmp( spellProto->SpellName[0] , "Concussion Blow") == 0
-			|| strcmp( spellProto->SpellName[0] , "Demoralizing Shout") == 0
-			|| strcmp( spellProto->SpellName[0] , "Battle Shout") == 0
-
-			 )
-		{
-			// white listed spell
-			whitelistedSpell = true;
-		}
-		else
-		{
-			BASIC_LOG("RICHAR: PARAGON - WHITE OR BLACK ? (%d) : || strcmp( spellProto->SpellName[0] , \"%s\") == 0   ",
-				value,  
-				spellProto->SpellName[0]  );
+			whitelistedSpell = false;
 		}
 
-*/
+
 		if ( whitelistedSpell )
 		{
 			int before = value;
 		
-			value =   (int)(   (float)value * coeffParagon   );
-
-		
-			BASIC_LOG("RICHAR: PARAGON - \"%s\" - %s -  %d->%d",spellProto->SpellName[0],effectStrr.c_str(),   before,value);
+			if ( unitPlayer->m_richar_paragon > 1 )
+			{
+				value =   (int)(   (float)value * coeffParagon   );
+				BASIC_LOG("RICHAR: PARAGON - %s - \"%s\" - %s -  %d->%d",
+					unitPlayer->GetName(),
+					spellProto->SpellName[0],
+					effectStrr.c_str(),  
+					before,
+					value);
+			}
+			else
+			{
+				//BASIC_LOG("RICHAR: PARAGON - \"%s\" - %s -  %d->%d",spellProto->SpellName[0],effectStrr.c_str(),   before,value);
+			}
 		}
 	}
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-
-
-
-
-
-
-
-//	BASIC_LOG("RICHAR: PARAGON - CalculateSpellDamage - \"%s\"  %d",spellProto->SpellName[0],   value);
 
 
 
@@ -9395,6 +9436,21 @@ void Unit::SetHealth(uint32 val)
 
 void Unit::SetMaxHealth(uint32 val)
 {
+
+
+	// richa ASUP
+	if ( GetEntry() ==  7895  ||  GetEntry() ==  4968 )
+	{
+		int aaa=0;
+		const char*  naamee = GetName();
+
+
+		int aaaa=0;
+	}
+
+
+
+
     uint32 health = GetHealth();
     SetUInt32Value(UNIT_FIELD_MAXHEALTH, val);
 

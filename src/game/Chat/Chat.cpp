@@ -1645,7 +1645,7 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 			{
 				if ( developerInfo )
 				{
-					sprintf(messageOUt,"Item.spellid_1->effect#1= apply aura ", 0);
+					sprintf(messageOUt,"Item.spellid_1->effect#1= apply aura ");
 					PSendSysMessage(messageOUt);
 				}
 			}
@@ -1863,104 +1863,336 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 			entry = entry_;
 			chances = chances_;
 		}
-		int32 entry;
+		int32 entry; // entry  du tableau reference_loot_template
 		float chances;
 	};
 
-	std::vector<LOOT_CHANCE> listChances;
 
-	int itemmmCommand = numberID;
-	char command1[2048];
-	sprintf(command1,"SELECT entry FROM creature_loot_template WHERE item = '%d' ",itemmmCommand);
+	struct LOOT_CHANCE_REFERENCE
+	{
+		LOOT_CHANCE_REFERENCE(int32 entry_,float chances_)
+		{
+			entry = entry_;
+			chances = chances_;
+			nombreItemInThisReference = 0;
+		}
+		int32 entry; // entry  du tableau reference_loot_template
+		float chances;
+		int nombreItemInThisReference;
+	};
 
-	if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
-    {
-		BarGoLink bar(result1->GetRowCount());
-        do
-        {
-            bar.step();
-            Field* fields = result1->Fetch();
-            
-			int32 entryItem = fields->GetInt32();
+	
 
-			char command2[2048];
-			sprintf(command2,"SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '%d' AND entry = '%d' ",itemmmCommand, entryItem);
+	std::vector<LOOT_CHANCE_REFERENCE> listChances_fromReference;
 
+	{
+		int itemmmCommand = numberID;
+		char command1[2048];
+		sprintf(command1,"SELECT entry FROM reference_loot_template WHERE item = '%d' ",itemmmCommand);
 
-
-
-			if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+		if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+		{
+			BarGoLink bar(result1->GetRowCount());
+			do
 			{
+				bar.step();
+				Field* fields = result1->Fetch();
+            
+				bool refFound = false;
 
-				if ( result2->GetRowCount() != 1 )
 				{
-					// ERROR ?????
-					sprintf(messageOUt,"ERROR 103 avec le taux de loot");
+					int32 entryItem = fields->GetInt32();
+					char command2[2048];
+					sprintf(command2,"SELECT ChanceOrQuestChance FROM reference_loot_template WHERE item = '%d' AND entry = '%d' ",itemmmCommand, entryItem);
+
+					
+					
+
+					if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+					{
+
+						if ( result2->GetRowCount() != 1 )
+						{
+							// ERROR ?????  LA COMMANDE  doit donner pile 1 resultat 
+							sprintf(messageOUt,"ERROR 303 avec le taux de loot");
+							PSendSysMessage(messageOUt);
+							delete result2;
+							delete result1;
+							return;
+						}
+
+						BarGoLink bar(result2->GetRowCount());
+						do
+						{
+							bar.step();
+							Field* fields = result2->Fetch();
+            
+							float chancesItem = fields->GetFloat();
+
+							listChances_fromReference.push_back(LOOT_CHANCE_REFERENCE(entryItem,chancesItem));
+							refFound = true;
+
+
+							int aaaa=0;
+
+						}
+						while (result2->NextRow());
+
+						delete result2;
+					}
+					else
+					{
+						// ERROR ?????
+						sprintf(messageOUt,"ERROR 104 avec le taux de loot");
+						PSendSysMessage(messageOUt);
+						delete result1;
+						return;
+					}
+			
+				}
+
+
+				int nbRef = 0;
+				{
+					int32 entryItem = fields->GetInt32();
+					char command2[2048];
+					sprintf(command2,"SELECT ChanceOrQuestChance FROM reference_loot_template WHERE entry = '%d' ", entryItem);
+
+					if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+					{
+
+						BarGoLink bar(result2->GetRowCount());
+						do
+						{
+							bar.step();
+							Field* fields = result2->Fetch();
+            
+							float chancesItem = fields->GetFloat();
+
+							nbRef++;
+
+							int aaaa=0;
+
+						}
+						while (result2->NextRow());
+
+						delete result2;
+					}
+					else
+					{
+						// ERROR ?????
+						sprintf(messageOUt,"ERROR 153 avec le taux de loot");
+						PSendSysMessage(messageOUt);
+						delete result1;
+						return;
+					}
+			
+				}
+
+
+				if ( refFound )
+				{
+					listChances_fromReference.back().nombreItemInThisReference = nbRef;
+				}
+				else
+				{
+					// ERROR ?????   
+					sprintf(messageOUt,"ERROR 337 avec le taux de loot");
 					PSendSysMessage(messageOUt);
-					delete result2;
 					delete result1;
 					return;
 				}
 
-				BarGoLink bar(result2->GetRowCount());
-				do
-				{
-					bar.step();
-					Field* fields = result2->Fetch();
-            
-					float chancesItem = fields->GetFloat();
 
-					listChances.push_back(LOOT_CHANCE(entryItem,chancesItem));
 
-					int aaaa=0;
+				int aaaa=0;
 
-				}
-				while (result2->NextRow());
-
-				delete result2;
 			}
-			else
+			while (result1->NextRow());
+			delete result1;
+		}
+		else
+		{
+			int aaa=0;
+		}
+
+	}
+
+	std::vector<LOOT_CHANCE> listChances_fromCreature;
+
+	{
+		int itemmmCommand = numberID;
+		char command1[2048];
+		sprintf(command1,"SELECT entry FROM creature_loot_template WHERE item = '%d' ",itemmmCommand);
+
+		if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+		{
+			BarGoLink bar(result1->GetRowCount());
+			do
 			{
-				// ERROR ?????
-				sprintf(messageOUt,"ERROR 104 avec le taux de loot");
-				PSendSysMessage(messageOUt);
-				delete result1;
-				return;
-			}
+				bar.step();
+				Field* fields = result1->Fetch();
+            
+				int32 entryItem = fields->GetInt32();
+
+				char command2[2048];
+				sprintf(command2,"SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '%d' AND entry = '%d' ",itemmmCommand, entryItem);
+
+
+
+
+				if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+				{
+
+					if ( result2->GetRowCount() != 1 )
+					{
+						// ERROR ?????
+						sprintf(messageOUt,"ERROR 907 avec le taux de loot");
+						PSendSysMessage(messageOUt);
+						delete result2;
+						delete result1;
+						return;
+					}
+
+					BarGoLink bar(result2->GetRowCount());
+					do
+					{
+						bar.step();
+						Field* fields = result2->Fetch();
+            
+						float chancesItem = fields->GetFloat();
+
+						listChances_fromCreature.push_back(LOOT_CHANCE(entryItem,chancesItem));
+
+						int aaaa=0;
+
+					}
+					while (result2->NextRow());
+
+					delete result2;
+				}
+				else
+				{
+					// ERROR ?????
+					sprintf(messageOUt,"ERROR 104 avec le taux de loot");
+					PSendSysMessage(messageOUt);
+					delete result1;
+					return;
+				}
 			
 
 
 
 
 
-			int aaaa=0;
+				int aaaa=0;
 
-        }
-        while (result1->NextRow());
-        delete result1;
+			}
+			while (result1->NextRow());
+			delete result1;
+		}
+		else
+		{
+			int aaa=0;
+		}
+
 	}
-	else
+
+	int nombreFoisReferenceUtiliseParCreature = 0;
+
+	for(int iRef=0; iRef<listChances_fromReference.size(); iRef++)
 	{
-		int aaa=0;
+		int itemmmCommand = numberID;
+		char command1[2048];
+		sprintf(command1,"SELECT entry FROM creature_loot_template WHERE mincountOrRef = '-%d' ",listChances_fromReference[iRef].entry);
+
+		if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+		{
+			BarGoLink bar(result1->GetRowCount());
+			do
+			{
+				bar.step();
+				Field* fields = result1->Fetch();
+            
+				int32 entryItem = fields->GetInt32();
+
+				char command2[2048];
+				sprintf(command2,"SELECT ChanceOrQuestChance FROM creature_loot_template WHERE mincountOrRef = '-%d' AND entry = '%d' ",listChances_fromReference[iRef].entry, entryItem);
+
+
+
+
+				if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+				{
+
+					if ( result2->GetRowCount() != 1 )
+					{
+						// ERROR ?????
+						sprintf(messageOUt,"ERROR 343 avec le taux de loot");
+						PSendSysMessage(messageOUt);
+						delete result2;
+						delete result1;
+						return;
+					}
+
+					BarGoLink bar(result2->GetRowCount());
+					do
+					{
+						bar.step();
+						Field* fields = result2->Fetch();
+            
+						float chancesItem = fields->GetFloat();
+
+						nombreFoisReferenceUtiliseParCreature ++;
+
+						int aaaa=0;
+
+					}
+					while (result2->NextRow());
+
+					delete result2;
+				}
+				else
+				{
+					// ERROR ?????
+					sprintf(messageOUt,"ERROR 104 avec le taux de loot");
+					PSendSysMessage(messageOUt);
+					delete result1;
+					return;
+				}
+			
+
+
+
+
+
+				int aaaa=0;
+
+			}
+			while (result1->NextRow());
+			delete result1;
+		}
+		else
+		{
+			int aaa=0;
+		}
+
 	}
-
-
-
 
 	//on les range :
-	if ( listChances.size() > 1 )
+	if ( listChances_fromCreature.size() > 1 )
 	{
-		for(int i=0; i<listChances.size(); i++)
+		for(unsigned int i=0; i<listChances_fromCreature.size(); i++)
 		{
-			for(int j=0; j<listChances.size(); j++)
+			for(unsigned int j=0; j<listChances_fromCreature.size(); j++)
 			{
 				if ( i < j )
 				{
-					if ( fabsf( listChances[i].chances ) <  fabsf( listChances[j].chances )  )
+					if ( fabsf( listChances_fromCreature[i].chances ) <  fabsf( listChances_fromCreature[j].chances )  )
 					{
-						LOOT_CHANCE iii = listChances[i];
-						listChances[i] = listChances[j];
-						listChances[j] = iii;
+						LOOT_CHANCE iii = listChances_fromCreature[i];
+						listChances_fromCreature[i] = listChances_fromCreature[j];
+						listChances_fromCreature[j] = iii;
 					}
 
 
@@ -1974,31 +2206,95 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 	sprintf(messageOUt,"-----------");
 	PSendSysMessage(messageOUt);
 	
-	if ( listChances.size() > 0 )
+	if ( listChances_fromCreature.size() > 0 )
 	{
 		for(int i=0; i<5; i++)
 		{
-			if ( i < listChances.size() )
+			if ( i < listChances_fromCreature.size() )
 			{
 
-				std::string creatNamStr = "???";
+				std::string creatNamStr = "<nom inconnu ?>";
 
-				CreatureInfo const* creatureProto = sCreatureStorage.LookupEntry<CreatureInfo>(listChances[i].entry);
+				CreatureInfo const* creatureProto = sCreatureStorage.LookupEntry<CreatureInfo>(listChances_fromCreature[i].entry);
 				if (creatureProto)
 				{
 					creatNamStr = std::string(creatureProto->Name);
 				}
 
 
-				sprintf(messageOUt,"%.0f pourcent  -  %s(%d)" ,listChances[i].chances , creatNamStr.c_str() , listChances[i].entry);
+				sprintf(messageOUt,"%.0f pourcent  -  %s(%d)" ,listChances_fromCreature[i].chances , creatNamStr.c_str() , listChances_fromCreature[i].entry);
 				PSendSysMessage(messageOUt);
 			}
+		}
+
+
+		if ( !developerInfo && nombreFoisReferenceUtiliseParCreature !=  0 )
+		{
+			sprintf(messageOUt,"-----------");
+			PSendSysMessage(messageOUt);
+			sprintf(messageOUt,"se loot aussi a priori sur %d mobs.",nombreFoisReferenceUtiliseParCreature);
+			PSendSysMessage(messageOUt);
+			sprintf(messageOUt,"mais eux je sais pas pourcentage.\n");
+			PSendSysMessage(messageOUt);
 		}
 	}
 	else
 	{
-		sprintf(messageOUt,"Ne se loot PAS sur des mobs.");
-		PSendSysMessage(messageOUt);
+		if ( developerInfo )
+		{
+			sprintf(messageOUt,"Ne se loot PAS sur des mobs.");
+			PSendSysMessage(messageOUt);
+		}
+		else
+		{
+			//message pour diane
+			if ( nombreFoisReferenceUtiliseParCreature == 0 )
+			{
+				sprintf(messageOUt,"Ne se loot PAS sur des mobs.");
+				PSendSysMessage(messageOUt);
+			}
+			else
+			{
+				sprintf(messageOUt,"se loot a priori sur %d mobs.",nombreFoisReferenceUtiliseParCreature);
+				PSendSysMessage(messageOUt);
+				sprintf(messageOUt,"mais je sais pas trop qui et le pourcentage.\n");
+				PSendSysMessage(messageOUt);
+			}
+		}
+	}
+
+	if ( listChances_fromReference.size() > 0 )
+	{
+		if ( developerInfo )
+		{
+			sprintf(messageOUt,"-----------");
+			PSendSysMessage(messageOUt);
+
+			sprintf(messageOUt,"Il est reference %d fois dans reference_loot_template.", listChances_fromReference.size() );
+			PSendSysMessage(messageOUt);
+
+			if ( listChances_fromReference.size() == 1 )
+			{
+				//ma theorie c'est que la chande de looter l'item est de :
+				//<chance de la creature de looter la reference> divisée par <nom d'item dans cette reference>
+				sprintf(messageOUt,"cette reference contient %d items.", listChances_fromReference[0].nombreItemInThisReference );
+				PSendSysMessage(messageOUt);
+
+				sprintf(messageOUt,"cette reference a reference_loot_template.entry = %d", listChances_fromReference[0].entry );
+				PSendSysMessage(messageOUt);
+
+				sprintf(messageOUt,"cette reference est utilisee par %d creatures", nombreFoisReferenceUtiliseParCreature );
+				PSendSysMessage(messageOUt);
+			}
+			else
+			{
+				sprintf(messageOUt,"ces references sont utilisees par %d creatures", nombreFoisReferenceUtiliseParCreature );
+				PSendSysMessage(messageOUt);
+			}
+			
+
+			
+		}
 	}
 
 

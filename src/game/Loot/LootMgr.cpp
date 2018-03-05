@@ -1223,12 +1223,27 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 		//jaune, c'est tout le temps entre   lvlPlayer-2  et  lvlPlayer+2
 		//vert ca depend : pour un player 10, le vert va etre entre 5 et 7    pour un player lvl 50 le vert va etre entre 40 et 47... donc je vais considere que le vert sera entre  lvl-7 et lvl-3
+		//
+		//apres un peu plus de test  (en mettant 2 Game Master l'un en face de l'autre), je confirme que Jaune ca change pas.
+		//voila en gros ce que j'estime :
+		//perso 1->10   vert sera entre lvl-5   et lvl-3 
+		//perso 10->19  vert sera entre lvl-5   et lvl-3   <
+		//perso 20->29  vert sera entre lvl-6   et lvl-3   <
+		//perso 30->39  vert sera entre lvl-7   et lvl-3   <--- c'est pas parfaitement exact mais ca donne une très bonne estimation
+		//perso 40->49  vert sera entre lvl-9   et lvl-3   <
+		//perso 50->59  vert sera entre lvl-10  et lvl-3   <
+		//perso     60  vert sera entre lvl-12  et lvl-3 
+		//
+		//
+		// je vais rester sur ma constante qui considere le NPC vert pour les Youhaicoin aux niveaux  [ -7  ->  -3  ]
+		// ca favorise les bas niveau qui vont avoir des youhaicoin sur qq mobs gris
+		// et ca défavorise les HL qui ne vont jamais avoir de youhaicoin sur des vert trop bas level
+		// j'aime bien
+		//
+
 
 		char typeMobChar[256];
 		strcpy(typeMobChar, "ERROR");
-
-
-
 
 
 		int playerlevel = lootOwner->getLevel();
@@ -1273,7 +1288,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			scoreToReach = 0;
 		}
 
-		BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%d<=%d",
+		BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%d<=%d/100",
 			playerlevel,
 			cadavreLevel,
 			typeMobChar,
@@ -2208,21 +2223,107 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
             SetGroupLootRight(player);
             m_clientLootType = CLIENT_LOOT_CORPSE;
 
-
-
-			int32 richard2 = creature->getLevel();
-			if (creature->IsElite())
-			{
-				richard2 = -richard2;
-			}
-
-
-
-
             if ((creatureInfo->LootId && FillLoot(creatureInfo->LootId, LootTemplates_Creature, player, false)) || creatureInfo->MaxLootGold > 0)
             {
-                GenerateMoneyLoot(creatureInfo->MinLootGold, creatureInfo->MaxLootGold);
-                // loot may be anyway empty
+
+
+
+
+                
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//
+				// RICHARD :  reduction des PO lootées par les mobs
+				//
+				// #REDUIT_TES_PO
+				//
+				// original :
+				// GenerateMoneyLoot(creatureInfo->MinLootGold, creatureInfo->MaxLootGold);
+				// nouveau :
+				{
+					float newMin = (float)creatureInfo->MinLootGold;
+					float newMax = (float)creatureInfo->MaxLootGold;
+
+					// 1) deja, on multiplie par la difficulté du perso :
+					newMin *= creature->Richar_difficuly_health;
+					newMax *= creature->Richar_difficuly_health;
+
+					// 2) et en plus de ca, on va rajouter une sécurite, car les gros boss de raid lootent de base
+					//plusieurs centaines de PO.
+					//donc meme divisé par la difficulté ca peut toujours faire une grosse somme
+					//info un mob Elite 60 hors donjon, va looter en gros 30 silver
+					//apres discussion avec Diane, on va partir sur une limite de 50 PA max looté
+					//je divise cette limite par 1.5, puisque elle va etre remultiplié derriere.
+					const float limitt = 50.0f * 100.0f /  sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY);
+					if ( newMin > limitt )
+					{
+						newMin = limitt;
+					}
+					
+					uint32 newMin_int = (uint32)newMin;
+					uint32 newMax_int = (uint32)newMax;
+
+					if ( newMax_int < newMin_int )
+					{
+						newMax_int = newMin_int;
+					}
+
+					// 3) regle d'exception qui va s'appliquer en gros uniquement a 47 mobs dans le jeu
+					//    ( correspondant en majorité a des gros boss
+					// si le mob de base lootait > 10 PO, alors on le ramene a 5 PO de limite
+					if ( creatureInfo->MinLootGold > 10 * 100 * 100 )
+					{
+						newMin_int = (5 * 100 * 100) /  sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY);
+						newMax_int = newMin_int;
+					}
+
+
+					if (   newMin_int != creatureInfo->MinLootGold
+						|| newMax_int != creatureInfo->MaxLootGold
+						)
+					{
+						
+						if ( 
+							(float)creatureInfo->MinLootGold * (float)sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)
+							<= 10.0f*100.0f  // en dessous de 10 PA on parle en PC
+							)
+						{
+							int a = (creatureInfo->MinLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
+							int b = (creatureInfo->MaxLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
+							int c = (newMin_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
+							int d = newMax_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY);
+
+							BASIC_LOG("RICHAR: loop de PO de NPC modifie %d-%d PC  -->  %d-%d PC ",a,b,c,d);
+
+						}
+						else
+						{
+							int a = (int)((float)creatureInfo->MinLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+							int b = (int)((float)creatureInfo->MaxLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+							int c = (int)((float)newMin_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+							int d = (int)((float)newMax_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+
+							BASIC_LOG("RICHAR: loop de PO de NPC modifie %d-%d PA  -->  %d-%d PA ",a,b,c,d);
+						}
+					}
+
+					GenerateMoneyLoot( newMin_int , newMax_int );
+				}
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				
+				
+
+
+
+
+
+
+
+
+
+
+				
+				
+				// loot may be anyway empty
                 if (!IsLootedForAll())      // TODO:: implement empty windows? sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))
                 {
                     creature->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);

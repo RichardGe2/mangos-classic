@@ -1494,8 +1494,11 @@ void GameObject::Use(Unit* user)
                     return;
 
                 // accept only use by player from same group as owner, excluding owner itself (unique use already added in spell effect)
-                if (player == (Player*)owner || (info->summoningRitual.castersGrouped && !player->IsInSameRaidWith(((Player*)owner))))
-                    return;
+      
+				
+		//  MODIF_RICHA_SUMMONING_RITUAL  1/2 -  RICHARD : faire marcher l'invocation avec une seule personne		
+	   //          if (player == (Player*)owner || (info->summoningRitual.castersGrouped && !player->IsInSameRaidWith(((Player*)owner))))
+      //              return;
 
                 // expect owner to already be channeling, so if not...
                 if (!owner->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
@@ -1530,9 +1533,11 @@ void GameObject::Use(Unit* user)
                 triggeredFlags = TRIGGERED_OLD_TRIGGERED;
             }
 
+
+		//  MODIF_RICHA_SUMMONING_RITUAL  2/2 -  RICHARD : faire marcher l'invocation avec une seule personne		
             // full amount unique participants including original summoner, need more
-            if (GetUniqueUseCount() < info->summoningRitual.reqParticipants)
-                return;
+        //    if (GetUniqueUseCount() < info->summoningRitual.reqParticipants)
+        //        return;
 
             // owner is first user for non-wild GO objects, if it offline value already set to current user
             if (!GetOwnerGuid())
