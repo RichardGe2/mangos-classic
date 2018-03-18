@@ -1509,12 +1509,9 @@ void GameObject::Use(Unit* user)
                 if (owner->GetTypeId() != TYPEID_PLAYER)
                     return;
 
-                // accept only use by player from same group as owner, excluding owner itself (unique use already added in spell effect)
-      
-				
-		//  MODIF_RICHA_SUMMONING_RITUAL  1/2 -  RICHARD : faire marcher l'invocation avec une seule personne		
-	   //          if (player == (Player*)owner || (info->summoningRitual.castersGrouped && !player->IsInSameRaidWith(((Player*)owner))))
-      //              return;
+                // accept only use by player from same group as owner, excluding owner itself (unique use already added in spell effect)	
+				if (player == (Player*)owner || (info->summoningRitual.castersGrouped && !player->IsInSameRaidWith(((Player*)owner))))
+					return;
 
                 // expect owner to already be channeling, so if not...
                 if (!owner->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
@@ -1538,12 +1535,10 @@ void GameObject::Use(Unit* user)
 
             if (info->summoningRitual.animSpell)
                 player->CastSpell(player, info->summoningRitual.animSpell, TRIGGERED_NONE);
-
-
-		//  MODIF_RICHA_SUMMONING_RITUAL  2/2 -  RICHARD : faire marcher l'invocation avec une seule personne		
+	
             // full amount unique participants including original summoner, need more
-        //    if (GetUniqueUseCount() < info->summoningRitual.reqParticipants)
-        //        return;
+            if (GetUniqueUseCount() < info->summoningRitual.reqParticipants)
+                return;
 
             if (info->summoningRitualCustom.delay)
                 m_delayedActionTimer = info->summoningRitualCustom.delay;

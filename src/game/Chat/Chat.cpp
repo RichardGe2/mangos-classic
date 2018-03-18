@@ -747,6 +747,22 @@ ChatCommand* ChatHandler::getCommandTable()
         { "notify",         SEC_MODERATOR,      true,  &ChatHandler::HandleNotifyCommand,              "", nullptr },
         { "goname",         SEC_MODERATOR,      false, &ChatHandler::HandleGonameCommand,              "", nullptr },
         { "namego",         SEC_MODERATOR,      false, &ChatHandler::HandleNamegoCommand,              "", nullptr },
+
+
+
+
+
+		// RICHARD, je re-cree   summoning ritual   ICI  -  comme ca pas besoin d'etre plusieurs invocateur pour lancer le rituel
+		//          j'ai pas reussi a modifier ne nombre de personne requise pour faire le rituel, j'abandonne pour l'instant, et  je fais ce hack, c'est plus simple
+		//          juste creer une macro qui dit   .namegospeicialricha
+		//          info :  l'icon du spell  summoning ritual  est a la fin dans la liste des icon de macro
+		{ "namegospeicialricha",         SEC_PLAYER,      false, &ChatHandler::HandleNamegoCommand_richaDemo,              "", nullptr },
+
+
+
+
+
+
         { "groupgo",        SEC_MODERATOR,      false, &ChatHandler::HandleGroupgoCommand,             "", nullptr },
         { "commands",       SEC_PLAYER,         true,  &ChatHandler::HandleCommandsCommand,            "", nullptr },
         { "demorph",        SEC_GAMEMASTER,     false, &ChatHandler::HandleDeMorphCommand,             "", nullptr },

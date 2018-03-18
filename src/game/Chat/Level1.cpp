@@ -365,6 +365,48 @@ bool ChatHandler::HandleGPSCommand(char* args)
     return true;
 }
 
+
+
+
+
+
+
+bool ChatHandler::HandleNamegoCommand_richaDemo(char* args)
+{
+
+	Player* player = m_session->GetPlayer();
+	if ( player )
+	{
+
+		if ( player->getClass() != CLASS_WARLOCK )
+		{
+			player->Say("je dois etre Demoniste niveau 20 pour faire ca",LANG_UNIVERSAL);
+			return false;
+		}
+
+		if ( player->getLevel() < 20 )  // je crois que ritual of summoning s'apprend au lvl 20
+		{
+			player->Say("je dois etre Demoniste niveau 20 pour faire ca",LANG_UNIVERSAL);
+			return false;
+		}
+
+		if ( !player->GetTarget() )  
+		{
+			player->Say("je dois selectionner une cible",LANG_UNIVERSAL);
+			return false;
+		}
+
+		bool rett = HandleNamegoCommand(args);
+		return rett;
+	}
+
+	return false;
+}
+
+
+
+
+
 // Summon Player
 bool ChatHandler::HandleNamegoCommand(char* args)
 {
