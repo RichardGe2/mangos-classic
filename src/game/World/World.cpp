@@ -1307,7 +1307,7 @@ void World::SetInitialWorldSettings()
 
 	////////////////////////////////////////////////////////
 	//richard - init message
-	BASIC_LOG("MODE RICHARD VERSION 12 -  version youhai2 ");
+	BASIC_LOG("MODE RICHARD VERSION 13 -  version youhai3 ");
 	BASIC_LOG("CMAKE_INTDIR = "  CMAKE_INTDIR);
 	////////////////////////////////////////////////////////
 

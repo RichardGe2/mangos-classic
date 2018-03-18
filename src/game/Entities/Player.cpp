@@ -1308,9 +1308,21 @@ void Player::richa_exportTo_ristat_()
 		);
 	FILE* fout = fopen(nameFile, "wb");
 
+	// pour faciliter la comparaison entre 2 fichier, c'est mieux je pense de mettre les 2 parametres de temps (qui bougent tout le temps)
+	// au debut du fichier
 	
 	sprintf(outt, "played,%d\r\n", GetTotalPlayedTime());
 	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "timenow,%d_%02d_%02d_%02d_%02d_%02d\r\n",
+		now->tm_year + 1900,
+		now->tm_mon+1,
+		now->tm_mday,
+		now->tm_hour,
+		now->tm_min,
+		now->tm_sec);
+	fwrite(outt, 1, strlen(outt), fout);
+
 
 	sprintf(outt, "youhaicoin,%d\r\n", richard_countItem(coinItemID1) +  richard_countItem(coinItemID2));
 	fwrite(outt, 1, strlen(outt), fout);
@@ -1333,14 +1345,7 @@ void Player::richa_exportTo_ristat_()
 	sprintf(outt, "paragon,%d\r\n", m_richar_paragon);
 	fwrite(outt, 1, strlen(outt), fout);
 
-	sprintf(outt, "timenow,%d_%02d_%02d_%02d_%02d_%02d\r\n",
-		now->tm_year + 1900,
-		now->tm_mon+1,
-		now->tm_mday,
-		now->tm_hour,
-		now->tm_min,
-		now->tm_sec);
-	fwrite(outt, 1, strlen(outt), fout);
+	
 
 
 	//get & save GPS info
@@ -1384,9 +1389,12 @@ void Player::richa_exportTo_ristat_()
 		//}
 		//else PSendSysMessage("no VMAP available for area info");
 
-
-		sprintf(outt, "GPS_GetPositionXYZ,%f,%f,%f\r\n", GetPositionX() , GetPositionY() , GetPositionZ());
+		//ca m'arrive de voir une difference de ~0.01 entre 2 fichiers alors que le perso n'a pas ete deplacé.
+		//Donc pour faciliter la comparaison, je vais arrondir.
+		//ca ne change pas grand chose car les nombre sont de l'ordre du centaine/millier
+		sprintf(outt, "GPS_GetPositionXYZ,%d,%d,%d\r\n", (int)GetPositionX() , (int)GetPositionY() , (int)GetPositionZ());
 		fwrite(outt, 1, strlen(outt), fout);
+		
 		sprintf(outt, "GPS_GetMapId,%d\r\n", GetMapId());
 		fwrite(outt, 1, strlen(outt), fout);
 		sprintf(outt, "GPS_zoneID,%d\r\n", zone_id);
@@ -1402,41 +1410,41 @@ void Player::richa_exportTo_ristat_()
 
 	}
 	
-	int nbGryphonss = 0;
-	//sprintf(outt, "GryphonList,");
-	//fwrite(outt, 1, strlen(outt), fout);
-	for(int iNode=1; iNode< TaxiMaskSize*32;  iNode++)
-	{
-		bool knownnn = m_taxi.IsTaximaskNodeKnown( iNode) ;
-		if ( knownnn )
-		{
-			nbGryphonss++;
-			//sprintf(outt, "%d,", iNode);
-			//fwrite(outt, 1, strlen(outt), fout);
-		}
-	}
-	//sprintf(outt, "\r\n");
-	//fwrite(outt, 1, strlen(outt), fout);
 
 
-	sprintf(outt, "nbGryphon,%d\r\n", nbGryphonss);
+	sprintf(outt, "isDead,%d\r\n", isDead() ? 1 : 0 );
 	fwrite(outt, 1, strlen(outt), fout);
 
+	
+	sprintf(outt, "isFlying,%d\r\n", IsTaxiFlying()  ? 1 : 0 );
+	fwrite(outt, 1, strlen(outt), fout);
 
-
+	
 	sprintf(outt, "queteList,");
 	fwrite(outt, 1, strlen(outt), fout);
 	int nbQuete = 0;
+	std::vector<uint32> questInLog;
 	for (int i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
 	{
 		uint32 questid = GetQuestSlotQuestId(i);
-		sprintf(outt, "%d,", questid);
-		fwrite(outt, 1, strlen(outt), fout);
+		questInLog.push_back(questid);
 
 		if (questid != 0)
 		{
 			nbQuete++;
 		}
+	}
+	//on les range par ordre croissant, c'est toujours mieux de faire ca, en cas de comparaison entre 2 fichiers
+	std::sort(questInLog.begin(),questInLog.end());
+	if ( questInLog.size() != 20 )
+	{
+		BASIC_LOG("RICHAR: WARNING 53644 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		int errror = 0;
+	}
+	for (int i = 0; i < questInLog.size(); ++i)
+	{
+		sprintf(outt, "%d,", questInLog[i]);
+		fwrite(outt, 1, strlen(outt), fout);
 	}
 	sprintf(outt, "\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
@@ -1449,8 +1457,14 @@ void Player::richa_exportTo_ristat_()
 	fwrite(outt, 1, strlen(outt), fout);
 
 
-	// QUEST_STATUS_NONE, je me demande si ca veut pas dire que c'est une quete que j'ai accepté, puis abandonnée
-	// ca comprends aussi les quetes qui sont en cours dans le journal de quetes
+	// QUEST_STATUS_NONE, je crois qu'une quete NONE peut correspondre a 2 choses uniquement :
+	// - je l'ai deja prise - deja eu dans mon journal - mais je l'ai refusée <- donc elle n'est plus dans mon journal
+	// OU
+	// - c'est une quete repetable que j'ai Complete.  dans ce cas, cmangos va lui assigner le status  NONE      <- donc elle n'est plus dans mon journal
+	//
+	// pour distinguer les 2 je crois qu'il suffit de regarder si la quete est dans la liste  REWARDED_TRUE (deja fait une fois, donc repetable)
+	// ou  REWARDED_FALSE --> donc non repetable
+	//
 	sprintf(outt, "questList_NONE,");
 	fwrite(outt, 1, strlen(outt), fout);
 	int nbQuete_NONE = 0;
@@ -1459,12 +1473,68 @@ void Player::richa_exportTo_ristat_()
 		uint32 questid =  i->first;
         QuestStatusData& questStatus = i->second;
 
-		if ( questStatus.m_rewarded == QUEST_STATUS_NONE )
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_NONE )
 		{
 			sprintf(outt, "%d,", questid);
 			fwrite(outt, 1, strlen(outt), fout);
 			nbQuete_NONE++;
 		}
+
+
+
+
+
+		//juste un petit check de debug  pour voir si j'ai bien tout compris
+		Quest const* pQuest = sObjectMgr.GetQuestTemplate(questid);
+		if ( !pQuest || pQuest->GetQuestId() != questid )
+		{
+			BASIC_LOG("RICHAR: WARNING 53641 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			int errror = 0;
+		}
+		else
+		{
+			if ( questStatus.m_status == QUEST_STATUS_NONE )
+			{
+				//
+				if ( questStatus.m_rewarded && pQuest->IsRepeatable() )
+				{
+					//soit c'est une quete que j'ai deja fini au moins une fois, et qui est repetable
+				}
+				else if ( !questStatus.m_rewarded && !pQuest->IsRepeatable() )
+				{
+					//soit j'ai annulé cette quete non repetable
+				}
+				else if ( !questStatus.m_rewarded && pQuest->IsRepeatable() )
+				{
+					//soit j'ai annulé cette quete repetable
+				}
+				else
+				{
+					// du coup, ce cas ne peut jamais arriver ?
+					//c'est a dire un quete avec status = NONE   qui est récompensé, mais non repetable
+					//pour moi ca ne doit pas arriver , car une quete non repetable, qui est réompensé, doit forcément avoir le status=COMPLETE
+					//je teste ca juste en dessous
+					BASIC_LOG("RICHAR: WARNING 53642 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					int errror = 0;
+				}
+			}
+
+			if ( questStatus.m_rewarded && !pQuest->IsRepeatable() )
+			{
+				if ( questStatus.m_status != QUEST_STATUS_COMPLETE )
+				{
+					BASIC_LOG("RICHAR: WARNING 53643 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					int errror = 0;
+				}
+
+			}
+		}
+
+
+
+
+
 	}
 	sprintf(outt, "\r\nnbQuest_NONE,%d\r\n", nbQuete_NONE);
 	fwrite(outt, 1, strlen(outt), fout);
@@ -1479,7 +1549,8 @@ void Player::richa_exportTo_ristat_()
 		uint32 questid =  i->first;
         QuestStatusData& questStatus = i->second;
 
-		if ( questStatus.m_rewarded == QUEST_STATUS_COMPLETE )
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_COMPLETE )
 		{
 			sprintf(outt, "%d,", questid);
 			fwrite(outt, 1, strlen(outt), fout);
@@ -1499,7 +1570,8 @@ void Player::richa_exportTo_ristat_()
 		uint32 questid =  i->first;
         QuestStatusData& questStatus = i->second;
 
-		if ( questStatus.m_rewarded == QUEST_STATUS_UNAVAILABLE )
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_UNAVAILABLE )
 		{
 			sprintf(outt, "%d,", questid);
 			fwrite(outt, 1, strlen(outt), fout);
@@ -1519,7 +1591,8 @@ void Player::richa_exportTo_ristat_()
 		uint32 questid =  i->first;
         QuestStatusData& questStatus = i->second;
 
-		if ( questStatus.m_rewarded == QUEST_STATUS_INCOMPLETE )
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_INCOMPLETE )
 		{
 			sprintf(outt, "%d,", questid);
 			fwrite(outt, 1, strlen(outt), fout);
@@ -1539,7 +1612,8 @@ void Player::richa_exportTo_ristat_()
 		uint32 questid =  i->first;
         QuestStatusData& questStatus = i->second;
 
-		if ( questStatus.m_rewarded == QUEST_STATUS_AVAILABLE )
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_AVAILABLE )
 		{
 			sprintf(outt, "%d,", questid);
 			fwrite(outt, 1, strlen(outt), fout);
@@ -1559,7 +1633,8 @@ void Player::richa_exportTo_ristat_()
 		uint32 questid =  i->first;
         QuestStatusData& questStatus = i->second;
 
-		if ( questStatus.m_rewarded == QUEST_STATUS_FAILED )
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_FAILED )
 		{
 			sprintf(outt, "%d,", questid);
 			fwrite(outt, 1, strlen(outt), fout);
@@ -1570,11 +1645,103 @@ void Player::richa_exportTo_ristat_()
 	fwrite(outt, 1, strlen(outt), fout);
 
 
-	sprintf(outt, "\r\n#LIST_SPELLS =================================\r\n");
+
+
+	// ajouté le  7 mars 2018  quand je me suis rendu compte de l'erreur
+	sprintf(outt, "questList_REWARDED_TRUE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_REWARDED_TRUE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_REWARDED_TRUE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_REWARDED_TRUE,%d\r\n", nbQuete_REWARDED_TRUE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "questList_REWARDED_FALSE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_REWARDED_FALSE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( !questStatus.m_rewarded )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_REWARDED_FALSE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_REWARDED_FALSE,%d\r\n", nbQuete_REWARDED_FALSE);
+	fwrite(outt, 1, strlen(outt), fout);
+	
+
+
+
+
+	//sauvegarde des mails
+	sprintf(outt, "MAIL,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbMAIL = 0;
+	for (PlayerMails::iterator itr = m_mail.begin(); itr != m_mail.end(); ++itr)
+    {
+		uint32 mailid =  (*itr)->messageID;
+		sprintf(outt, "%d,", mailid);
+		fwrite(outt, 1, strlen(outt), fout);
+		nbMAIL++;
+	}
+	sprintf(outt, "\r\nnbMAIL,%d\r\n", nbMAIL);
 	fwrite(outt, 1, strlen(outt), fout);
 
 
+
+
+
+
+
+
+	sprintf(outt, "\r\n#LIST_SPELLS =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+	// COUNTER
+	int nbSpell = 0;
+	for (auto itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+	{
+		//SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+		SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
+        if (!spellInfo)
+            continue;
+		nbSpell++;
+	}
+	sprintf(outt, "ListSpellCount,%d\r\n",nbSpell);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	//je convertis m_spells qui est un std::unordered_map  en un  map qui est ordonné.
+	//ca devrait normallement me ranger mes nombre dans l'order croissant,  ce qui est toujours plus pratique quand il faudra comparer 2 fichiers
+	std::map<uint32, PlayerSpell>  orderedMapSpell;
 	for (PlayerSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+	{
+		orderedMapSpell[itr->first] = itr->second;
+	}
+
+	if ( orderedMapSpell.size() != m_spells.size() )
+	{
+		//les 2 tailles doivent etre toujours egales
+		BASIC_LOG("RICHAR: WARNING 53645 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		int errror = 0;
+	}
+
+	for (auto itr = orderedMapSpell.begin(); itr != orderedMapSpell.end(); ++itr)
 	{
 		//SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
 		SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
@@ -1644,25 +1811,73 @@ void Player::richa_exportTo_ristat_()
 	//save items of player
 	{
 
-		sprintf(outt, "\r\n#LIST_ITEMS =================================\r\n");
-		fwrite(outt, 1, strlen(outt), fout);
-	
-		bool inBankAlso = true; // count bank or not
-		bool inEquipmentAlso = true;
-		bool inKeyRingAlso = true;
-		bool inInventoryAlso = true;
 
-		//uint32 tempcount = 0;
-
-		//j ai pas trouvé comment avoir le nom de l'objet
-		//const char* itemName = "NULL";
-
-		sprintf(outt, "\r\n#EQUIPED ==========\r\n");
+		//bool inBankAlso = true; // count bank or not
+		//bool inEquipmentAlso = true;
+		//bool inKeyRingAlso = true;
+		//bool inInventoryAlso = true;
+		
+		sprintf(outt, "\r\n#LIST_ITEMS_INVENTORY_BAG ==========\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		if (inEquipmentAlso)
+		// COUNTER
 		{
-			for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+			int nb = 0;
+			
+			for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					Item* pItem = pBag;
+					if ( pItem )
+					{
+
+						nb++;
+					}
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				Item* pItem = pBag;
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pBag->GetBagSize() ,  itemProto->Name1    );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+
+		sprintf(outt, "\r\n#LIST_ITEMS_EQUIPED ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+
+					nb++;
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		//if (inEquipmentAlso)
+		{
+			for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
 			{
 				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
 				if ( pItem )
@@ -1671,13 +1886,36 @@ void Player::richa_exportTo_ristat_()
 					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
 					fwrite(outt, 1, strlen(outt), fout);
 				}
+				else
+				{
+					int aa=0;
+				}
 			}
 		}
 
-		sprintf(outt, "\r\n#KEYRING ==========\r\n");
+		sprintf(outt, "\r\n#LIST_ITEMS_KEYRING ==========\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		if (inKeyRingAlso)
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+
+					nb++;
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+
+		//if (inKeyRingAlso)
 		{
 			for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
 			{
@@ -1691,10 +1929,33 @@ void Player::richa_exportTo_ristat_()
 			}
 		}
 
-		sprintf(outt, "\r\n#INVENTORY ==========\r\n");
+
+
+
+
+		sprintf(outt, "\r\n#LIST_ITEMS_INVENTORY ==========\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		if (inInventoryAlso)
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+
+						nb++;
+					}
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		//if (inInventoryAlso)
 		{
 			for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
 			{
@@ -1736,10 +1997,78 @@ void Player::richa_exportTo_ristat_()
 			}
 		}
 
-		sprintf(outt, "\r\n#BANK ==========\r\n");
+
+		sprintf(outt, "\r\n#LIST_ITEMS_BANK_BAG ==========\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		if (inBankAlso)
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					Item* pItem = pBag;
+					if ( pItem )
+					{
+
+						nb++;
+					}
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				Item* pItem = pBag;
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pBag->GetBagSize() ,  itemProto->Name1    );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+
+		sprintf(outt, "\r\n#LIST_ITEMS_BANK ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+
+						nb++;
+				}
+			}
+
+			for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+						nb++;
+					}
+				}
+			}
+
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		//if (inBankAlso)
 		{
 			for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
 			{
@@ -1780,13 +2109,29 @@ void Player::richa_exportTo_ristat_()
 	 sprintf(outt, "\r\n#LIST_SKILLS =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
 
+	// COUNTER
+	{
+		int nb = 0;
+			
+		for (SkillStatusMap::const_iterator itr = mSkillStatus.begin(); itr != mSkillStatus.end(); ++itr)
+		{
+			SkillStatusData const& skillStatus = itr->second;
+			if (skillStatus.uState == SKILL_DELETED)
+				continue;
+
+			nb++;
+		}
+
+		sprintf(outt, "Counter,%d\r\n",nb);
+		fwrite(outt, 1, strlen(outt), fout);
+	}
 
 
 	for (SkillStatusMap::const_iterator itr = mSkillStatus.begin(); itr != mSkillStatus.end(); ++itr)
 	{
 		SkillStatusData const& skillStatus = itr->second;
 		if (skillStatus.uState == SKILL_DELETED)
-        continue;
+			continue;
 
 		//par exemple, les humains on +5 en sword et en mass
 		uint32 bonus = GetUInt32Value(PLAYER_SKILL_BONUS_INDEX(skillStatus.pos));
@@ -1820,12 +2165,24 @@ void Player::richa_exportTo_ristat_()
 	}
 
 
-	 sprintf(outt, "\r\n#LIST_REPUTATION =================================\r\n");
+	sprintf(outt, "\r\n#LIST_REPUTATION =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
 
+	// COUNTER
+	{
+		int nb = 0;
+			
+		for ( auto  itr = GetReputationMgr().GetStateList().begin(); itr != GetReputationMgr().GetStateList().end(); ++itr)
+		{
+
+			nb++;
+		}
+
+		sprintf(outt, "Counter,%d\r\n",nb);
+		fwrite(outt, 1, strlen(outt), fout);
+	}
 	
-	
-	 for ( auto  itr = GetReputationMgr().GetStateList().begin(); itr != GetReputationMgr().GetStateList().end(); ++itr)
+	for ( auto  itr = GetReputationMgr().GetStateList().begin(); itr != GetReputationMgr().GetStateList().end(); ++itr)
     {
 		 const RepListID& faction_1 = itr->first;
         const FactionState& faction_2 = itr->second;
@@ -1869,11 +2226,13 @@ void Player::richa_exportTo_ristat_()
 
 
 
+	{
+		sprintf(outt, "\r\n#LIST_HONOR =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
 
-	 sprintf(outt, "\r\n#LIST_HONOR =================================\r\n");
-	fwrite(outt, 1, strlen(outt), fout);
+		// TODO
 
-
+	}
 
 
 	//save talent tree
@@ -1978,6 +2337,15 @@ void Player::richa_exportTo_ristat_()
 		sprintf(outt, "nbTotalTalentSpells,%d\r\n", nbTotalSpells);
 		fwrite(outt, 1, strlen(outt), fout);
 
+
+		int nbPointDispo = getLevel() - 9;
+		if ( nbPointDispo < 0 ) { nbPointDispo = 0; }
+
+		// a titre indicatif, on dit le nombdre de point qu'il doit rester logiquement au joueur
+		// celui ci peut etre faux, pour les GM par exemple
+		int nbPointUnspent = nbPointDispo - nbTotalPoint;
+		sprintf(outt, "pointUnspentShouldBe,%d\r\n", nbPointUnspent);
+		fwrite(outt, 1, strlen(outt), fout);
 
 	}
 
@@ -2097,6 +2465,29 @@ void Player::richa_exportTo_ristat_()
 	{
 		sprintf(outt, "\r\n#LIST_GRYPHON_NAMES =================================\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
+
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for(int iNode=1; iNode< TaxiMaskSize*32;  iNode++)
+			{
+				bool knownnn = m_taxi.IsTaximaskNodeKnown( iNode) ;
+				if ( knownnn )
+				{
+
+						nb++;
+				}
+			}
+
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+
+
+
 		//sprintf(outt, "GryphonListNames,");
 		//fwrite(outt, 1, strlen(outt), fout);
 		for(int iNode=1; iNode< TaxiMaskSize*32;  iNode++)
@@ -2166,6 +2557,7 @@ void Player::richa_exportTo_ristat_()
 
 	}
 
+	/*
 	{
 
 		sprintf(outt, "\r\n#ELITE_GRIS_TUES_COMMUN =================================\r\n");
@@ -2177,13 +2569,15 @@ void Player::richa_exportTo_ristat_()
 		sprintf(outt, "\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 	}
+	*/
+
 
 	{
 
 		sprintf(outt, "\r\n#LIST_NPC_KILLED =================================\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		sprintf(outt, "%d\r\n", m_richa_NpcKilled.size());
+		sprintf(outt, "Counter,%d\r\n", m_richa_NpcKilled.size());
 		fwrite(outt, 1, strlen(outt), fout);
 
 		for(int i=0; i<m_richa_NpcKilled.size(); i++)
@@ -2201,7 +2595,7 @@ void Player::richa_exportTo_ristat_()
 		sprintf(outt, "\r\n#LIST_PAGE_DISCOVERED =================================\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		sprintf(outt, "%d\r\n", m_richa_pageDiscovered.size());
+		sprintf(outt, "Counter,%d\r\n", m_richa_pageDiscovered.size());
 		fwrite(outt, 1, strlen(outt), fout);
 
 		for(int i=0; i<m_richa_pageDiscovered.size(); i++)
@@ -2219,7 +2613,7 @@ void Player::richa_exportTo_ristat_()
 		sprintf(outt, "\r\n#LIST_LUNARFESTIVAL_ELDERFOUND =================================\r\n");
 		fwrite(outt, 1, strlen(outt), fout);
 
-		sprintf(outt, "%d\r\n", m_richa_lunerFestivalElderFound.size());
+		sprintf(outt, "Counter,%d\r\n", m_richa_lunerFestivalElderFound.size());
 		fwrite(outt, 1, strlen(outt), fout);
 
 		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
@@ -2296,6 +2690,74 @@ void Player::richa_exportTo_ristat_()
 	}
 	
 
+	{
+		sprintf(outt, "\r\n#LES_CONSTANTES =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		sprintf(outt, "name,%s\r\n", GetName());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		uint8 race = getRace();
+		std::string raceStr = "?race?";
+		if ( race == RACE_HUMAN ) { raceStr = "HUMAN"; }
+		if ( race == RACE_ORC ) { raceStr = "ORC"; }
+		if ( race == RACE_DWARF ) { raceStr = "DWARF"; }
+		if ( race == RACE_NIGHTELF ) { raceStr = "NIGHTELF"; }
+		if ( race == RACE_UNDEAD ) { raceStr = "UNDEAD"; }
+		if ( race == RACE_TAUREN ) { raceStr = "TAUREN"; }
+		if ( race == RACE_GNOME ) { raceStr = "GNOME"; }
+		if ( race == RACE_TROLL ) { raceStr = "TROLL"; }
+		if ( race == RACE_GOBLIN ) { raceStr = "GOBLIN"; }
+		sprintf(outt, "race,%s\r\n", raceStr.c_str() );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		uint8 classe = getClass();
+		std::string classeStr = "?class?";
+		if ( classe == CLASS_WARRIOR ) { classeStr = "WARRIOR"; }
+		if ( classe == CLASS_PALADIN ) { classeStr = "PALADIN"; }
+		if ( classe == CLASS_HUNTER ) { classeStr = "HUNTER"; }
+		if ( classe == CLASS_ROGUE ) { classeStr = "ROGUE"; }
+		if ( classe == CLASS_PRIEST ) { classeStr = "PRIEST"; }
+		if ( classe == CLASS_SHAMAN ) { classeStr = "SHAMAN"; }
+		if ( classe == CLASS_MAGE ) { classeStr = "MAGE"; }
+		if ( classe == CLASS_WARLOCK ) { classeStr = "WARLOCK"; }
+		if ( classe == CLASS_DRUID ) { classeStr = "DRUID"; }
+		sprintf(outt, "class,%s\r\n", classeStr.c_str() );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		uint8 gendere = getGender();
+		std::string gendereStr = "?gendere?";
+		if ( gendere == GENDER_FEMALE ) { gendereStr = "FEMALE"; }
+		if ( gendere == GENDER_MALE ) { gendereStr = "MALE"; }
+		if ( gendere == GENDER_NONE ) { gendereStr = "NONE"; }
+		sprintf(outt, "gender,%s\r\n", gendereStr.c_str() );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		uint8 skin       = GetByteValue(PLAYER_BYTES, 0);
+		uint8 face       = GetByteValue(PLAYER_BYTES, 1);
+		uint8 hairstyle  = GetByteValue(PLAYER_BYTES, 2);
+		uint8 haircolor  = GetByteValue(PLAYER_BYTES, 3);
+		uint8 facialhair = GetByteValue(PLAYER_BYTES_2, 0);
+
+		sprintf(outt, "apparence_skin,%d\r\n", skin );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_face,%d\r\n", face );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_hairstyle,%d\r\n", hairstyle );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_haircolor,%d\r\n", haircolor );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_facialhair,%d\r\n", facialhair );
+		fwrite(outt, 1, strlen(outt), fout);
+
+		
+
+	}
+
 	sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
 
@@ -2319,8 +2781,27 @@ void Player::richa_exportTo_ristat_()
 	BOOL succesCopy = CopyFileA(nameFile,nameFile2,TRUE);
 	if ( !succesCopy )
 	{
+		DWORD laster = GetLastError();
+
 		BASIC_LOG("WARNING FAIL COPY FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		Sleep(20000);
+
+		//c'est deja arrive je sais pas pk, j'ai rajoute getlasterror.
+
+		//on va reessayer...
+		BOOL succesCopy2 = CopyFileA(nameFile,nameFile2,TRUE);
+		if ( succesCopy2 )
+		{
+			BASIC_LOG("try 2 - ca a marche .");
+			int aaa=0;
+		}
+		else
+		{
+			DWORD laster2 = GetLastError();
+			BASIC_LOG("try 2 - ca a PAS marche !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			int aaa=0;
+		}
+		
 	}
 
 }
@@ -10106,7 +10587,7 @@ uint32 Player::richard_countItem(uint32 item) const
 
 	if (inEquipmentAlso)
 	{
-		for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+		for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
 		{
 			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
 			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())

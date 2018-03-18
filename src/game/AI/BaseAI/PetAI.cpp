@@ -377,6 +377,10 @@ void PetAI::UpdateAI(const uint32 diff)
                     m_unit->GetMotionMaster()->Clear(false);
                     m_unit->GetMotionMaster()->MoveIdle();
                 }
+				else
+				{
+					 m_unit->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+				}
             }
             else if (charmInfo && charmInfo->HasCommandState(COMMAND_FOLLOW)
                      && !owner->IsWithinDistInMap(m_unit, (PET_FOLLOW_DIST * 2)))

@@ -1612,8 +1612,7 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 		if (spellProtoype)
 		{
 			
-
-			if ( spellProtoype->Effect[0] == 36 )
+			if ( spellProtoype->Effect[0] == SPELL_EFFECT_LEARN_SPELL )
 			{
 				spellProtoypeLearn = sSpellTemplate.LookupEntry<SpellEntry>(spellProtoype->EffectTriggerSpell[0]);
 				if ( spellProtoypeLearn )
@@ -1633,7 +1632,7 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 				}
 			}
 
-			else if ( spellProtoype->Effect[0] == 24 )
+			else if ( spellProtoype->Effect[0] == SPELL_EFFECT_CREATE_ITEM )
 			{
 				if ( developerInfo )
 				{
@@ -1642,7 +1641,7 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 				}
 			}
 
-			else if ( spellProtoype->Effect[0] == 6 )
+			else if ( spellProtoype->Effect[0] == SPELL_EFFECT_APPLY_AURA )
 			{
 				if ( developerInfo )
 				{
@@ -1763,14 +1762,20 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 		{
 			bool insideSpellList = false;
 			std::string line;
+			int lineInsideListSpellSection = 0;
+			int nbSpellsInSection_1 = -1; // read depuis la ligne ListSpellCount,
+			int nbSpellsInSection_2 = -1; // on compte le nombre de spell reel
 			while (std::getline(myfile, line)) 
 			{
 				if ( line == "#LIST_SPELLS =================================" )
 				{
 					insideSpellList = true;
+					lineInsideListSpellSection = 0;
+					nbSpellsInSection_2 = 0;
 				}
 
-				else if ( line == "#LIST_ITEMS =================================" )
+				//si on rencontre une nouvelle section
+				else if ( insideSpellList && line.length() >= 1 &&  line[0] == '#' )
 				{
 					insideSpellList = false;
 					break;
@@ -1778,42 +1783,97 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 
 				else if ( insideSpellList )
 				{
-					char number[2048];
-					number[0] = 0;
-					for(int i=0; i<line.length();i++)
-					{
-						if ( line[i] == ',' )
-						{
-							break;
-						}
 
-						if ( i > 100 )
+					//si c'est la premiere ligne, ca indique le nombre de spell
+					if ( lineInsideListSpellSection == 0 )
+					{
+						if ( line.size() >= 16 
+							&& line.substr(0,15) == "ListSpellCount,"
+							)
 						{
+							nbSpellsInSection_1 = atoi( &( (line.c_str())[15])   );
+							int ggg=0;
+						}
+						else
+						{
+							sprintf(messageOUt,"ERREUR DE LECTURE DE FICHIER 001 !!!!");
+							PSendSysMessage(messageOUt);
 							myfile.close();
 							return;
 						}
-
-						number[i] = line[i];
-						number[i+1] = 0;
 					}
-
-					if ( number[0] >= '0' && number[0] <= '9' )
+					else if ( line.size() == 0 )
 					{
-						int spellID = atoi(number);
-
-						if ( searchKnowSpell == spellID )
-						{
-							KnownByPlayer = true;
-							break;
-						}
-
 						int aa=0;
 					}
+					else
+					{
+
+						char number[2048];
+						number[0] = 0;
+						for(int i=0; i<line.length();i++)
+						{
+							if ( line[i] == ',' )
+							{
+								break;
+							}
+
+							if ( i > 100 )
+							{
+								myfile.close();
+								return;
+							}
+
+							number[i] = line[i];
+							number[i+1] = 0;
+						}
+
+						if ( number[0] >= '0' && number[0] <= '9' )
+						{
+							int spellID = atoi(number);
+
+							if ( searchKnowSpell == spellID )
+							{
+								KnownByPlayer = true;
+								//break;  <--- on ne break PAS  car on doit compter tous les spell,  juste dans un but de bien verifier que tout est OK.
+							}
+
+							int aa=0;
+						}
+
+
+						nbSpellsInSection_2++;
+
+					}
+
+					lineInsideListSpellSection++;
 				}
+			} // pour chaque ligne du fichier
+
+
+			myfile.close(); 
+
+
+			if ( nbSpellsInSection_1 != nbSpellsInSection_2 )
+			{
+				sprintf(messageOUt,"ERREUR DE LECTURE DE FICHIER 002 !!!!");
+				PSendSysMessage(messageOUt);
+				return;
 			}
 
-			myfile.close();
+
+			if ( nbSpellsInSection_1 <= 0 )
+			{
+				sprintf(messageOUt,"ERREUR DE LECTURE DE FICHIER 003 !!!!");
+				PSendSysMessage(messageOUt);
+				return;
+			}
+
+			
 		}
+
+
+	
 
 
 		if ( KnownByPlayer )

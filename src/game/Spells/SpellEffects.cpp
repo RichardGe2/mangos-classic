@@ -5074,6 +5074,14 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
 		}
 	}
 
+
+	// INFO :
+	// pour certain pet,  comme la poule que Bouillot a,  ils ne vont pas follow,  car ils ont qqchose dans la colonne ScriptName  dans  creature_template.
+	// je vais laisser comme ca pour l'instant, car les gars de mangos sont en train de bosser sur l'IA,  quand ca sera stabilisé, je corrigerai ca.. je vais reflechir comment plus tard.
+	// ca a pas l'air de toucher bcp de creature niveau 1
+	//en attendant ne pas utiliser le petite creature qui ne suivent pas, et c'est tout, les garder a la banque en collection :)
+
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

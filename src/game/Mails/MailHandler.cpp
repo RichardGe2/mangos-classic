@@ -193,9 +193,114 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
 			)
 		{
 			pl->Say("Interdit par regle Youhainy", LANG_UNIVERSAL);
-			pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_NOT_YOUR_TEAM);
+			pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_NOT_YOUR_TEAM); // important d'envoyer un  result au client, sinon ca bloque tous les autres envoies
 			 return;
 		}
+
+
+
+
+		// Regle : si un secondaire envoie un plan que le primaire connait pas, alors c'est cool que le secondaire puisse quand meme garder ce plan
+		//  pour lui aussi, donc on en fait une copie pour le secondaire
+		
+		bool thisItemLearnSpell = false;
+
+		ItemPrototype const* itemProtoype = 0;
+
+		if ( itemGuid )
+		{
+			Item* item___ = pl->GetItemByGuid(itemGuid);
+
+			//uint8 getTypeId =  item___->GetTypeId();
+			//item___->id
+
+			if ( item___ )
+			{
+
+				//uint32  itemId = item___->GetGUIDLow();
+
+
+				itemProtoype =  item___->GetProto()  ;  //sItemStorage.LookupEntry<ItemPrototype>(itemId);
+				if (itemProtoype)
+				{
+					
+					int searchKnowSpell = 0;
+
+					SpellEntry const* spellProtoypeLearn = 0;
+
+					if ( itemProtoype->Spells[0].SpellId != 0 )
+					{
+						SpellEntry const* spellProtoype = sSpellTemplate.LookupEntry<SpellEntry>(itemProtoype->Spells[0].SpellId);
+						if (spellProtoype)
+						{
+			
+							if ( spellProtoype->Effect[0] == SPELL_EFFECT_LEARN_SPELL )
+							{
+								spellProtoypeLearn = sSpellTemplate.LookupEntry<SpellEntry>(spellProtoype->EffectTriggerSpell[0]);
+								if ( spellProtoypeLearn )
+								{
+									//sprintf(messageOUt,"Item.spellid_1->effect#1= Learn Spell %d (%s)", spellProtoype->EffectTriggerSpell[0]  ,  spellProtoypeLearn->SpellName[0]);
+									searchKnowSpell = spellProtoype->EffectTriggerSpell[0];
+									thisItemLearnSpell = true;
+								}
+							}
+						}
+					}
+
+				}
+			}
+		}
+
+		// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( thisItemLearnSpell
+			&&
+			(
+				//list des envoies qui vont creer des copie si c'est un plan :
+
+			   sender_account == 10 && receiver_account == 5    // richard2 vers richard
+			|| sender_account == 9 && receiver_account  == 6    // diane2 vers diane
+
+			|| sender_account == 10 && receiver_account  == 6    // richard2 vers diane
+			|| sender_account == 9 && receiver_account  == 5    // diane2 vers richard
+
+
+			|| sender_account == 11 && receiver_account  == 7    // juste poiur le test ;  GrandJuge2 vers GrandJuge
+
+			)
+			
+			)
+		{
+			
+
+			//pl->Say(".additem 2581", LANG_UNIVERSAL);
+
+			//ChatHandler::HandleAddItemCommand();
+
+			int nbItemReceived = 1;
+			uint32 itemIdd = itemProtoype->ItemId;
+			ItemPosCountVec dest;
+			// petit astuce : on donne l'id 12947 (un item de MJ, car on est sur que le joueur ne l'a pas )
+			// comme ca on est sur de trouver une case vide.
+			// car si on stack un deuxieme plan sur le 1er, les 2 vont etre delete.
+			if (pl->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, 12947, nbItemReceived) == EQUIP_ERR_OK)
+			{
+				pl->Say("Envoie d'un plan - une copie est gardee.", LANG_UNIVERSAL);
+				Item* item = pl->StoreNewItem(dest, itemIdd, true, Item::GenerateItemRandomPropertyId(itemIdd));
+				pl->SendNewItem(item, nbItemReceived, true, false);
+			}
+			else
+			{
+				pl->Say("Pas assez de place dans l'inventaire pour recevoir une copie du plan.", LANG_UNIVERSAL);
+				pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_NOT_YOUR_TEAM); // important d'envoyer un  result au client, sinon ca bloque tous les autres envoies
+				return; // on annule l'envoie si pas de place
+			}
+
+
+			int  aaa=0;
+			//ExecuteCommand();
+		}
+
+		
 
 	}
 	//////////////////////////////////////////////////////////////////////

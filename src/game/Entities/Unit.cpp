@@ -8811,6 +8811,15 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 
 		)
 	{
+
+		if ( spellProto->Id == 15007  ||  spellProto->Id == 36000  )
+		{
+			int aaa=0;
+		}
+
+
+
+
 		uint32 effectttt = spellProto->Effect[effect_index];
 		uint32 auraNamee = spellProto->EffectApplyAuraName[effect_index];
 
@@ -8998,7 +9007,8 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_DECREASE_SPEED  // "Prowl"  reduire vitesse de marche
 			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_GHOST  // "Ghost"		
 			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_PERIODIC_MANA_LEECH  // "Drain Mana"  le leech de vie, je pense l'ameliorer, car c'est considerer comme un soin. par contre le leech de mana, on le whitelist pas 
-			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_PERCENT_STAT  //  "Resurrection Sickness" :  X=-75  c'est un pourcentage on touche pas
+			|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == SPELL_AURA_MOD_RESISTANCE_PCT  // "Resurrection Sickness" :  X=-75  c'est un pourcentage on touche pas
 			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
 			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
 			//|| effectttt == SPELL_EFFECT_APPLY_AURA && auraNamee == XXXXX  //
@@ -9050,8 +9060,8 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 			|| effectttt == SPELL_EFFECT_OPEN_LOCK  //  "Herb Gathering"  "Opening"
 			|| effectttt == SPELL_EFFECT_WEAPON_PERCENT_DAMAGE  //  "Shred"   -  % donc on touche pas
 			|| effectttt == SPELL_EFFECT_DISPEL  //   "Abolish Poison"   enlever un poison 
-			//|| effectttt == XXXXXX  //
-			//|| effectttt == XXXXXX  //
+			|| effectttt == SPELL_EFFECT_DODGE  //  "Dodge"
+			|| effectttt == SPELL_EFFECT_DETECT  //  "Detect"  
 			//|| effectttt == XXXXXX  //
 			//|| effectttt == XXXXXX  //
 			//|| effectttt == XXXXXX  //

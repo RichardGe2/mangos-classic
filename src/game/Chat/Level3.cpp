@@ -5376,6 +5376,25 @@ bool ChatHandler::HandleResetTaxiNodesCommand(char* args)
 
 bool ChatHandler::HandleResetAllCommand(char* args)
 {
+
+
+	// RICHARD : je desactive la commande reset all qui va affecter TOUS les joueurs, c'est trop dangeureux,
+	//           je l'ai deja fait plusieurs fois sans faire expres en pensant ne faire ca que au grand juge
+	//  NO_RESET_ALL
+	// si jamais ca arrive quand meme, ne PAS connecter les perso, et mettre  at_login = 0   pour chaque perso
+	// si je veux vraiment le faire pour des perso, le faire manuellement,
+	// en faisant    at_login = AT_LOGIN_RESET_TALENTS    ou   AT_LOGIN_RESET_SPELLS
+	BASIC_LOG("RICHAR -  je desactive la commande reset all    car ca affecte TOUS les joueurs !!!");
+	PSendSysMessage("RICHAR : commande desactive - 5398 ");
+	return false;
+
+
+
+
+
+
+
+
     if (!*args)
         return false;
 

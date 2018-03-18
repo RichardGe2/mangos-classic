@@ -248,6 +248,10 @@ struct npc_doctorAI : public ScriptedAI
         m_bIsEventInProgress = false;
 
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+
+
+
+
     }
 
     void BeginEvent(Player* pPlayer);
@@ -272,6 +276,9 @@ struct npc_injured_patientAI : public ScriptedAI
     {
         m_doctorGuid.Clear();
         m_pCoord = nullptr;
+
+		//RICHARD - QUETE_FIRSTAID : s assurer de faire dsparaitre le copr des qu'il meurt pour pas gener les nouveaux corps
+		m_creature->SetCorpseDelay(1);
 
         // no select
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
@@ -405,6 +412,15 @@ void npc_doctorAI::BeginEvent(Player* pPlayer)
 
     m_bIsEventInProgress = true;
     m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+
+
+
+
+
+
+
+
+
 }
 
 void npc_doctorAI::PatientDied(Location* pPoint)
@@ -414,6 +430,20 @@ void npc_doctorAI::PatientDied(Location* pPoint)
     if (pPlayer && (pPlayer->GetQuestStatus(6624) == QUEST_STATUS_INCOMPLETE || pPlayer->GetQuestStatus(6622) == QUEST_STATUS_INCOMPLETE))
     {
         ++m_uiPatientDiedCount;
+
+
+
+
+
+		// RICHARD - QUETE_FIRSTAID  :  info sur la quete de soin  pour aider le joueur:
+		char strrr[1024];
+		sprintf(strrr,"%d patients morts sur 6  :(",m_uiPatientDiedCount);
+		pPlayer->Say(strrr,LANG_UNIVERSAL);
+
+
+
+
+
 
         if (m_uiPatientDiedCount > 5 && m_bIsEventInProgress)
         {
@@ -441,6 +471,18 @@ void npc_doctorAI::PatientSaved(Creature* /*soldier*/, Player* pPlayer, Location
         {
             ++m_uiPatientSavedCount;
 
+
+
+
+			// RICHARD - QUETE_FIRSTAID  :  info sur la quete de soin  pour aider le joueur:
+			char strrr[1024];
+			sprintf(strrr,"%d patients sauves sur 15  :)",m_uiPatientSavedCount);
+			pPlayer->Say(strrr,LANG_UNIVERSAL);
+
+
+
+
+
             if (m_uiPatientSavedCount == 15)
             {
                 for (GuidList::const_iterator itr = m_lPatientGuids.begin(); itr != m_lPatientGuids.end(); ++itr)
@@ -465,7 +507,18 @@ void npc_doctorAI::PatientSaved(Creature* /*soldier*/, Player* pPlayer, Location
 
 void npc_doctorAI::UpdateAI(const uint32 uiDiff)
 {
-    if (m_bIsEventInProgress && m_uiSummonPatientCount >= 20)
+    if (m_bIsEventInProgress && m_uiSummonPatientCount >= 
+		
+		
+		
+		// RICHARD - QUETE_FIRSTAID  -   20 c'est pas assez car il faut au moins  15+6
+		//20
+		23
+		
+		
+		
+		
+		)
     {
         Reset();
         return;
@@ -487,7 +540,29 @@ void npc_doctorAI::UpdateAI(const uint32 uiDiff)
                     return;
             }
 
-            if (Creature* Patient = m_creature->SummonCreature(patientEntry, (*itr)->x, (*itr)->y, (*itr)->z, (*itr)->o, TEMPSPAWN_TIMED_OOC_DESPAWN, 5000))
+
+
+			// ASUP
+			//static float countAngleRicha = 0.0f;
+			//countAngleRicha += 2.0f * 3.14 / 22.0f;
+
+
+
+
+
+            if (Creature* Patient = m_creature->SummonCreature(patientEntry, (*itr)->x, (*itr)->y, (*itr)->z, 
+				
+
+				// RICHARD - QUETE_FIRSTAID   --  des fois il spwn l'un sur l'autre, pour faciliter la selection, je rotate aleatoirement
+				(*itr)->o               //  <--- ORIGINAL
+				//frand(0.0f, 2.0f*3.14f) // richa method 1
+				//countAngleRicha                // richa method 2
+
+
+
+				
+				
+				, TEMPSPAWN_TIMED_OOC_DESPAWN, 5000))
             {
                 // 2.4.3, this flag appear to be required for client side item->spell to work (TARGET_SINGLE_FRIEND)
                 Patient->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP);
