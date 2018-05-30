@@ -55,6 +55,14 @@
 #include "Server/SQLStorages.h"
 #include "Loot/LootMgr.h"
 
+
+
+#include <iostream>
+#include <fstream>
+
+
+
+
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 {
     LANG_AHBOT_QUALITY_GREY, LANG_AHBOT_QUALITY_WHITE,
@@ -3477,6 +3485,690 @@ bool ChatHandler::HandleDieCommand(char* args)
     return true;
 }
 
+bool ChatHandler::Richar_listeventquest(char* /*args*/)
+{
+	//
+	// BUT DU SCRIPT :
+	//
+	// lister toutes les quete qui dependent des NPC et Gameobject qui n'apparraissent que
+	// pendant les events
+	//
+	//
+	//
+
+
+	Player* player = m_session->GetPlayer();
+
+	//event id,  creature id,  quest id
+	std::map<int,std::map<int,int>>  event_creature_quest;
+
+	//event id,  gameobject id,  quest id
+	std::map<int,std::map<int,int>>  event_gameobject_quest;
+
+	//event id,   quest id ,  not used
+	std::map<int,std::map<int,int>>  event_MERGED_quest;
+
+
+	char command1[2048];
+	sprintf(command1,"SELECT guid FROM game_event_creature");
+	if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+    {
+		BarGoLink bar1(result1->GetRowCount());
+        do
+        {
+            bar1.step();
+            Field* fields = result1->Fetch();
+			int32 entryItem = fields->GetInt32();
+
+
+			//on recupere l'ID de l'event :
+			int32 eventID = -1;
+			{
+				char command4[2048];
+				sprintf(command4,"SELECT event FROM game_event_creature WHERE guid=%d",entryItem);
+				if (QueryResult* result4 = WorldDatabase.PQuery( command4 ))
+				{
+					if ( result4->GetRowCount() != 1 )
+					{
+						BASIC_LOG("ERROR 325");
+						return true;
+					}
+
+					BarGoLink bar4(result4->GetRowCount());
+					bar4.step();
+					Field* fields = result4->Fetch();
+					eventID = fields->GetInt32();
+					delete result4;
+				}
+				else
+				{
+					BASIC_LOG("ERROR 326");
+					return true;
+				}
+			}
+
+
+			
+			
+			char command2[2048];
+			sprintf(command2,"SELECT id FROM creature WHERE guid=%d",entryItem);
+			if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+			{
+				if ( result2->GetRowCount() != 1 )
+				{
+					BASIC_LOG("ERROR 323");
+					return true;
+				}
+
+				BarGoLink bar2(result2->GetRowCount());
+				bar2.step();
+				Field* fields = result2->Fetch();
+				int32 npcID = fields->GetInt32();
+				delete result2;
+
+
+
+				//on recupere la liste de quete lie a ce NPC
+
+
+				char command3[2048];
+				sprintf(command3,"SELECT quest FROM creature_questrelation WHERE id=%d",npcID);
+				if (QueryResult* result3 = WorldDatabase.PQuery( command3 ))
+				{
+					BarGoLink bar3(result3->GetRowCount());
+					do
+					{
+						bar3.step();
+						Field* fields = result3->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_creature_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result3->NextRow());
+					delete result3;
+				}
+
+
+
+
+
+
+				char command5[2048];
+				sprintf(command5,"SELECT quest FROM creature_involvedrelation WHERE id=%d",npcID);
+				if (QueryResult* result5 = WorldDatabase.PQuery( command5 ))
+				{
+					BarGoLink bar5(result5->GetRowCount());
+					do
+					{
+						bar5.step();
+						Field* fields = result5->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_creature_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result5->NextRow());
+					delete result5;
+				}
+
+
+
+
+
+
+
+			}
+			else
+			{
+				int dddd=0;
+				//c'est pas normal, mais ca peut arriver:
+				//ca veut dire qu'une creature ID dans  game_event_creature
+				//n'est pas dans  creature
+
+				//BASIC_LOG("ERROR 322");
+				//return true;
+			}
+
+
+
+			int aaaa=0;
+
+        }
+        while (result1->NextRow());
+        delete result1;
+	}
+	else
+	{
+		BASIC_LOG("ERROR 321");
+		return true;
+	}
+
+
+	///////////////////////////////////
+
+
+
+	sprintf(command1,"SELECT guid FROM game_event_gameobject");
+	if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+    {
+		BarGoLink bar1(result1->GetRowCount());
+        do
+        {
+            bar1.step();
+            Field* fields = result1->Fetch();
+			int32 entryItem = fields->GetInt32();
+
+
+			//on recupere l'ID de l'event :
+			int32 eventID = -1;
+			{
+				char command4[2048];
+				sprintf(command4,"SELECT event FROM game_event_gameobject WHERE guid=%d",entryItem);
+				if (QueryResult* result4 = WorldDatabase.PQuery( command4 ))
+				{
+					if ( result4->GetRowCount() != 1 )
+					{
+						BASIC_LOG("ERROR 325");
+						return true;
+					}
+
+					BarGoLink bar4(result4->GetRowCount());
+					bar4.step();
+					Field* fields = result4->Fetch();
+					eventID = fields->GetInt32();
+					delete result4;
+				}
+				else
+				{
+					BASIC_LOG("ERROR 326");
+					return true;
+				}
+			}
+
+
+			
+			
+			char command2[2048];
+			sprintf(command2,"SELECT id FROM gameobject WHERE guid=%d",entryItem);
+			if (QueryResult* result2 = WorldDatabase.PQuery( command2 ))
+			{
+				if ( result2->GetRowCount() != 1 )
+				{
+					BASIC_LOG("ERROR 323");
+					return true;
+				}
+
+				BarGoLink bar2(result2->GetRowCount());
+				bar2.step();
+				Field* fields = result2->Fetch();
+				int32 npcID = fields->GetInt32();
+				delete result2;
+
+
+
+				//on recupere la liste de quete lie a ce NPC
+
+
+				char command3[2048];
+				sprintf(command3,"SELECT quest FROM gameobject_questrelation WHERE id=%d",npcID);
+				if (QueryResult* result3 = WorldDatabase.PQuery( command3 ))
+				{
+					BarGoLink bar3(result3->GetRowCount());
+					do
+					{
+						bar3.step();
+						Field* fields = result3->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_gameobject_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result3->NextRow());
+					delete result3;
+				}
+
+
+
+
+
+
+				char command5[2048];
+				sprintf(command5,"SELECT quest FROM gameobject_involvedrelation WHERE id=%d",npcID);
+				if (QueryResult* result5 = WorldDatabase.PQuery( command5 ))
+				{
+					BarGoLink bar5(result5->GetRowCount());
+					do
+					{
+						bar5.step();
+						Field* fields = result5->Fetch();
+						int32 questID = fields->GetInt32();
+
+						npcID;
+						questID;
+						eventID;
+
+						event_gameobject_quest[eventID][npcID] = questID;
+
+						int aaa=0;
+					}
+					while (result5->NextRow());
+					delete result5;
+				}
+
+
+
+
+
+
+
+			}
+			else
+			{
+				int dddd=0;
+				//c'est pas normal, mais ca peut arriver:
+				//ca veut dire qu'une creature ID dans  game_event_creature
+				//n'est pas dans  creature
+
+				//BASIC_LOG("ERROR 322");
+				//return true;
+			}
+
+
+
+			int aaaa=0;
+
+        }
+        while (result1->NextRow());
+        delete result1;
+	}
+	else
+	{
+		BASIC_LOG("ERROR 321");
+		return true;
+	}
+
+
+
+
+
+	//on merge les listes
+	for (const auto& elem1 : event_creature_quest)
+	{
+		for (const auto& elem2 : elem1.second)
+		{
+			int eventID__  = elem1.first;
+			//int npcID__  = elem2.first;
+			int questID__ = elem2.second;
+			event_MERGED_quest[eventID__][questID__] = 0;
+			int aaa=0;
+		}
+	}
+	for (const auto& elem1 : event_gameobject_quest)
+	{
+		for (const auto& elem2 : elem1.second)
+		{
+			int eventID__  = elem1.first;
+			//int npcID__  = elem2.first;
+			int questID__ = elem2.second;
+			event_MERGED_quest[eventID__][questID__] = 0;
+			int aaa=0;
+		}
+	}
+
+
+
+	//on peut lister :
+	std::ofstream myfile;
+	myfile.open ("RICHARDS/___OUT_listeventquest_ASUP.txt");
+	myfile <<"## START -----------------";
+	for (const auto& elem1 : event_MERGED_quest)
+	{
+		myfile << "### quest for " << elem1.first  <<std::endl ;
+
+		for (const auto& elem2 : elem1.second)
+		{
+			int eventID__  = elem1.first;
+			//int npcID__  = elem2.first;
+			int questID__ = elem2.first;
+
+			//myfile << eventID__  << ", " << questID__ << std::endl ;
+
+
+			myfile <<"OR    quest=";
+			myfile <<questID__;
+			myfile <<std::endl ;
+
+			int aaa=0;
+		}
+	}
+
+	myfile <<"## END -----------------";
+	myfile.close();
+
+
+	BASIC_LOG("list even quest generated with success in  RICHARD/___OUT_listeventquest_ASUP.txt ");
+
+
+	return true;
+
+}
+
+
+bool ChatHandler::Richar_tellMobStats(char* /*args*/)
+{
+    Player* player = m_session->GetPlayer();
+    Unit* target = getSelectedUnit();
+
+   // if (!target || !player->GetSelectionGuid())
+   // {
+  //      SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
+   //     SetSentErrorMessage(true);
+   //     return false;
+    //}
+
+
+    if (!target ||  target->GetTypeId() == TYPEID_PLAYER)
+    {
+
+		 Player* playerTarget = 0;
+
+		 if ( target )
+		 {
+			 playerTarget = dynamic_cast<Player*>(target);
+		 }
+		 else
+		 {
+			 playerTarget = player;
+		 }
+
+
+		 char messageee[2048];
+
+		 if ( playerTarget )
+		 {
+		
+
+			sprintf(messageee, "==== INFO ========================"  );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "TYPEID_PLAYER" );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "Name = %s", playerTarget->GetName() );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "Paragon = %d", playerTarget->GetParagonLevelFromItem() );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+
+			sprintf(messageee, "MaxHealth = %d", playerTarget->GetMaxHealth() );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			//sprintf(messageee, "entry = %d", playerTarget->GetEntry() );
+			//BASIC_LOG(messageee);
+			//PSendSysMessage(messageee);
+
+			sprintf(messageee, "GUIDlow = %d", playerTarget->GetGUIDLow() );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
+			
+
+		 }
+		 else
+		 {
+			 sprintf(messageee, "ERROR playerTarget" );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+		 }
+    }
+
+   // if (target->isAlive() )
+	else
+	{
+
+		char messageee[2048];
+
+		sprintf(messageee, "==== INFO ========================"  );
+		BASIC_LOG(messageee);
+		PSendSysMessage(messageee);
+		
+		sprintf(messageee, "Name = %s", target->GetName() );
+		BASIC_LOG(messageee);
+		PSendSysMessage(messageee);
+
+		sprintf(messageee, "Health = %d / %d  (%.0f pourcent) ", target->GetHealth() ,   target->GetMaxHealth() , target->GetHealthPercent()    );
+		BASIC_LOG(messageee);
+		PSendSysMessage(messageee);
+
+
+		//sprintf(messageee, "entry = %d", target->GetEntry() );
+		//BASIC_LOG(messageee);
+		//PSendSysMessage(messageee);
+
+
+		Creature* cast_creature = dynamic_cast<Creature*>(target);
+
+		if ( cast_creature )
+		{
+			CreatureInfo const* cinfo = cast_creature->GetCreatureInfo();
+
+			if ( cinfo )
+			{
+				sprintf(messageee, "cinfo->MinMeleeDmg = %f", cinfo->MinMeleeDmg );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "cinfo->MaxMeleeDmg = %f", cinfo->MaxMeleeDmg );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				//  cinfo->Entry  et   cast_creature->GetEntry()  retournent la meme chose
+				sprintf(messageee, "npc = %d", cinfo->Entry );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "creature GUID = %d", cast_creature->GetGUIDLow() );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "Richar_difficuly_health = %f", cast_creature->Richar_difficuly_health );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+
+
+
+
+				if ( cinfo->Rank == CREATURE_ELITE_RARE )
+				{
+
+
+					std::vector<int>  mainPlayerGUID;
+					std::vector<std::string>  mainPlayerNames;
+
+					// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+					//
+					//list de tous les perso principaux de tout le monde
+					mainPlayerGUID.push_back(4);  mainPlayerNames.push_back("Boulette"); 
+					mainPlayerGUID.push_back(5);  mainPlayerNames.push_back("Bouillot"); 
+					mainPlayerGUID.push_back(27); mainPlayerNames.push_back("Bouzigouloum"); 
+					mainPlayerGUID.push_back(28);  mainPlayerNames.push_back("Adibou"); 
+					
+					int existInDataBaseV2 = -1;
+					for(int jj=0; jj<mainPlayerGUID.size(); jj++)
+					{
+						std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+						std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+						std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+						std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+						std::string persoNameImport;
+						Player::richa_importFrom_richaracter_(
+							mainPlayerGUID[jj],
+							richa_NpcKilled,
+							richa_pageDiscovered,
+							richa_lunerFestivalElderFound,
+							richa_maisontavern,
+							persoNameImport
+							);
+
+						for(int kk=0; kk<richa_NpcKilled.size(); kk++)
+						{
+							if ( richa_NpcKilled[kk].npc_id == cinfo->Entry )
+							{
+								existInDataBaseV2 = jj;
+								break;
+							}
+						}
+
+						if ( existInDataBaseV2 != -1 ) {  break; }
+					}
+
+
+
+					if ( existInDataBaseV2 == -1 )
+					{
+						sprintf(messageee, "Cet Elite Gris n'a PAS ete decouvert."  );
+						BASIC_LOG(messageee);
+						PSendSysMessage(messageee);
+					}
+					else
+					{
+						sprintf(messageee, "Cet Elite Gris a DEJA ete decouvert par %s" , mainPlayerNames[existInDataBaseV2].c_str()  );
+						BASIC_LOG(messageee);
+						PSendSysMessage(messageee);
+					}
+
+				}
+
+
+
+
+
+
+
+				// TEMP ASUP
+				/*{
+
+					for(int i=0; i<Player::m_richa_StatALL__elitGrisKilled.size(); i++)
+					{
+						//if ( Player::m_richa_StatALL__elitGrisKilled[i] == cinfo->Entry )
+						//{
+							std::vector<int>  mainPlayerGUID;
+
+							// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+							//
+							//list de tous les perso principaux de tout le monde
+							mainPlayerGUID.push_back(4); // boulette
+							mainPlayerGUID.push_back(5);// Bouillot
+							mainPlayerGUID.push_back(27); // Bouzigouloum
+							mainPlayerGUID.push_back(28); // Adibou
+					
+							bool existInDataBaseV2 = false;
+							for(int k=0; k<mainPlayerGUID.size(); k++)
+							{
+								std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+								std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+								std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+								Player::richa_importFrom_richaracter_(
+									mainPlayerGUID[k],
+									richa_NpcKilled,
+									richa_pageDiscovered,
+									richa_lunerFestivalElderFound
+									);
+
+								for(int j=0; j<richa_NpcKilled.size(); j++)
+								{
+									if ( richa_NpcKilled[j].npc_id == Player::m_richa_StatALL__elitGrisKilled[i] )
+									{
+										existInDataBaseV2 = true;
+										break;
+									}
+								}
+
+								if ( existInDataBaseV2 ) {  break; }
+							}
+
+							if ( !existInDataBaseV2 )
+							{
+								sprintf(messageee, "%d EXISTE PAS" , Player::m_richa_StatALL__elitGrisKilled[i] );
+								BASIC_LOG(messageee);
+							}
+							else
+							{
+								sprintf(messageee, "%d existe" , Player::m_richa_StatALL__elitGrisKilled[i] );
+								BASIC_LOG(messageee);
+							}
+						//}
+					}
+				}
+				*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			}
+			else
+			{
+				sprintf(messageee, "ERROR cinfo" );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+			}
+		}
+		else
+		{
+			sprintf(messageee, "NOT_CREATURE" );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+		}
+
+		
+
+	
+	}
+
+    return true;
+}
+
+
+
 bool ChatHandler::HandleDamageCommand(char* args)
 {
     if (!*args)
@@ -4713,6 +5405,25 @@ bool ChatHandler::HandleResetTaxiNodesCommand(char* args)
 
 bool ChatHandler::HandleResetAllCommand(char* args)
 {
+
+
+	// RICHARD : je desactive la commande reset all qui va affecter TOUS les joueurs, c'est trop dangeureux,
+	//           je l'ai deja fait plusieurs fois sans faire expres en pensant ne faire ca que au grand juge
+	//  NO_RESET_ALL
+	// si jamais ca arrive quand meme, ne PAS connecter les perso, et mettre  at_login = 0   pour chaque perso
+	// si je veux vraiment le faire pour des perso, le faire manuellement,
+	// en faisant    at_login = AT_LOGIN_RESET_TALENTS    ou   AT_LOGIN_RESET_SPELLS
+	BASIC_LOG("RICHAR -  je desactive la commande reset all    car ca affecte TOUS les joueurs !!!");
+	PSendSysMessage("RICHAR : commande desactive - 5398 ");
+	return false;
+
+
+
+
+
+
+
+
     if (!*args)
         return false;
 

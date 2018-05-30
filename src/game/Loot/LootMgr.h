@@ -210,6 +210,9 @@ struct LootItem
     bool AllowedForPlayer(Player const* player, WorldObject const* lootTarget) const;
     LootSlotType GetSlotTypeForSharedLoot(Player const* player, Loot const* loot) const;
     bool IsLootedFor(ObjectGuid const& playerGuid) const { return lootedBy.find(playerGuid) != lootedBy.end(); }
+
+	static bool Richard_lootCommunPourObjDeQuest(unsigned int itemID);
+
 };
 
 typedef std::vector<LootItem*> LootItemList;
@@ -282,6 +285,7 @@ ByteBuffer& operator<<(ByteBuffer& b, LootItem const& li);
 
 class Loot
 {
+
     public:
         friend struct LootItem;
         friend class GroupLootRoll;
@@ -366,6 +370,13 @@ class Loot
         bool             m_isChanged;                     // true if at least one item is looted
         GroupLootRollMap m_roll;                          // used if an item is under rolling
         GuidSet          m_playersLooting;                // player who opened loot windows
+
+
+
+	public : time_t m_richard_timeCreated;
+
+
+
 };
 
 extern LootStore LootTemplates_Creature;

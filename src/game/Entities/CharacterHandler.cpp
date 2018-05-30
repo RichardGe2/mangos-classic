@@ -489,6 +489,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     ObjectGuid playerGuid = holder->GetGuid();
 
     Player* pCurrChar = new Player(this);
+
+	pCurrChar->richard_importVariables_START(playerGuid.GetRawValue());
+
+
     pCurrChar->GetMotionMaster()->Initialize();
 
     // "GetAccountId()==db stored account id" checked in LoadFromDB (prevent login not own character using cheating tools)
@@ -500,6 +504,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         m_playerLoading = false;
         return;
     }
+
+	
 
     SetPlayer(pCurrChar);
 
@@ -691,6 +697,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     if (!pCurrChar->IsStandState() && !pCurrChar->hasUnitState(UNIT_STAT_STUNNED))
         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);
+
+
+	pCurrChar->richard_importVariables_END(playerGuid.GetRawValue());
+
 
     m_playerLoading = false;
     delete holder;

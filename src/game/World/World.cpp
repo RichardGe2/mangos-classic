@@ -1307,6 +1307,24 @@ void World::SetInitialWorldSettings()
     sLog.outString("---------------------------------------");
     sLog.outString();
 
+
+
+
+
+
+	////////////////////////////////////////////////////////
+	//richard - init message
+	BASIC_LOG("MODE RICHARD VERSION 13 -  version youhai3 ");
+	BASIC_LOG("CMAKE_INTDIR = "  CMAKE_INTDIR);
+	////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
     uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());
     sLog.outString("SERVER STARTUP TIME: %i minutes %i seconds", uStartInterval / 60000, (uStartInterval % 60000) / 1000);
     sLog.outString();

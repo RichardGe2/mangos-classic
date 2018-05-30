@@ -69,8 +69,12 @@ typedef std::deque<Mail*> PlayerMails;
 #define PLAYER_MAX_SKILLS           127
 #define PLAYER_EXPLORED_ZONES_SIZE  64
 
+
+
 // TODO: Maybe this can be implemented in configuration file.
 #define PLAYER_NEW_INSTANCE_LIMIT_PER_HOUR 5
+
+
 
 // Note: SPELLMOD_* values is aura types in fact
 enum SpellModType
@@ -747,6 +751,17 @@ class PlayerTaxi
 
     private:
         TaxiMask m_taximask;
+
+
+
+
+public: //richard : etait en private avant
+
+
+
+        std::deque<uint32> m_TaxiDestinations;
+        uint32 m_lastNode;
+
 };
 
 std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi);
@@ -842,6 +857,11 @@ class Player : public Unit
     public:
         explicit Player(WorldSession* session);
         ~Player();
+
+		void richard_saveToLog();
+		void richard_importVariables_START(uint64 guid__);
+		void richard_importVariables_END(uint64 guid__);
+		
 
         void CleanupsBeforeDelete() override;
 
@@ -1038,6 +1058,15 @@ class Player : public Unit
         uint8 GetBankBagSlotCount() const { return GetByteValue(PLAYER_BYTES_2, 2); }
         void SetBankBagSlotCount(uint8 count) { SetByteValue(PLAYER_BYTES_2, 2, count); }
         bool HasItemCount(uint32 item, uint32 count, bool inBankAlso = false) const;
+
+
+
+		// richa :  essayer plutot d'utiliser   GetItemCount  si possible
+		uint32 richard_countItem(uint32 item,  bool inBankAlso = false , bool inEquipmentAlso = false ,  bool inKeyRingAlso = false,   bool inInventoryAlso = true ) const; 
+		void richard_countItem_pokeball(uint32& itemKeyRin0 , uint32& quantity ) const;
+
+
+
         bool HasItemFitToSpellReqirements(SpellEntry const* spellInfo, Item const* ignoreItem = nullptr) const;
         bool CanNoReagentCast(SpellEntry const* spellInfo) const;
         bool HasItemWithIdEquipped(uint32 item, uint32 count, uint8 except_slot = NULL_SLOT) const;
@@ -1111,6 +1140,7 @@ class Player : public Unit
         void RemoveItemFromBuyBackSlot(uint32 slot, bool del);
 
         uint32 GetMaxKeyringClientSize() const; // number of slots available depending on the Player's level - limited by Client GUI
+
         void SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2 = nullptr, uint32 itemid = 0) const;
         void SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param) const;
         void SendSellError(SellResult msg, Creature* pCreature, ObjectGuid itemGuid, uint32 param) const;
@@ -2392,8 +2422,129 @@ class Player : public Unit
 
         int32 m_cannotBeDetectedTimer;
 
+
+
+
+
+
+
+
+		///////////////////////////////////////////////////////////////////////////////////
+		// richar
+		public:
+		void Richard_InformDiscoveredNewArea(int areaFlag);
+		struct MAP_SECONDA
+		{
+			MAP_SECONDA(const std::string& name_, bool explored_ , int areaFlag_)
+			{
+				name = name_ ;
+				explored = explored_;
+				areaFlag__ = areaFlag_;
+			}
+
+			std::string name;
+			bool explored;
+			int areaFlag__;
+		};
+
+		
+		void Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECONDA>  >& mapsList,   int&  nbAreaExplored,  int&  nbAreaTotal);
+		
+
+		//int m_richar_paragon; // variable specifique a ce Player : Bouillot, Boulette....
+		//int m_richar_paragonProgressFromFile; // only USED during loading, after that, it's always 0
+		
+		struct RICHA_NPC_KILLED_STAT
+		{
+			RICHA_NPC_KILLED_STAT(unsigned int npc_id_ , unsigned int nb_killed_)
+			{
+				npc_id = npc_id_ ;
+				nb_killed = nb_killed_;
+			}
+
+			unsigned int npc_id;
+			unsigned int nb_killed;
+		};
+		std::vector<RICHA_NPC_KILLED_STAT> m_richa_NpcKilled;
+
+		struct RICHA_PAGE_DISCO_STAT
+		{
+			RICHA_PAGE_DISCO_STAT(unsigned int pageId_ , unsigned int objectID_, unsigned int itemID_)
+			{
+				pageId = pageId_ ;
+				objectID = objectID_;
+				itemID = itemID_;
+			}
+
+			unsigned int pageId;
+			unsigned int objectID;
+			unsigned int itemID;
+		};
+		std::vector<RICHA_PAGE_DISCO_STAT> m_richa_pageDiscovered;
+
+
+		struct RICHA_LUNARFESTIVAL_ELDERFOUND
+		{
+			RICHA_LUNARFESTIVAL_ELDERFOUND(unsigned int year_ , unsigned int questId_)
+			{
+				year = year_ ;
+				questId = questId_;
+			}
+
+			unsigned int year;
+			unsigned int questId;
+		};
+		std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND> m_richa_lunerFestivalElderFound;
+
+		struct RICHA_MAISON_TAVERN
+		{
+			RICHA_MAISON_TAVERN(uint32 a , uint32 b)
+			{
+				mapid = a ;
+				areaid = b;
+			}
+
+			uint32 mapid;
+			uint32 areaid;
+		};
+
+		static void richa_importFrom_richaracter_(
+			uint64 guid__,
+			std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
+			std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
+			std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+			std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+			std::string& namePerso);
+
+		static void richa_exportTo_richaracter_(
+			uint64 guid__,
+			const std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
+			const std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
+			const std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+			const std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+			const char* name);
+
+		//va exporter dans   _ri_stat_Grandjuge_2017_04_21.txt
+		//le but de cet exporter est d'exporter TOUTES les donnée possible qui definissent ENTIEREMENT le PERSONNAGE
+		//ceci dans un but de debug, et d'archivage
+		//le fichier exporté n'est pas vraiment sensé etre relu et utilisé derriere par le serveur
+		void richa_exportTo_ristat_();
+
+		int GetParagonLevelFromItem();
+
+		std::vector<RICHA_MAISON_TAVERN> m_richa_ListeMaison;
+
+		///////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
         std::unordered_map<uint32, TimePoint> m_enteredInstances;
         uint32 m_createdInstanceClearTimer;
+
 };
 
 void AddItemsSetItem(Player* player, Item* item);
@@ -2454,3 +2605,27 @@ template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T& bas
 }
 
 #endif
+
+
+
+//richard : check good config :
+#ifdef _M_AMD64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+#ifdef _M_IA64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+#ifdef _M_X64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+#ifdef _WIN64
+#error  NE PAS UTILISER LE 64 BIT !!!!
+NE PAS UTILISER LE 64 BIT !!!!
+#endif
+
+
+
+

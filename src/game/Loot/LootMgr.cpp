@@ -30,6 +30,13 @@
 #include "Entities/ItemEnchantmentMgr.h"
 #include "Entities/Corpse.h"
 
+
+#include <fstream>
+
+
+
+
+
 INSTANTIATE_SINGLETON_1(LootMgr);
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
@@ -323,6 +330,80 @@ bool LootStoreItem::IsValid(LootStore const& store, uint32 entry) const
     return true;                                            // Referenced template existence is checked at whole store level
 }
 
+
+
+
+// si on voit que tous les loot d'un objet sont negatif, cela veut dire que cet objet n'est QUE pour les quetes
+//    et donc qu'on peut le mettre en loot commun
+//
+// return TRUE si on peut forcer le loot commun
+//
+bool LootItem::Richard_lootCommunPourObjDeQuest(unsigned int itemID)
+{
+	//SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '5055'
+	//QueryResult* result = CharacterDatabase.PQuery("SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '%u'", itemID);
+
+
+	//int aaaaa=0;
+
+
+	int itemmmCommand =  itemID;  //  5055; // itemID;
+	char command1[2048];
+	sprintf(command1,"SELECT ChanceOrQuestChance FROM creature_loot_template WHERE item = '%u' ",itemmmCommand);
+
+	int nbNbNeg = 0;
+	int nbNbPos = 0;
+
+	if (QueryResult* result1 = WorldDatabase.PQuery( command1 ))
+    {
+		BarGoLink bar(result1->GetRowCount());
+        do
+        {
+            bar.step();
+            Field* fields = result1->Fetch();
+            
+
+
+			int32 entryItem = fields->GetInt32();
+			
+			if ( entryItem < 0 ) { nbNbNeg++; } else { nbNbPos++; }
+
+
+			int aaaa=0;
+
+        }
+        while (result1->NextRow());
+        delete result1;
+	}
+	else
+	{
+		int aaa=0;
+	}
+
+
+
+	if ( nbNbNeg > 0 && nbNbPos == 0 )
+	{
+		BASIC_LOG("RICHAR: on force le loot commun pour item = '%d'", itemID );
+		return true;
+	}
+
+
+	int aaannn=0;
+
+
+
+	return false;
+}
+
+
+
+
+
+
+
+
+
 //
 // --------- LootItem ---------
 //
@@ -343,6 +424,8 @@ LootItem::LootItem(LootStoreItem const& li, uint32 _lootSlot, uint32 threshold)
         freeForAll       = !!(itemProto->Flags & ITEM_FLAG_MULTI_DROP);
         displayID        = itemProto->DisplayInfoID;
         isUnderThreshold = itemProto->Quality < threshold;
+
+		freeForAll = Richard_lootCommunPourObjDeQuest(li.itemid) ? true : freeForAll;
     }
     else
     {
@@ -372,6 +455,8 @@ LootItem::LootItem(uint32 _itemId, uint32 _count, uint32 _randomSuffix, int32 _r
     {
         freeForAll = !!(itemProto->Flags & ITEM_FLAG_MULTI_DROP);
         displayID = itemProto->DisplayInfoID;
+
+		freeForAll = Richard_lootCommunPourObjDeQuest(_itemId) ? true : freeForAll;
     }
     else
     {
@@ -874,6 +959,669 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
     tab->Process(*this, lootOwner, store, store.IsRatesAllowed()); // Processing is done there, callback via Loot::AddItem()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//richard : add coin on loot
+
+
+	// id dans la base de donnée
+	const uint32 coinItemID1 = 30000; 
+	const uint32 coinItemID2 = 30007;
+
+
+	/*
+	bool lootOrigin_creature = false;
+	bool lootOrigin_gameobj = false;
+	bool lootOrigin_item = false;
+
+	if ( GetLootTarget() )
+	{
+		lootOrigin_creature = GetLootTarget()->GetObjectGuid().IsCreature();
+		lootOrigin_gameobj = GetLootTarget()->GetObjectGuid().IsGameObject();
+	}
+	//lootOrigin_item = loot->item->GetObjectGuid().IsItem();
+	*/
+	
+	// 0 unknown
+	// 1 creature cadavre loot classic
+	// 2 gameobjet
+	// 3 item
+	// 4 depecage
+	int lootOrigin = 0;
+
+
+
+	if (  strcmp(store.GetName() , "creature_loot_template") == 0 )
+	{
+		lootOrigin = 1;
+	}
+	else if (  strcmp(store.GetName() , "disenchant_loot_template") == 0 )
+	{
+		int aaa=0;
+	}
+	else if (  strcmp(store.GetName() , "fishing_loot_template") == 0 )
+	{
+		int aaa=0;
+	}
+	else if (  strcmp(store.GetName() , "gameobject_loot_template") == 0 )
+	{
+		lootOrigin = 2;
+	}
+	else if (  strcmp(store.GetName() , "item_loot_template") == 0 )
+	{
+		lootOrigin = 3;
+	}
+	else if (  strcmp(store.GetName() , "pickpocketing_loot_template") == 0 )
+	{
+		int aaa=0;
+	}
+	else if (  strcmp(store.GetName() , "skinning_loot_template") == 0 )
+	{
+		lootOrigin = 4;
+	}
+	else if (  strcmp(store.GetName() , "mail_loot_template") == 0 )
+	{
+		int aaa=0;
+	}
+	else
+	{
+		int aa=0;
+		BASIC_LOG("RICHAR: ERRRROR !!!!!!!!!!!!!!!!   unkonwn type loot  = '%s'", store.GetName() );
+
+	}
+	
+	
+
+	/*
+	if ( lootOrigin_creature && !lootOrigin_gameobj && !lootOrigin_item )
+	{
+
+		Creature* creature__ = GetLootTarget()->GetMap()->GetCreature(  GetLootTarget()->GetObjectGuid()  );
+		CreatureInfo const* creatureInfo = creature__->GetCreatureInfo();
+		if ( creatureInfo->SkinningLootId == loot_id )
+		{
+			lootOrigin = 4;
+		}
+		else
+		{
+			//sLog.outBasic("RICHAR: LOOT - type creature" );
+			lootOrigin = 1;
+		}
+
+		
+	}
+	else if ( !lootOrigin_creature && lootOrigin_gameobj  && !lootOrigin_item )
+	{
+		//sLog.outBasic("RICHAR: LOOT - type gameobj" );
+		lootOrigin = 2;
+	}
+	else if ( !lootOrigin_creature && !lootOrigin_gameobj  && lootOrigin_item )
+	{
+		// j'ai pas encore reussi a trouver quand ca vient d'un objet (exemple quand on desanchante)
+		//sLog.outBasic("RICHAR: LOOT - type item" ); 
+		lootOrigin = 3;
+	}
+	else
+	{
+		//sLog.outBasic("RICHAR: LOOT - type ???" );
+		int aa=0;
+	}
+	*/
+
+
+	// parametre richard01_test est la source :  0=unknown   1=cadavre    2=coffre (TODO ?)
+	//
+	// parametre richard02_test :
+	// si cadavre alors correspond au niveau du cadavre  (Negatif si la creature est elite)
+	//
+
+	int32 richard01_test = 0;
+	int32 richard02_test = 0;
+
+	Creature* creatureLooting = 0;
+
+	if ( lootOrigin ==  1 ) // creature
+	{
+
+		creatureLooting = GetLootTarget()->GetMap()->GetCreature(  GetLootTarget()->GetObjectGuid()  );
+		richard02_test = creatureLooting->getLevel();
+		if ( creatureLooting->IsElite() )
+		{
+			richard02_test = -richard02_test;
+		}
+
+		richard01_test = 1;
+
+	}
+	else if ( lootOrigin ==  2 ) // game object  (genre : coffre)
+	{
+		GameObject* goLooting = GetLootTarget()->GetMap()->GetGameObject(  GetLootTarget()->GetObjectGuid()  );
+		//const char* nameGo = goLooting->GetName();
+
+		if ( goLooting )
+		{
+			GameObjectInfo const* goinfo = goLooting->GetGOInfo();
+
+			if ( goinfo )
+			{
+
+				const char* nameGo = goinfo->name;
+
+				//  RICHARD_LOOT_COFFRE
+
+				// comme les Elite gris :
+				//
+				// 1PA si notre perso est niveau  >=1  et  <10   
+				// 10PA si notre perso est niveau  >=10  et  <20   
+				// 50PA si notre perso est niveau  >=20  et  <30 
+				// 1PO si notre perso est niveau  >=30  et  <40 
+				// 2PO si notre perso est niveau  >=40  et  <50 
+				// 4PO si notre perso est niveau  >=50  et  <60 
+				// 5PO pour 60
+
+				if (   
+					nameGo
+					&&
+					(
+
+						//maintenanir la meme liste en ici et  _______richard_ALL.txt
+						strcmp(nameGo , "Solid Chest" ) == 0  
+					||  strcmp(nameGo , "Battered Chest" ) == 0 
+					||  strcmp(nameGo , "Locked Chest" ) == 0 
+					||  strcmp(nameGo , "Large Solid Chest" ) == 0 
+					||  strcmp(nameGo , "Large Mithril Bound Chest" ) == 0 
+					||  strcmp(nameGo , "Ancient Treasure" ) == 0 
+					||  strcmp(nameGo , "Witch Doctor\'s Chest" ) == 0 
+					||  strcmp(nameGo , "Large Battered Chest" ) == 0 
+					||  strcmp(nameGo , "Tattered Chest" ) == 0 
+						)
+					)
+				{
+					int aaaa=0;
+
+					// ajout d'une youhaincoin de type cadeau dans tous les coffres
+					// note : si un coffre ne donner pas de Youhaicoin, ca veut dire qu'il faut ajouter son nom a la liste
+					AddItem(coinItemID2, 1, 0, 0);
+
+
+
+					int playerlevel = lootOwner->getLevel();
+
+
+					uint32  goldBase = 0;
+
+					if ( playerlevel >= 1 && playerlevel < 10 )
+					{
+						goldBase = 1 * 100;
+					}
+					else if ( playerlevel >= 10 && playerlevel < 20 )
+					{
+						goldBase = 10 * 100;
+					}
+					else if ( playerlevel >= 20 && playerlevel < 30 )
+					{
+						goldBase = 50 * 100;
+					}
+					else if ( playerlevel >= 30 && playerlevel < 40 )
+					{
+						goldBase = 1 * 100 * 100;
+					}
+					else if ( playerlevel >= 40 && playerlevel < 50 )
+					{
+						goldBase = 2 * 100 * 100;
+					}
+					else if ( playerlevel >= 50 && playerlevel < 60 )
+					{
+						goldBase = 4 * 100 * 100;
+					}
+					else if ( playerlevel >= 60 )
+					{
+						goldBase = 5 * 100 * 100;
+					}
+
+					// + ou - 20%
+
+					int minGoldBase = (int)goldBase-((int)goldBase*20)/100;
+					if ( minGoldBase < 0 )
+					{
+						minGoldBase = 0;
+					}
+
+					m_gold = uint32(urand(      minGoldBase      ,  goldBase+(goldBase*20)/100  )  );
+
+
+					BASIC_LOG("RICHAR: add coin on COFFRE - base=%d  -  entre %d et %d --> %d  ",
+					goldBase,
+					minGoldBase ,
+					goldBase+(goldBase*20)/100,
+					m_gold
+					);
+
+
+
+					//m_gold = uint32(urand(minAmount >> 8, maxAmount >> 8) 
+					//m_gold = 10001;
+
+				}
+				else if ( goinfo->id  ==  400001 ) // coffre de l'aventurier
+				{
+					
+					// cette ligne ne marche pas
+					// j'aimerai bien reduire le temps de respawn qui est de 60 secondes... enfin c'est low priority c'est pas tres grave
+					//goLooting->SetRespawnTime(1);
+
+
+					uint32 zone_id, area_id;
+					lootOwner->GetZoneAndAreaId(zone_id, area_id);
+					MapEntry const* mapEntry = sMapStore.LookupEntry(lootOwner->GetMapId());
+					AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+					AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(area_id);
+					float posXf = lootOwner->GetPositionX();
+					int posXi = (int)posXf;
+
+					if ( areaEntry )
+					{
+
+						std::ifstream infile("C:\\Users\\Administrator\\Desktop\\wowServ\\_DOC\\youhai_update_mangos_coffreaventure.sql");
+						
+						struct ITEMCOFFREAVENTURIER
+						{
+							int item;
+							std::string region;
+							int x;
+						};
+						std::vector<ITEMCOFFREAVENTURIER> listItem;
+
+						if ( infile )
+						{
+							std::string line;
+							while (std::getline(infile, line))
+							{
+								if ( line.size() > 10 ) // si trop petite ligne ca sert a rien
+								{
+
+									if (
+										   line[0] == '-' && line[1] == '-'  // <-
+										|| line[1] == '-' && line[2] == '-'  // <-- c'est très moche, mais ca va suffir
+										|| line[3] == '-' && line[4] == '-'  // <-
+
+										)
+									{
+										/// si c'est une ligne commentaire
+										int eee=0;
+									}
+
+									else
+									{
+
+										const char* addre1 = strstr( line.c_str() ,   "item = '"  );
+										if ( addre1 )
+										{
+											addre1 += 8;
+											int item = atoi(addre1);
+									
+											const char* addre2 = strstr( line.c_str() ,   "-- "  );
+									
+											std::string regionName;
+									
+											if ( addre2 )
+											{
+												addre2 += 3;
+										
+												for(int i=0; ;i++)
+												{
+													if ( *addre2 == '*' )
+													{
+														addre2++;
+														break;
+													}
+													regionName.push_back(*addre2);
+													addre2++;
+												}
+											}
+
+											int x = atoi(addre2);
+
+											ITEMCOFFREAVENTURIER newww;
+											newww.item = item;
+											newww.region = regionName;
+											newww.x = x;
+											listItem.push_back(newww);
+
+											int aaa=0;
+										}
+
+									}
+								}
+
+							}
+
+							infile.close();
+						}
+						else
+						{
+							lootOwner->Say("ERROR 538F : can't open coffreaventure.sql", LANG_UNIVERSAL);
+						}
+
+
+						
+
+
+
+						bool itemFound = false;
+						if ( listItem.size() <= 0 )
+						{
+							lootOwner->Say("ERROR 548F : coffreaventure.sql - liste vide", LANG_UNIVERSAL);
+						}
+						else
+						{
+							for(int i=0; i<listItem.size(); i++)
+							{
+								if ( listItem[i].region == areaEntry->area_name[0]
+									&& abs(posXi-(listItem[i].x))<=7 )
+								{
+									AddItem(listItem[i].item, 1, 0, 0);
+									itemFound = true;
+									break;
+								}
+
+							}
+
+							if ( !itemFound )
+							{
+								//on ecrit les 2 caracteristique d'un coffre :  area name, et posX. ca devrait suffir pout pas avoir de conflit
+								char messageOut[2048];
+								sprintf(messageOut, "ERROR 598K : Pas d'objet de quete. - *%s*%d   -guid=%d",
+									areaEntry->area_name[0],
+									posXi,
+									GetLootTarget()->GetGUIDLow() 
+								
+								);
+								lootOwner->Say(messageOut, LANG_UNIVERSAL);
+							}
+							else
+							{
+								if (    strcmp( lootOwner->GetName() , "GrandJuge" ) == 0
+									||  strcmp( lootOwner->GetName() , "GrandTroll" ) == 0
+									
+									)
+								{
+									//juste un message d'info pour m'aider a debugger
+									char messageOut[2048];
+									sprintf(messageOut, "INFO : itemFound - listItem.size()=%d - guid=%d",listItem.size() , GetLootTarget()->GetGUIDLow()  );
+									lootOwner->Say(messageOut, LANG_UNIVERSAL);
+								}
+							}
+						}
+
+
+					
+					}
+					else
+					{
+						char messageOut[2048];
+						sprintf(messageOut, "ERROR 598J : wrong areaEntry");
+						lootOwner->Say(messageOut, LANG_UNIVERSAL);
+					}
+
+
+					int aaa=0;
+				}
+
+				int affaa=0;
+
+			}
+
+		}
+
+		int aaaa=0;
+	}
+	else
+	{
+		int dfdfd=0;
+	}
+
+
+
+
+
+	if (richard01_test == 0)
+	{
+		//BASIC_LOG("RICHAR: add coin on loot - NO because richard01_test=%d", richard01_test);
+	}
+	else if (richard01_test == 1) // cadavre
+	{
+
+		//jaune, c'est tout le temps entre   lvlPlayer-2  et  lvlPlayer+2
+		//vert ca depend : pour un player 10, le vert va etre entre 5 et 7    pour un player lvl 50 le vert va etre entre 40 et 47... donc je vais considere que le vert sera entre  lvl-7 et lvl-3
+		//
+		//apres un peu plus de test  (en mettant 2 Game Master l'un en face de l'autre), je confirme que Jaune ca change pas.
+		//voila en gros ce que j'estime :
+		//perso 1->10   vert sera entre lvl-5   et lvl-3 
+		//perso 10->19  vert sera entre lvl-5   et lvl-3   <
+		//perso 20->29  vert sera entre lvl-6   et lvl-3   <
+		//perso 30->39  vert sera entre lvl-7   et lvl-3   <--- c'est pas parfaitement exact mais ca donne une très bonne estimation
+		//perso 40->49  vert sera entre lvl-9   et lvl-3   <
+		//perso 50->59  vert sera entre lvl-10  et lvl-3   <
+		//perso     60  vert sera entre lvl-12  et lvl-3 
+		//
+		//
+		// je vais rester sur ma constante qui considere le NPC vert pour les Youhaicoin aux niveaux  [ -7  ->  -3  ]
+		// ca favorise les bas niveau qui vont avoir des youhaicoin sur qq mobs gris
+		// et ca défavorise les HL qui ne vont jamais avoir de youhaicoin sur des vert trop bas level
+		// j'aime bien
+		//
+
+
+		char typeMobChar[256];
+		strcpy(typeMobChar, "ERROR");
+
+		float difficultyParagon1 = 0.0;
+
+		Creature::GetRichardModForMap(  creatureLooting->m_richar_lieuOrigin , creatureLooting->GetName(),  creatureLooting->GetOwner() , &difficultyParagon1  );
+
+		int playerParagon = lootOwner->GetParagonLevelFromItem();
+		int playerlevel = lootOwner->getLevel();
+		int cadavreLevel = abs(richard02_test);
+		bool cadavreElite = richard02_test < 0 ? true : false;
+		float scoreRand = (float)(rand() % 100 + 1);     //  1 to 100
+		float scoreToReach = 0.0f;
+		if (false) {}
+		else if (!cadavreElite &&    cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature non elite verte
+		{
+			strcpy(typeMobChar, "easy-vert");
+			scoreToReach = 5.0f;
+		}
+		else if (!cadavreElite &&   cadavreLevel >= playerlevel - 2 && cadavreLevel <= playerlevel + 2) // creature non elite jaune
+		{
+			strcpy(typeMobChar, "easy-jaune");
+			scoreToReach = 10.0f;
+		}
+		else if (!cadavreElite &&   cadavreLevel >= playerlevel + 3) // creature non elite orange ou plus
+		{
+			strcpy(typeMobChar, "easy-orange");
+			scoreToReach = 15.0f;
+		}
+		else if (cadavreElite &&     cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature  elite verte
+		{
+			strcpy(typeMobChar, "elite-verte");
+			scoreToReach = 10.0f;
+		}
+		else if (cadavreElite &&   cadavreLevel >= playerlevel - 2 && cadavreLevel <= playerlevel + 2) // creature  elite jaune
+		{
+			strcpy(typeMobChar, "elite-jaune");
+			scoreToReach = 15.0f;
+		}
+		else if (cadavreElite &&     cadavreLevel >= playerlevel + 3) // creature  elite orange ou plus
+		{
+			strcpy(typeMobChar, "elite-orange");
+			scoreToReach = 20.0f;
+		}
+		else
+		{
+			strcpy(typeMobChar, "tooEasy");
+			scoreToReach = 0.0f;
+		}
+
+
+
+		//on va ajuster le score to reach en fonction du paragon
+		//par exemple un joueur paragon40 qui attaque un mob paragon 20  on doit reduire de 2x  le chance de loot
+		//cette regle ne marchera QUE pour reduire, pas pour augmenter.
+		//un joueur paragon 1 qui s'attaque a un mob fait pour 2 joueurs  aura autant de chance qu'un mob fait pour 1 joueur.
+		//    je dis ca pour garder une retrocompatibilité avec le vieux taux de loot de youhaicoin qui a toujours ete le meme en donjon et a l'exterieur pour les low level.
+		//en gros ce IF ne va concerner que les joueur 60 avec un paragon > 1
+		if ( (float)playerParagon > difficultyParagon1
+			&& difficultyParagon1 > 0.0f
+			&& playerParagon > 0.0f
+			) // si le joueur s'en prends a plus faible que lui
+		{
+			float coeffFacilite = playerParagon / difficultyParagon1;
+
+			scoreToReach /= coeffFacilite;
+
+			BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%.1f<=%.1f/100 -  MalusParagon=%f",
+				playerlevel,
+				cadavreLevel,
+				typeMobChar,
+				scoreRand, scoreToReach,
+				coeffFacilite
+				);
+		}
+		else
+		{
+			BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%.1f<=%.1f/100",
+				playerlevel,
+				cadavreLevel,
+				typeMobChar,
+				scoreRand, scoreToReach
+				);
+		}
+
+
+
+		
+
+		if (scoreRand <= scoreToReach)
+		{
+
+			uint32 newCoin_ = urand(0,1) == 0 ?  coinItemID1  :  coinItemID2 ;
+
+
+			AddItem(   newCoin_   , 1, 0, 0);
+
+
+			char messageOut[2048];
+
+			if ( newCoin_ == coinItemID1 )
+			{
+				sprintf(messageOut, "+1 youhaicoin paragon!");
+			}
+			else
+			{
+				sprintf(messageOut, "+1 youhaicoin cadeau!");
+			}
+			lootOwner->Say(messageOut, LANG_UNIVERSAL);
+
+			// Dommage, je prefererai faire parler le cadavre de la creature, mais ca marche pas bien :  le cadavre va bien parler, on voit le message dans la fenetre de conversation
+			// mais.. il n'y a pas une vraie bulle de BD
+			//char messageOut[2048];
+			//sprintf(messageOut, "TEST");
+			//creatureLooting->MonsterSay(messageOut, LANG_UNIVERSAL);
+		}
+
+		
+
+	}
+	else
+	{
+		//BASIC_LOG("RICHAR: add coin on loot - NO because ERROR richard01=%d", richard01);
+		int dfdfd=0;
+	}
+
+
+	// richard partie 2 : on ajoute peut etre un youhaimon EPIC :
+	if ( 
+		
+		lootOrigin ==  1 &&  // creature
+
+		//c'est + sympa que ca ne tombe que quand on joue ensemble, plutot que quand on joue tout seul
+		lootOwner &&
+		lootOwner->GetGroup() && 
+		lootOwner->GetGroup()->GetMembersCount() > 1 
+		) 
+	{
+
+		Creature* creatureLooting = GetLootTarget()->GetMap()->GetCreature(  GetLootTarget()->GetObjectGuid()  );
+		int itemYouhaimon = 200000 + creatureLooting->Richar_GetOriginalEntry();
+
+		ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(itemYouhaimon);
+		if (itemProto) // si l'objet youhaimon existe
+		{
+			itemProto->Name1;
+
+			int scoreRandYouhaimon = rand() % 1000 ;
+			if ( scoreRandYouhaimon >= 123 && scoreRandYouhaimon <= 124 ) // 2 chances sur 1000 d'avoir un youhaimon
+			{
+				lootOwner->Say("LOOT YOUHAIMON EPIC !", LANG_UNIVERSAL);
+				AddItem(itemYouhaimon, 1, 0, 0);
+			}
+
+			BASIC_LOG("RICHAR: -------------------------------------------------------------> score youhaimon : %d",scoreRandYouhaimon);
+
+			
+		}
+		else
+		{
+			// objet youhaimon pas trouvé
+		}
+
+		
+	}
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Must now check if current looter have right to loot all item or he will lockout that item until he look and release the loot
     if (!m_currentLooterGuid.IsEmpty() && m_ownerSet.size() > 1 && m_lootMethod != FREE_FOR_ALL) // only for group that are not free for all
     {
@@ -1213,7 +1961,62 @@ void Loot::Release(Player* player)
                         AutoStore(player); // can be lost if no space
                     Clear();
                     m_itemTarget->SetLootState(ITEM_LOOT_REMOVED);
+
+
+					//RICHARD - ne pas delete un tas d'objet quand en en desanchante 1 
+					//sauvegarde des states AVANT delete
+					//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+					uint32 entryItem = m_itemTarget->GetEntry();
+					uint32 countBeforeDelete = m_itemTarget->GetCount();
+					uint32 bagSlot_beforeDelete = m_itemTarget->GetBagSlot();
+					uint32 Slot_beforeDelete = m_itemTarget->GetSlot();
+					//FIN MODIF
+					///////////////////////////////////////////////////////////
+
+
+
+
                     player->DestroyItem(m_itemTarget->GetBagSlot(), m_itemTarget->GetSlot(), true);
+
+
+
+					//on donne ce qui a été delete APRES le delete
+					//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+					if ( countBeforeDelete > 1 ) // si on avait + d'un objet stacké
+					{
+						Item* item_AfterDelete = player->GetItemByPos(bagSlot_beforeDelete, Slot_beforeDelete);
+						if ( item_AfterDelete != nullptr )
+						{
+							sLog.outBasic("RICHAR: error 536903");
+							*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+						}
+						if ( item_AfterDelete == nullptr
+							//||
+							//item_AfterDelete->GetCount() < countBeforeDelete-1
+							)
+						{
+							Item* newItem = Item::CreateItem(entryItem,  countBeforeDelete-1 );
+							ItemPosCountVec sDest;
+							InventoryResult msg = player->CanStoreItem(bagSlot_beforeDelete, Slot_beforeDelete, sDest, newItem, false);
+							if (msg == EQUIP_ERR_OK)
+							{
+								player->StoreItem(sDest, newItem, true);
+							}
+							else
+							{
+								sLog.outBasic("RICHAR: error 536904");
+								*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+							}
+
+						}
+						
+					}
+					//FIN MODIF
+					///////////////////////////////////////////////////////////
+
+
+
+
                     break;
                 }
                 // normal persistence loot
@@ -1223,8 +2026,69 @@ void Loot::Release(Player* player)
                     if (IsLootedFor(player))
                     {
                         m_itemTarget->SetLootState(ITEM_LOOT_REMOVED);
+
+
+
+						//RICHARD - ne pas delete un objet quand en en ouvre 1 (exemple les coquillages)
+						//sauvegarde des states AVANT delete
+						//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+						uint32 entryItem = m_itemTarget->GetEntry();
+						uint32 countBeforeDelete = m_itemTarget->GetCount();
+						uint32 bagSlot_beforeDelete = m_itemTarget->GetBagSlot();
+						uint32 Slot_beforeDelete = m_itemTarget->GetSlot();
+						//FIN MODIF
+						///////////////////////////////////////////////////////////
+
+
+
+
                         player->DestroyItem(m_itemTarget->GetBagSlot(), m_itemTarget->GetSlot(), true);
-                    }
+                    
+					
+
+
+						//on donne ce qui a été delete APRES le delete
+						//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
+						if ( countBeforeDelete > 1 ) // si on avait + d'un objet stacké
+						{
+							Item* item_AfterDelete = player->GetItemByPos(bagSlot_beforeDelete, Slot_beforeDelete);
+							if ( item_AfterDelete != nullptr )
+							{
+								sLog.outBasic("RICHAR: error 536901");
+								*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+							}
+							if ( item_AfterDelete == nullptr
+								//||
+								//item_AfterDelete->GetCount() < countBeforeDelete-1
+								)
+							{
+								Item* newItem = Item::CreateItem(entryItem,  countBeforeDelete-1 );
+								ItemPosCountVec sDest;
+								InventoryResult msg = player->CanStoreItem(bagSlot_beforeDelete, Slot_beforeDelete, sDest, newItem, false);
+								if (msg == EQUIP_ERR_OK)
+								{
+									player->StoreItem(sDest, newItem, true);
+								}
+								else
+								{
+									sLog.outBasic("RICHAR: error 536902");
+									*((unsigned int*)0) = 0xDEAD;//on provoque un CRASH - car c'est pas normal
+								}
+
+							}
+						
+						}
+						//FIN MODIF
+						///////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+					}
                     break;
                 }
             }
@@ -1560,6 +2424,11 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
     m_clientLootType(CLIENT_LOOT_CORPSE), m_lootMethod(NOT_GROUP_TYPE_LOOT), m_threshold(ITEM_QUALITY_UNCOMMON), m_maxEnchantSkill(0), m_isReleased(false), m_haveItemOverThreshold(false),
     m_isChecked(false), m_isChest(false), m_isChanged(false)
 {
+
+
+	m_richard_timeCreated = WorldTimer::getMSTime();
+
+
     // the player whose group may loot the corpse
     if (!player)
     {
@@ -1587,8 +2456,105 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
 
             if ((creatureInfo->LootId && FillLoot(creatureInfo->LootId, LootTemplates_Creature, player, false)) || creatureInfo->MaxLootGold > 0)
             {
-                GenerateMoneyLoot(creatureInfo->MinLootGold, creatureInfo->MaxLootGold);
-                // loot may be anyway empty
+
+
+
+
+                
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//
+				// RICHARD :  reduction des PO lootées par les mobs
+				//
+				// #REDUIT_TES_PO
+				//
+				// original :
+				// GenerateMoneyLoot(creatureInfo->MinLootGold, creatureInfo->MaxLootGold);
+				// nouveau :
+				{
+					float newMin = (float)creatureInfo->MinLootGold;
+					float newMax = (float)creatureInfo->MaxLootGold;
+
+					// 1) deja, on multiplie par la difficulté du perso :
+					newMin *= creature->Richar_difficuly_health;
+					newMax *= creature->Richar_difficuly_health;
+
+					// 2) et en plus de ca, on va rajouter une sécurite, car les gros boss de raid lootent de base
+					//plusieurs centaines de PO.
+					//donc meme divisé par la difficulté ca peut toujours faire une grosse somme
+					//info un mob Elite 60 hors donjon, va looter en gros 30 silver
+					//apres discussion avec Diane, on va partir sur une limite de 50 PA max looté
+					//je divise cette limite par 1.5, puisque elle va etre remultiplié derriere.
+					const float limitt = 50.0f * 100.0f /  sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY);
+					if ( newMin > limitt )
+					{
+						newMin = limitt;
+					}
+					
+					uint32 newMin_int = (uint32)newMin;
+					uint32 newMax_int = (uint32)newMax;
+
+					if ( newMax_int < newMin_int )
+					{
+						newMax_int = newMin_int;
+					}
+
+					// 3) regle d'exception qui va s'appliquer en gros uniquement a 47 mobs dans le jeu
+					//    ( correspondant en majorité a des gros boss
+					// si le mob de base lootait > 10 PO, alors on le ramene a 5 PO de limite
+					if ( creatureInfo->MinLootGold > 10 * 100 * 100 )
+					{
+						newMin_int = (5 * 100 * 100) /  sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY);
+						newMax_int = newMin_int;
+					}
+
+
+					if (   newMin_int != creatureInfo->MinLootGold
+						|| newMax_int != creatureInfo->MaxLootGold
+						)
+					{
+						
+						if ( 
+							(float)creatureInfo->MinLootGold * (float)sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)
+							<= 10.0f*100.0f  // en dessous de 10 PA on parle en PC
+							)
+						{
+							int a = (creatureInfo->MinLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
+							int b = (creatureInfo->MaxLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
+							int c = (newMin_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
+							int d = newMax_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY);
+
+							BASIC_LOG("RICHAR: loop de PO de NPC modifie %d-%d PC  -->  %d-%d PC ",a,b,c,d);
+
+						}
+						else
+						{
+							int a = (int)((float)creatureInfo->MinLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+							int b = (int)((float)creatureInfo->MaxLootGold * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+							int c = (int)((float)newMin_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+							int d = (int)((float)newMax_int * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY) / 100.0f);
+
+							BASIC_LOG("RICHAR: loop de PO de NPC modifie %d-%d PA  -->  %d-%d PA ",a,b,c,d);
+						}
+					}
+
+					GenerateMoneyLoot( newMin_int , newMax_int );
+				}
+				////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				
+				
+
+
+
+
+
+
+
+
+
+
+				
+				
+				// loot may be anyway empty
                 if (!IsLootedForAll())      // TODO:: implement empty windows? sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))
                 {
                     creature->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
@@ -1650,6 +2616,11 @@ Loot::Loot(Player* player, GameObject* gameObject, LootType type) :
     m_clientLootType(CLIENT_LOOT_CORPSE), m_lootMethod(NOT_GROUP_TYPE_LOOT), m_threshold(ITEM_QUALITY_UNCOMMON), m_maxEnchantSkill(0), m_isReleased(false), m_haveItemOverThreshold(false),
     m_isChecked(false), m_isChest(false), m_isChanged(false)
 {
+
+	m_richard_timeCreated = WorldTimer::getMSTime();
+
+
+
     // the player whose group may loot the corpse
     if (!player)
     {
@@ -1708,9 +2679,61 @@ Loot::Loot(Player* player, GameObject* gameObject, LootType type) :
                 uint32 zone, subzone;
                 gameObject->GetZoneAndAreaId(zone, subzone);
                 // if subzone loot exist use it
-                if (!FillLoot(subzone, LootTemplates_Fishing, player, true, (subzone != zone)) && subzone != zone)
-                    // else use zone loot (if zone diff. from subzone, must exist in like case)
-                    FillLoot(zone, LootTemplates_Fishing, player, true);
+               
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//   RICHARD   -   repare le fishing qui peut donner 0 poissons
+				//   voir le ticket que j'ai créé :  894
+
+				// original :
+				// if (!     FillLoot(  0,0,     subzone, LootTemplates_Fishing, player, true, (subzone != zone))        && subzone != zone)
+				//      // else use zone loot (if zone diff. from subzone, must exist in like case)
+				//     FillLoot(  0,0,     zone, LootTemplates_Fishing, player, true);
+
+				bool fillLoot1 = FillLoot(subzone, LootTemplates_Fishing, player, true, (subzone != zone));
+				int nbFish1 = m_lootItems.size();
+				if (nbFish1 == 0 || (!fillLoot1  &&   subzone != zone))
+				{
+					FillLoot(zone, LootTemplates_Fishing, player, true);
+					int nbFish2 = m_lootItems.size();
+					int aaaaa = 0;
+
+					BASIC_LOG("RICHAR: peche de %d poissons dans la zone %d  (no data for SUBzone=%d)", nbFish2, zone, subzone);
+				}
+				else
+				{
+					BASIC_LOG("RICHAR: peche de %d poissons dans la SUBzone %d   (no need to loot zone=%d)", nbFish1, subzone, zone);
+				}
+
+				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                 // setting loot right
                 m_ownerSet.insert(player->GetObjectGuid());
@@ -1748,6 +2771,12 @@ Loot::Loot(Player* player, Corpse* corpse, LootType type) :
     m_clientLootType(CLIENT_LOOT_CORPSE), m_lootMethod(NOT_GROUP_TYPE_LOOT), m_threshold(ITEM_QUALITY_UNCOMMON), m_maxEnchantSkill(0), m_isReleased(false), m_haveItemOverThreshold(false),
     m_isChecked(false), m_isChest(false), m_isChanged(false)
 {
+
+
+	m_richard_timeCreated = WorldTimer::getMSTime();
+
+
+
     // the player whose group may loot the corpse
     if (!player)
     {
@@ -1793,6 +2822,11 @@ Loot::Loot(Player* player, Item* item, LootType type) :
     m_clientLootType(CLIENT_LOOT_CORPSE), m_lootMethod(NOT_GROUP_TYPE_LOOT), m_threshold(ITEM_QUALITY_UNCOMMON), m_maxEnchantSkill(0), m_isReleased(false), m_haveItemOverThreshold(false),
     m_isChecked(false), m_isChest(false), m_isChanged(false)
 {
+
+	m_richard_timeCreated = WorldTimer::getMSTime();
+
+
+
     // the player whose group may loot the corpse
     if (!player)
     {
@@ -1832,6 +2866,10 @@ Loot::Loot(Unit* unit, Item* item) :
     m_lootType(LOOT_SKINNING), m_clientLootType(CLIENT_LOOT_PICKPOCKETING), m_lootMethod(NOT_GROUP_TYPE_LOOT), m_threshold(ITEM_QUALITY_UNCOMMON), m_maxEnchantSkill(0), m_isReleased(false),
     m_haveItemOverThreshold(false), m_isChecked(false), m_isChest(false), m_isChanged(false)
 {
+
+	m_richard_timeCreated = WorldTimer::getMSTime();
+
+
     m_ownerSet.insert(unit->GetObjectGuid());
     m_guidTarget = item->GetObjectGuid();
 }
@@ -1841,6 +2879,11 @@ Loot::Loot(Player* player, uint32 id, LootType type) :
     m_clientLootType(CLIENT_LOOT_CORPSE), m_lootMethod(NOT_GROUP_TYPE_LOOT), m_threshold(ITEM_QUALITY_UNCOMMON), m_maxEnchantSkill(0), m_isReleased(false), m_haveItemOverThreshold(false),
     m_isChecked(false), m_isChest(false), m_isChanged(false)
 {
+
+	m_richard_timeCreated = WorldTimer::getMSTime();
+
+
+
     switch (type)
     {
         case LOOT_MAIL:

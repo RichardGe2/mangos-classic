@@ -69,6 +69,8 @@
 
 #include <cmath>
 
+#include <fstream>
+
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
 
 #define PLAYER_SKILL_INDEX(x)       (PLAYER_SKILL_INFO_1_1 + ((x)*3))
@@ -330,6 +332,9 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player(WorldSession* session): Unit(), m_taxiTracker(*this), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
+	//m_richar_paragon = 0;
+	//m_richar_paragonProgressFromFile = 0;
+
     m_transport = nullptr;
 
 #ifdef BUILD_PLAYERBOT
@@ -500,8 +505,2645 @@ Player::Player(WorldSession* session): Unit(), m_taxiTracker(*this), m_mover(thi
     m_createdInstanceClearTimer = MINUTE * IN_MILLISECONDS;
 }
 
+
+
+
+void Player::Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECONDA>  >& mapsList  ,   int&  nbAreaExplored,  int&  nbAreaTotal)
+{
+
+	int loc = GetSession()->GetSessionDbcLocale();
+
+
+	AreaTableEntry const* aEntry = nullptr;
+	for (uint32 i = 0; i <= sAreaStore.GetNumRows(); i++)
+	{
+		if (AreaTableEntry const* AreaEntry = sAreaStore.LookupEntry(i))
+		{
+			AreaEntry->exploreFlag ;
+			AreaEntry->area_name[loc];
+			AreaEntry->ID;
+			AreaEntry->zone; // parent area ID
+
+
+			std::string parentName = "?? parent name inconnu ??";
+
+			AreaTableEntry const* AreaEntryParent = sAreaStore.LookupEntry(AreaEntry->zone);
+			if ( AreaEntryParent )
+			{
+				parentName = std::string(AreaEntryParent->area_name[loc]);
+			}
+			else
+			{	if ( AreaEntry->zone == 0 )
+				{
+					parentName = "AAA__ROOT_0"; // si la zone parent est l'indice 0 -> pas de parent
+				}
+				int aaaa=0;
+			}
+
+
+			int areaFlag_ = GetAreaFlagByAreaID(AreaEntry->ID);
+				
+			if ( areaFlag_ == -1 )
+			{
+				int aaa=0;
+				continue; // ERRORR
+			}
+
+			int offset = areaFlag_ / 32;
+
+			uint32 val = (uint32)(1 << (areaFlag_ % 32));
+
+				
+			if ( strcmp((char*)AreaEntry->area_name[loc],"Southfury River" ) == 0 )
+			{
+				int aaa=0;
+			}
+
+			if ( offset < PLAYER_EXPLORED_ZONES_SIZE && offset >= 0  )
+			{
+				const uint32 explorred = GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset) ;
+
+
+				//liste des exclus :
+				if (   strcmp(AreaEntry->area_name[loc], "City") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "***On Map Dungeon***") == 0 
+
+					|| strcmp(AreaEntry->area_name[loc], "UNUSED Stratholme") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "UNUSEDShadowfang Keep 003") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Unused The Deadmines 002") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "UNUSEDAlcaz Island") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "DELETE ME") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Darrowmere Lake UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "South Seas UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "UNUSED Stonewrought Pass") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Unused Ironcladcove") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "***On Map Dungeon***") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Programmer Isle") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Caer Darrow UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "The Maul UNUSED") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Unused Ironclad Cove 003") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "GM Island") == 0
+					|| strcmp(AreaEntry->area_name[loc], "Designer Island") == 0
+					|| strcmp(AreaEntry->area_name[loc], "Island of Doctor Lapidis") == 0
+
+					//List des zone : on retire quand le nom du sub-area correspond au nom d'une zone entiere
+					|| strcmp(AreaEntry->area_name[loc], "Alterac Mountains") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Alterac Valley") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Arathi Basin") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Arathi Highlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Ashenvale") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Azshara") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Badlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Blasted Lands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Burning Steppes") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Darkshore") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Darnassus") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Deadwind Pass") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Desolace") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Dun Morogh") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Durotar") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Duskwood") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Dustwallow Marsh") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Eastern Plaguelands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Elwynn Forest") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Felwood") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Feralas") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Hillsbrad Foothills") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Loch Modan") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Moonglade") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Mulgore") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Old Hillsbrad Foothills") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Redridge Mountains") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Ruins of Ahn'Qiraj") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Searing Gorge") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Silithus") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Silverpine Forest") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Stonetalon Mountains") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Stranglethorn Vale") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Swamp of Sorrows") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Tanaris") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Teldrassil") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "The Barrens") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "The Hinterlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Thousand Needles") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Thunder Bluff") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Tirisfal Glades") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Un'Goro Crater") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Warsong Gulch") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Western Plaguelands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Westfall") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Wetlands") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Winterspring") == 0 
+					|| strcmp(AreaEntry->area_name[loc], "Zul'Gurub") == 0 
+
+
+					//on retire les  zone entirere qui nous interresse pas dans les stats
+					|| parentName == "Programmer Isle"
+						
+
+					// || strcmp(AreaEntry->area_name[loc], "XXXXXX") == 0 
+					)
+				{
+					int eeee=0;
+				}
+				else
+				{
+
+					if ( explorred & val )
+					{
+						nbAreaExplored++;
+					}
+
+					mapsList[parentName].push_back(  MAP_SECONDA( AreaEntry->area_name[loc] ,  explorred & val  ,  areaFlag_ ) );
+
+					nbAreaTotal++;
+				}
+
+
+					
+			}
+			else
+			{
+				int aa=0;  // ERRORR
+			}
+
+			int aaa=0;
+		}
+	}
+
+}
+
+
+void Player::richard_importVariables_END(uint64 guid__)
+{
+
+	/*
+	int lvl = getLevel();
+
+	if ( lvl == 60  )
+	{
+		if ( m_richar_paragon >= 1 )
+		{
+			int aaaa=0;
+		}
+		else
+		{
+			//si ca arrive, c'est surement parce que 
+			//le joueur n'est pas dans la liste des joueur niveau 60
+			//dans  Player::richard_importVariables_START
+			//il faut donc updater la liste
+			//
+			//Enfin si je suis la, qqchose ne va pas, il faut enqueter
+			BASIC_LOG("RICHAR: WARNING 53610 IMPORTANT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			//
+			m_richar_paragon = 0;
+
+		}
+	}
+	else
+	{
+		if ( m_richar_paragon != 0 )
+		{
+			//ERREUR ???
+			int aaa=0;
+		}
+
+		m_richar_paragon = 0;
+	}
+
+	m_richar_paragonProgressFromFile = 0;
+	*/
+}
+
+
+void Player::richa_exportTo_richaracter_(
+			uint64 guid,
+			const std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
+			const std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
+			const std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+			const std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+			const char* characterName
+			)
+{
+	char outt[4096];
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	//// sauvegarde des custom variables - pour les CHARACTER (bouillot, boulette, Inge, Herbo ...etc...)
+
+	//ObjectGuid const& guiiddd = GetObjectGuid();
+	//uint32 entryy = guiiddd.GetEntry();
+	//uint64 guid = guiiddd.GetRawValue();
+
+	char nameFile2[2048];
+	sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid);
+	FILE* fcustom = fopen(nameFile2, "wb"); // w : create an empty file - if file already exist content are discarded , and treated as new empty file
+	
+
+	if ( !fcustom )
+	{
+
+		BASIC_LOG("WARNING IMPORTANT  45RT6 :  arrive pas a ouvrir un fichier pour exporter les data - pause de 60 secondes !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ");
+
+		// je prefere bloquer le serveur plutot que charger n'importe quoi ou prendre le risque d'effacer des data
+		for(int i=0; i<60 ;i++)
+		{
+			Sleep(1000);
+			int aaaa=0;
+		}
+
+		int aaa=0;
+
+		return;
+	}
+
+
+	sprintf(outt, "// generated on %02d/%02d/%d \r\n", now->tm_mday ,now->tm_mon+1,  now->tm_year + 1900 );
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "// but de ce fichier : sauvegarder des donnees en plus (qui ne sont pas sauvegardee par la vraie database) propres aux PERSONNAGES.\r\n"); 
+	fwrite(outt, 1, strlen(outt), fcustom);
+		
+	sprintf(outt, "CHARACTER_STAT\r\n"); // juste un code pour savoir si tout est ok
+	fwrite(outt, 1, strlen(outt), fcustom);
+	
+	sprintf(outt, "VERSION_254\r\n"); // la version
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%s\r\n",characterName);//GetName()); // name
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	//sprintf(outt, "%d\r\n",m_richar_paragon);  // <--- TODO : retirer lui car il est save dans  _ri_human_%s
+	//fwrite(outt, 1, strlen(outt), fcustom);    //
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_NPC_KILLED\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%d\r\n", richa_NpcKilled.size());
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	for(int i=0; i<richa_NpcKilled.size(); i++)
+	{
+		sprintf(outt, "%d,%d\r\n", richa_NpcKilled[i].npc_id , richa_NpcKilled[i].nb_killed);
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_PAGE_DISCOVERED\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "%d\r\n", richa_pageDiscovered.size());
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	for(int i=0; i<richa_pageDiscovered.size(); i++)
+	{
+		sprintf(outt, "%d,%d,%d,%d\r\n", richa_pageDiscovered[i].pageId, richa_pageDiscovered[i].objectID, richa_pageDiscovered[i].itemID , 0);
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_LUNARFESTIVAL_ELDERFOUND\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+	for(int i=0; i<richa_lunerFestivalElderFound.size(); i++)
+	{
+		sprintf(outt, "%d,%d\r\n", richa_lunerFestivalElderFound[i].year , richa_lunerFestivalElderFound[i].questId);
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_MAISON_TAVERN\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+	for(int i=0; i<richa_ListeMaison.size(); i++)
+	{
+		//AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+		AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(  richa_ListeMaison[i].areaid  );
+
+		sprintf(outt, "%d,%d,%s\r\n", richa_ListeMaison[i].mapid , richa_ListeMaison[i].areaid , areaEntry ? areaEntry->area_name[0] : "unknown");
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+	
+
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#FIN_DOCUMENT\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	//sprintf(outt, "3146\r\n"); // juste un code pour savoir si tout est ok
+	//fwrite(outt, 1, strlen(outt), fcustom);
+	fclose(fcustom); fcustom=0;
+	
+
+}
+
+
+
+void Player::richa_importFrom_richaracter_(uint64 guid__,
+	std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
+	std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
+	std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+	std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+	std::string& namePerso
+	)
+{
+	
+	char nameFile2[2048];
+	//const char* playerName = GetName();
+	sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid__);
+
+	std::ifstream infile(nameFile2);
+
+
+
+
+	if ( !infile.is_open() || infile.fail() )
+	{
+		// si on arrive la c'est certainement car un nouveau perso a été créé.
+		//  NON EN FAIT car  richa_exportTo_richaracter_  est appelé au moment de creation du perso
+		// donc il n'y a aucune raison de ne pas pouvroi ouvrir ce fichier
+		// et donc c'est une errur tres grave 
+
+		BASIC_LOG("RICHAR WARNING GRAVE 85XC2 : Can't find save file for guid = %d : !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" , (int32_t)guid__ );
+		
+
+		// je prefere bloquer le serveur plutot que charger n'importe quoi ou prendre le risque d'effacer des data
+		for(int i=0; ;i++)
+		{
+			Sleep(1000);
+			int aaaa=0;
+		}
+
+
+		//on RESET toutes la variables importées par ce TXT :
+		richa_NpcKilled.clear();
+		richa_pageDiscovered.clear();
+		richa_lunerFestivalElderFound.clear();
+		richa_ListeMaison.clear();
+		namePerso = "";
+		
+		return;
+	}
+
+
+
+
+	int nbOk = 0;
+	bool error = false;
+	int errorCode = 0;
+
+
+	if ( richa_NpcKilled.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3265 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+	if ( richa_pageDiscovered.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3266 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+	if ( richa_lunerFestivalElderFound.size() != 0 )
+	{
+		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - LIST3267 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
+	}
+
+	richa_NpcKilled.clear();
+	richa_pageDiscovered.clear();
+	richa_lunerFestivalElderFound.clear();
+
+	std::string line;
+	int lineCount = 0; // ne compte PAS les ligne ignorées par le lecteur (ligne vides, commentaires....)
+	int nbNpcKilled = 0;
+	int nbPageDiscoverd = 0;
+	std::string currentSectionName = ""; // string vide si on est pas dans une section
+	int currentSectionLine = 0; //  line 0 = 1ere ligne de la section, sans compter la ligne de titre de la section
+	while (std::getline(infile, line))
+	{
+		//std::istringstream iss(line);
+		//int a, b;
+		//if (!(iss >> a >> b)) { break; } // error
+
+		// process pair (a,b)
+
+		if ( line == "#FIN_DOCUMENT" ) // critere d'arret
+		{
+			nbOk++;
+			break;
+		}
+
+		else if ( line == "" ) // on ignore les ligne vide
+		{
+			lineCount--;
+		}
+
+		else if (  line.size() >= 2 &&  line[0] == '/' &&  line[1] == '/' ) // on ignore les ligne qui commencent par //
+		{
+			lineCount--;
+		}
+
+		else if ( lineCount == 0 )
+		{
+			if ( line != "CHARACTER_STAT" )
+			{
+				error = true; errorCode = 1; break;
+			}
+			else
+			{
+				nbOk++;
+			}
+		}
+
+		else if ( lineCount == 1 )
+		{
+			if ( line != "VERSION_254" ) // version
+			{
+				error = true; errorCode = 2; break;
+			}
+			else
+			{
+				nbOk++;
+			}
+		}
+
+		else if ( lineCount == 2 )
+		{
+			// character name
+			namePerso = line;
+			int aa=0;
+		}
+
+		else if ( lineCount == 3 )
+		{
+			if ( line != "#LIST_NPC_KILLED" ) // version
+			{
+				error = true; errorCode = 3; break;
+			}
+		}
+
+		else if ( lineCount == 4 )
+		{
+			int nb = atoi(line.c_str());
+			nbNpcKilled = nb;
+		}
+
+		else if ( lineCount >= 5 && lineCount <= 5+nbNpcKilled-1 )
+		{
+			int npcid=0;
+			int npckilled=0;
+			if ( sscanf(line.c_str(),"%d,%d",&npcid,&npckilled) != 2 )
+			{
+				error = true;
+				errorCode = 4; 
+				break;
+			}
+			richa_NpcKilled.push_back(RICHA_NPC_KILLED_STAT(npcid,npckilled));
+		}
+
+
+		else if ( lineCount == 5+nbNpcKilled-1+1 )
+		{
+			if ( line != "#LIST_PAGE_DISCOVERED" ) // version
+			{
+				error = true; errorCode = 5; break;
+			}
+		}
+
+		else if ( lineCount == 5+nbNpcKilled-1+2 )
+		{
+			int nb = atoi(line.c_str());
+			nbPageDiscoverd = nb;
+		}
+
+		else if ( lineCount >= 5+nbNpcKilled-1+3 && lineCount <= (5+nbNpcKilled-1+3)+nbPageDiscoverd-1 )
+		{
+			int pageid=0;
+			int objectid=0;
+			int itemid=0;
+			int unuseddd=0;
+			if ( sscanf(line.c_str(),"%d,%d,%d,%d",&pageid,&objectid,&itemid,&unuseddd) != 4 )
+			{
+				error = true;errorCode = 6; 
+				break;
+			}
+
+			if ( objectid == 0 && itemid == 0 )
+			{
+				error = true;errorCode = 7;  break;
+			}
+			if ( objectid != 0 && itemid != 0 )
+			{
+				error = true; errorCode = 8; break;
+			}
+			if ( unuseddd != 0  )
+			{
+				error = true;errorCode = 9;  break;
+			}
+
+			richa_pageDiscovered.push_back(RICHA_PAGE_DISCO_STAT(pageid,objectid,itemid));
+		}
+
+
+
+
+		// mettre les section ici  AVANT les IF qui vont lire dans les sections
+		else if ( line == "#LIST_LUNARFESTIVAL_ELDERFOUND" )
+		{
+			currentSectionName = line;
+			currentSectionLine = 0;
+		}
+		else if ( line == "#LIST_MAISON_TAVERN" )
+		{
+			currentSectionName = line;
+			currentSectionLine = 0;
+		}
+
+
+
+
+
+		else if ( currentSectionName == "#LIST_LUNARFESTIVAL_ELDERFOUND" )
+		{
+			int year=0;
+			int questid=0;
+			int nbnb = sscanf(line.c_str(),"%d,%d",&year,&questid) ;
+			if ( nbnb != 2 )
+			{
+				error = true;errorCode = 10; 
+				break;
+			}
+			richa_lunerFestivalElderFound.push_back(RICHA_LUNARFESTIVAL_ELDERFOUND(year,questid));
+			currentSectionLine++;
+		}
+
+		else if ( currentSectionName == "#LIST_MAISON_TAVERN" )
+		{
+			int mapid=0;
+			int areaid=0;
+			char sonzename[4096];
+			if ( sscanf(line.c_str(),"%d,%d,%s",&mapid,&areaid,sonzename) != 3 )
+			{
+				error = true;errorCode = 11; 
+				break;
+			}
+			richa_ListeMaison.push_back(RICHA_MAISON_TAVERN(mapid,areaid));
+			currentSectionLine++;
+		}
+
+		else
+		{
+			error = true;errorCode = 12; 
+			break;
+		}
+
+
+		lineCount++;
+	}
+
+	if ( richa_NpcKilled.size() != nbNpcKilled )
+	{
+		error = true;errorCode = 13; 
+	}
+	if ( richa_pageDiscovered.size() != nbPageDiscoverd )
+	{
+		error = true;errorCode = 14; 
+	}
+
+
+	if ( nbOk != 3 || error ||  errorCode != 0 )
+	{
+		if ( error )
+		{
+			int aaaaa=0;
+		}
+
+		char finalErro[4096];
+		sprintf(finalErro,"RICHAR WARNING GRAVE cant load save for guid= %d   errorCode= %d -  JE BLOQUE LE SERVER !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" ,
+			(uint32_t)guid__  , 
+			errorCode );
+
+		BASIC_LOG(finalErro);
+
+		// je prefere bloquer le serveur plutot que charger n'importe quoi ou prendre le risque d'effacer des data
+		for(int i=0; ;i++)
+		{
+			Sleep(1000);
+			int aaaa=0;
+		}
+
+
+		//si on arrive dans cette erreur, ca veut dire que    _ri_character_%d.txt
+		//n'a pas été chargé correctment.
+		
+
+		//on RESET toutes la variables importées par ce TXT :
+		richa_NpcKilled.clear();
+		richa_pageDiscovered.clear();
+		richa_lunerFestivalElderFound.clear();
+		richa_ListeMaison.clear();
+		namePerso = "";
+
+
+	}
+
+
+	infile.close();
+}
+
+void Player::richard_importVariables_START(uint64 guid__)
+{
+	BASIC_LOG("Start richard_importVariables....");
+
+
+	/*
+	//on set toute les valeurs par default - au cas ou la variable existe pas
+	m_richar_paragon = 0;
+	m_richar_paragonProgressFromFile = 0;
+
+
+	/////////////////////////////////////////////////////////////////////
+	//importation des variable propres au humain : diane, richard
+	
+	{
+
+		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid__);
+		
+		char irlName[256];
+		// #LISTE_ACCOUNT_HERE
+		// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( player_account == 5 || player_account == 10 )
+		{
+			strcpy_s(irlName,"richard");
+		}
+		else if ( player_account == 6 || player_account == 9 )
+		{
+			strcpy_s(irlName,"diane");
+		}
+		else if ( player_account == 7  ) // grandjuge
+		{
+			strcpy_s(irlName,"dieu");
+		}
+		else
+		{
+			irlName[0] = 0;
+		}
+
+
+
+		if ( irlName[0] != 0 )
+		{
+			int fromFile_paragonLvl = 0;
+			int fromFile_paragoProgress = 0;
+
+			char nameFile2[2048];
+			sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+
+
+			{
+				std::ifstream infile(nameFile2);
+
+				int nbOk = 0;
+				bool error = false;
+
+				int lineConsts = 0;
+				const int Line_First = lineConsts; lineConsts++;
+				const int Line_Version = lineConsts; lineConsts++;
+				const int Line_Name = lineConsts; lineConsts++;
+				const int Line_Paragon = lineConsts; lineConsts++;
+				const int Line_ParagonProgress = lineConsts; lineConsts++;
+				//const int Line_End = lineConsts; lineConsts++;
+
+				std::string line;
+				int lineCount = 0;
+				while (std::getline(infile, line))
+				{
+					if ( lineCount == Line_First )
+					{
+						if ( line != "HUMAIN_STAT" )
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+
+					else if ( lineCount == Line_Version )
+					{
+						if ( line != "VERSION_4" ) // version
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+					else if ( lineCount == Line_Name )
+					{
+						int aa=0;
+					}
+					else if ( lineCount == Line_Paragon )
+					{
+						int value = atoi(line.c_str());
+						fromFile_paragonLvl = value;
+					}
+					else if ( lineCount == Line_ParagonProgress )
+					{
+						int value = atoi(line.c_str());
+						fromFile_paragoProgress = value;
+					}
+					else
+					{
+						error = true;
+						break;
+					}
+
+
+					lineCount++;
+				}
+
+
+
+				if ( nbOk != 2 || error )
+				{
+					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! read file fail" );
+
+					//si erreur, on reset tout
+					//m_richar_paragon = 0;
+					//paragonProgressBeforeSave = 0;
+					
+				}
+				else
+				{
+					//int lvl = getLevel();
+
+					//le GetLevel ne marche pas encore, donc c'est pas tres propre, mais mettre ici la liste
+					//des perso niveau 60 : c'est a dire qui ont le droit au paragon
+					//pour des raison de securité, il est important de ne jamais mettre m_richar_paragon > 0
+					//   pour les niveau < 60
+					//   meme pendant le chargement de ce perso.
+					//   comme ca je suis sur qu'on lui mets pas de sort cheaté par le coeff paragon..etc....
+					//
+					//de meme, pour les perso 60, je pense que c'est important d'avoir m_richar_paragon
+					//  de deja pret avec la bonne valeur >= 1
+					//  comme ca, s'il y a des init de sort, on a bien le coeff du paragon qui va influencer
+					//
+					//donc ca confirme bien qu'il me faut cette liste 
+					//
+					if ( 
+
+						// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+						   guid__ == 4 // boulette
+						|| guid__ == 5 // bouillot
+						|| player_account == 7 // tous les persos du compte du grand juge - je pense pas que ce soit grave si certain perso sont pas 60
+						)
+					{
+						m_richar_paragon = fromFile_paragonLvl;
+						m_richar_paragonProgressFromFile = fromFile_paragoProgress;
+						//fromFile_paragoProgress;
+
+					}
+					else
+					{
+						m_richar_paragon = 0;
+						m_richar_paragonProgressFromFile = 0;
+					}
+
+					int aa=0;
+				}
+
+
+				infile.close();
+
+			}
+
+		}
+
+
+
+	}
+	*/
+
+	//////////////////////////////////////////////////////////////////////
+
+	std::string persoNameImport;
+	richa_importFrom_richaracter_(
+		guid__,
+		m_richa_NpcKilled,
+		m_richa_pageDiscovered,
+		m_richa_lunerFestivalElderFound,
+		m_richa_ListeMaison,
+		persoNameImport
+		);
+
+
+	BASIC_LOG("FINISH richard_importVariables");
+}
+
+
+int Player::GetParagonLevelFromItem()
+{
+	for(int i=1; i<100; i++)
+	{
+		int countitem = GetItemCount(31000+i);
+		if ( countitem >= 1 ) // normallement c'est juste 0  ou 1
+		{
+			return i;
+		}
+	}
+
+	return 0;
+}
+
+
+
+void Player::richa_exportTo_ristat_()
+{
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	char outt[4096];
+
+	// id dans la base de donnée
+	const uint32 coinItemID1 = 30000; 
+	const uint32 coinItemID2 = 30007;
+
+	char nameFile[2048];
+	const char* playerName = GetName();
+	sprintf(nameFile, "RICHARDS/_ri_stat_%s_%d_%02d_%02d.txt",
+		playerName,
+		now->tm_year + 1900,
+		now->tm_mon+1,
+		now->tm_mday
+		);
+	FILE* fout = fopen(nameFile, "wb");
+
+	// pour faciliter la comparaison entre 2 fichier, c'est mieux je pense de mettre les 2 parametres de temps (qui bougent tout le temps)
+	// au debut du fichier
+	
+	sprintf(outt, "played,%d\r\n", GetTotalPlayedTime());
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "timenow,%d_%02d_%02d_%02d_%02d_%02d\r\n",
+		now->tm_year + 1900,
+		now->tm_mon+1,
+		now->tm_mday,
+		now->tm_hour,
+		now->tm_min,
+		now->tm_sec);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	int nbyouhaiCadeau = richard_countItem(coinItemID2, true, true, true, true);
+	int nbyouhaiPara = richard_countItem(coinItemID1, true, true, true, true);
+	
+	int nbyouhaiCadeau_2 = GetItemCount(coinItemID2,true);
+	int nbyouhaiPara_2 = GetItemCount(coinItemID1,true);
+
+
+	if ( nbyouhaiCadeau != nbyouhaiCadeau_2
+		 || nbyouhaiPara != nbyouhaiPara_2
+		)
+	{
+		// ERREUR GRAVE !
+		BASIC_LOG("WARNING GRAVE 2369 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		Sleep(20000);
+		int rrr=0;
+	}
+
+
+	sprintf(outt, "youhaicoin,%d\r\n", nbyouhaiPara +  nbyouhaiCadeau);
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "youhaicoin_paragon,%d\r\n", nbyouhaiPara );
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "youhaicoin_cadeau,%d\r\n", nbyouhaiCadeau );
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "level,%d\r\n", getLevel());
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "xp,%d\r\n", GetUInt32Value(PLAYER_XP));
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "xpNextLevel,%d\r\n", GetUInt32Value(PLAYER_NEXT_LEVEL_XP));
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "paragon,%d\r\n", GetParagonLevelFromItem() );
+	fwrite(outt, 1, strlen(outt), fout);
+
+	
+
+
+	//get & save GPS info
+	{ 
+		uint32 zone_id, area_id;
+		GetZoneAndAreaId(zone_id, area_id);
+
+		MapEntry const* mapEntry = sMapStore.LookupEntry(GetMapId());
+		AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+		AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(area_id);
+
+		float zone_x = GetPositionX();
+		float zone_y = GetPositionY();
+
+		if (!Map2ZoneCoordinates(zone_x, zone_y, zone_id))
+		{
+			zone_x = 0;
+			zone_y = 0;
+		}
+
+		Map const* map = GetMap();
+		float ground_z = map->GetHeight(GetPositionX(), GetPositionY(), MAX_HEIGHT);
+		float floor_z = map->GetHeight(GetPositionX(), GetPositionY(), GetPositionZ());
+
+		GridPair p = MaNGOS::ComputeGridPair(GetPositionX(), GetPositionY());
+
+		int gx = 63 - p.x_coord;
+		int gy = 63 - p.y_coord;
+
+		uint32 have_map = GridMap::ExistMap(GetMapId(), gx, gy) ? 1 : 0;
+		uint32 have_vmap = GridMap::ExistVMap(GetMapId(), gx, gy) ? 1 : 0;
+
+		TerrainInfo const* terrain = GetTerrain();
+
+		//if (have_vmap)
+		//{
+		//	if (terrain->IsOutdoors(GetPositionX(), GetPositionY(), GetPositionZ()))
+		//		PSendSysMessage("You are OUTdoor");
+		//	else
+		//		PSendSysMessage("You are INdoor");
+		//}
+		//else PSendSysMessage("no VMAP available for area info");
+
+		//ca m'arrive de voir une difference de ~0.01 entre 2 fichiers alors que le perso n'a pas ete deplacé.
+		//Donc pour faciliter la comparaison, je vais arrondir.
+		//ca ne change pas grand chose car les nombre sont de l'ordre du centaine/millier
+		sprintf(outt, "GPS_GetPositionXYZ,%d,%d,%d\r\n", (int)GetPositionX() , (int)GetPositionY() , (int)GetPositionZ());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "GPS_GetOrientation,%.2f\r\n", GetOrientation() );
+		fwrite(outt, 1, strlen(outt), fout);
+		
+		sprintf(outt, "GPS_GetMapId,%d\r\n", GetMapId());
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_zoneID,%d\r\n", zone_id);
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_areaID,%d\r\n", area_id);
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_mapEntry,\"%s\"\r\n",  mapEntry ? mapEntry->name[0] : "<unknown>" );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_zoneEntry,\"%s\"\r\n",  zoneEntry ? zoneEntry->area_name[0] : "<unknown>" );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "GPS_areaEntry,\"%s\"\r\n",  areaEntry ? areaEntry->area_name[0] : "<unknown>" );
+		fwrite(outt, 1, strlen(outt), fout);
+
+	}
+	
+
+
+	sprintf(outt, "isDead,%d\r\n", isDead() ? 1 : 0 );
+	fwrite(outt, 1, strlen(outt), fout);
+
+	
+	sprintf(outt, "isFlying,%d\r\n", IsTaxiFlying()  ? 1 : 0 );
+	fwrite(outt, 1, strlen(outt), fout);
+
+	
+	sprintf(outt, "queteList,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete = 0;
+	std::vector<uint32> questInLog;
+	for (int i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
+	{
+		uint32 questid = GetQuestSlotQuestId(i);
+		questInLog.push_back(questid);
+
+		if (questid != 0)
+		{
+			nbQuete++;
+		}
+	}
+	//on les range par ordre croissant, c'est toujours mieux de faire ca, en cas de comparaison entre 2 fichiers
+	std::sort(questInLog.begin(),questInLog.end());
+	if ( questInLog.size() != 20 )
+	{
+		BASIC_LOG("RICHAR: WARNING 53644 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		int errror = 0;
+	}
+	for (int i = 0; i < questInLog.size(); ++i)
+	{
+		sprintf(outt, "%d,", questInLog[i]);
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+	sprintf(outt, "\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "nbQuete,%d\r\n", nbQuete);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	sprintf(outt, "version,10\r\n"); // version of THIS save file, think to increment it each time you add update
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	// QUEST_STATUS_NONE, je crois qu'une quete NONE peut correspondre a 2 choses uniquement :
+	// - je l'ai deja prise - deja eu dans mon journal - mais je l'ai refusée <- donc elle n'est plus dans mon journal
+	// OU
+	// - c'est une quete repetable que j'ai Complete.  dans ce cas, cmangos va lui assigner le status  NONE      <- donc elle n'est plus dans mon journal
+	//
+	// pour distinguer les 2 je crois qu'il suffit de regarder si la quete est dans la liste  REWARDED_TRUE (deja fait une fois, donc repetable)
+	// ou  REWARDED_FALSE --> donc non repetable
+	//
+	sprintf(outt, "questList_NONE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_NONE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_NONE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_NONE++;
+		}
+
+
+
+
+
+		//juste un petit check de debug  pour voir si j'ai bien tout compris
+		Quest const* pQuest = sObjectMgr.GetQuestTemplate(questid);
+		if ( !pQuest || pQuest->GetQuestId() != questid )
+		{
+			BASIC_LOG("RICHAR: WARNING 53641 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			int errror = 0;
+		}
+		else
+		{
+			if ( questStatus.m_status == QUEST_STATUS_NONE )
+			{
+				//
+				if ( questStatus.m_rewarded && pQuest->IsRepeatable() )
+				{
+					//soit c'est une quete que j'ai deja fini au moins une fois, et qui est repetable
+				}
+				else if ( !questStatus.m_rewarded && !pQuest->IsRepeatable() )
+				{
+					//soit j'ai annulé cette quete non repetable
+				}
+				else if ( !questStatus.m_rewarded && pQuest->IsRepeatable() )
+				{
+					//soit j'ai annulé cette quete repetable
+				}
+				else
+				{
+					// du coup, ce cas ne peut jamais arriver ?
+					//c'est a dire un quete avec status = NONE   qui est récompensé, mais non repetable
+					//pour moi ca ne doit pas arriver , car une quete non repetable, qui est réompensé, doit forcément avoir le status=COMPLETE
+					//je teste ca juste en dessous
+					BASIC_LOG("RICHAR: WARNING 53642 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					int errror = 0;
+				}
+			}
+
+			if ( questStatus.m_rewarded && !pQuest->IsRepeatable() )
+			{
+				if ( questStatus.m_status != QUEST_STATUS_COMPLETE )
+				{
+					BASIC_LOG("RICHAR: WARNING 53643 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					int errror = 0;
+				}
+
+			}
+		}
+
+
+
+
+
+	}
+	sprintf(outt, "\r\nnbQuest_NONE,%d\r\n", nbQuete_NONE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_COMPLETE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_COMPLETE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_COMPLETE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_COMPLETE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_COMPLETE,%d\r\n", nbQuete_COMPLETE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_UNAVAILABLE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_UNAVAILABLE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_UNAVAILABLE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_UNAVAILABLE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_UNAVAILABLE,%d\r\n", nbQuete_UNAVAILABLE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_INCOMPLETE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_INCOMPLETE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_INCOMPLETE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_INCOMPLETE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_INCOMPLETE,%d\r\n", nbQuete_INCOMPLETE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	//je crois que  QUEST_STATUS_AVAILABLE  est inutilisé.
+	sprintf(outt, "questList_AVAILABLE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_AVAILABLE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_AVAILABLE )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_AVAILABLE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_AVAILABLE,%d\r\n", nbQuete_AVAILABLE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+	sprintf(outt, "questList_FAILED,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_FAILED = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		// le 7 mars 2018, je me rends compte d'une erreur, je vois   questStatus.m_rewarded   alors que ca doit etre  questStatus.m_status !
+		if ( questStatus.m_status == QUEST_STATUS_FAILED )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_FAILED++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_FAILED,%d\r\n", nbQuete_FAILED);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+
+	// ajouté le  7 mars 2018  quand je me suis rendu compte de l'erreur
+	sprintf(outt, "questList_REWARDED_TRUE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_REWARDED_TRUE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( questStatus.m_rewarded )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_REWARDED_TRUE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_REWARDED_TRUE,%d\r\n", nbQuete_REWARDED_TRUE);
+	fwrite(outt, 1, strlen(outt), fout);
+
+	sprintf(outt, "questList_REWARDED_FALSE,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbQuete_REWARDED_FALSE = 0;
+	for (QuestStatusMap::iterator i = mQuestStatus.begin(); i != mQuestStatus.end(); ++i)
+    {
+		uint32 questid =  i->first;
+        QuestStatusData& questStatus = i->second;
+
+		if ( !questStatus.m_rewarded )
+		{
+			sprintf(outt, "%d,", questid);
+			fwrite(outt, 1, strlen(outt), fout);
+			nbQuete_REWARDED_FALSE++;
+		}
+	}
+	sprintf(outt, "\r\nnbQuest_REWARDED_FALSE,%d\r\n", nbQuete_REWARDED_FALSE);
+	fwrite(outt, 1, strlen(outt), fout);
+	
+
+
+
+
+	//sauvegarde des mails
+	sprintf(outt, "MAIL,");
+	fwrite(outt, 1, strlen(outt), fout);
+	int nbMAIL = 0;
+	for (PlayerMails::iterator itr = m_mail.begin(); itr != m_mail.end(); ++itr)
+    {
+		uint32 mailid =  (*itr)->messageID;
+		sprintf(outt, "%d,", mailid);
+		fwrite(outt, 1, strlen(outt), fout);
+		nbMAIL++;
+	}
+	sprintf(outt, "\r\nnbMAIL,%d\r\n", nbMAIL);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+
+
+
+
+
+
+	sprintf(outt, "\r\n#LIST_SPELLS =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+	// COUNTER
+	int nbSpell = 0;
+	for (auto itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+	{
+		//SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+		SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
+        if (!spellInfo)
+            continue;
+		nbSpell++;
+	}
+	sprintf(outt, "ListSpellCount,%d\r\n",nbSpell);
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	//je convertis m_spells qui est un std::unordered_map  en un  map qui est ordonné.
+	//ca devrait normallement me ranger mes nombre dans l'order croissant,  ce qui est toujours plus pratique quand il faudra comparer 2 fichiers
+	std::map<uint32, PlayerSpell>  orderedMapSpell;
+	for (PlayerSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+	{
+		orderedMapSpell[itr->first] = itr->second;
+	}
+
+	if ( orderedMapSpell.size() != m_spells.size() )
+	{
+		//les 2 tailles doivent etre toujours egales
+		BASIC_LOG("RICHAR: WARNING 53645 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		int errror = 0;
+	}
+
+	for (auto itr = orderedMapSpell.begin(); itr != orderedMapSpell.end(); ++itr)
+	{
+		//SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+		SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
+        if (!spellInfo)
+            continue;
+		
+		PlayerSpell const& playerSpell = itr->second;
+
+		//if ( HasSpell();
+		//S_GNOMISH
+
+		//if (playerSpell.state == PLAYERSPELL_REMOVED)
+		//    continue;
+
+		//if (!playerSpell.active || playerSpell.disabled)
+		//    continue;
+
+
+		std::string effectName = "";
+		for (int i = SPELL_EFFECT_NONE; i<TOTAL_SPELL_EFFECTS; i++)
+		{
+			bool eff = IsSpellHaveEffect(spellInfo, (SpellEffects)i);
+			if (eff)
+			{
+				if (false) {}
+				//else if ( i == SPELL_EFFECT_NONE ) { effectName = "SPELL_EFFECT_NONE"; }
+				else if (i == SPELL_EFFECT_INSTAKILL) { effectName += "SPELL_EFFECT_INSTAKILL "; }
+
+
+				else if (i == SPELL_EFFECT_LEARN_SPELL) { effectName += "SPELL_EFFECT_LEARN_SPELL "; }
+
+				else if (i == SPELL_EFFECT_DEFENSE) { effectName += "SPELL_EFFECT_DEFENSE "; }
+
+
+				else if (i == SPELL_EFFECT_ENCHANT_ITEM) { effectName += "SPELL_EFFECT_ENCHANT_ITEM "; }
+				else if (i == SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY) { effectName += "SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY "; }
+
+				//else if ( i == XXXX ) { effectName = "XXXX"; }
+				//break;
+			}
+		}
+
+
+		int loc = GetSession()->GetSessionDbcLocale();
+
+		//if (  strcmp(spellInfo->SpellName[loc], "Dragonscale Leatherworking") == 0 )
+		//{
+		//	int a=0;
+		//}
+
+
+		sprintf(outt, "%d,\"%s\",%d,0x%llx,%s\r\n",
+			itr->first,
+			spellInfo->SpellName[loc],
+			spellInfo->Category,
+			spellInfo->SpellFamilyFlags,
+			effectName.c_str()  // ...
+
+			);
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+
+
+
+
+	//save items of player
+	{
+
+
+		//bool inBankAlso = true; // count bank or not
+		//bool inEquipmentAlso = true;
+		//bool inKeyRingAlso = true;
+		//bool inInventoryAlso = true;
+		
+		sprintf(outt, "\r\n#LIST_ITEMS_INVENTORY_BAG ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					Item* pItem = pBag;
+					if ( pItem )
+					{
+
+						nb++;
+					}
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				Item* pItem = pBag;
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pBag->GetBagSize() ,  itemProto->Name1    );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+
+		sprintf(outt, "\r\n#LIST_ITEMS_EQUIPED ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+
+					nb++;
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		//if (inEquipmentAlso)
+		{
+			for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+				else
+				{
+					int aa=0;
+				}
+			}
+		}
+
+		sprintf(outt, "\r\n#LIST_ITEMS_KEYRING ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+
+					nb++;
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+
+		//if (inKeyRingAlso)
+		{
+			for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+
+
+
+
+		sprintf(outt, "\r\n#LIST_ITEMS_INVENTORY ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+
+						nb++;
+					}
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		//if (inInventoryAlso)
+		{
+			for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+
+						Item* pItem = GetItemByPos(i, j);
+
+						if (pItem)
+						{
+							//	BASIC_LOG("RICHAR: item = %d",pItem->GetEntry());
+						}
+						else
+						{
+							//	BASIC_LOG("RICHAR: item = nothing");
+						}
+
+						if ( pItem )
+						{
+							ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+							sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+							fwrite(outt, 1, strlen(outt), fout);
+						}
+					}
+				}
+			}
+
+			for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i) // les 16 place du packback de default
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+
+		sprintf(outt, "\r\n#LIST_ITEMS_BANK_BAG ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					Item* pItem = pBag;
+					if ( pItem )
+					{
+
+						nb++;
+					}
+				}
+			}
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				Item* pItem = pBag;
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pBag->GetBagSize() ,  itemProto->Name1    );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+		}
+
+
+		sprintf(outt, "\r\n#LIST_ITEMS_BANK ==========\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+
+						nb++;
+				}
+			}
+
+			for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+						nb++;
+					}
+				}
+			}
+
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		//if (inBankAlso)
+		{
+			for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+			{
+				Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+				if ( pItem )
+				{
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+					sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() , itemProto->Name1   );
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+			}
+			for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+			{
+				if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				{
+					for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+					{
+						Item* pItem = GetItemByPos(i, j);
+						if ( pItem )
+						{
+							ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(pItem->GetEntry());
+							sprintf(outt, "%d,%d,\"%s\"\r\n", pItem->GetEntry(), pItem->GetCount() ,  itemProto->Name1    );
+							fwrite(outt, 1, strlen(outt), fout);
+						}
+					}
+				}
+			}
+		}
+
+
+
+	 }
+
+
+
+
+
+	 sprintf(outt, "\r\n#LIST_SKILLS =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+	// COUNTER
+	{
+		int nb = 0;
+			
+		for (SkillStatusMap::const_iterator itr = mSkillStatus.begin(); itr != mSkillStatus.end(); ++itr)
+		{
+			SkillStatusData const& skillStatus = itr->second;
+			if (skillStatus.uState == SKILL_DELETED)
+				continue;
+
+			nb++;
+		}
+
+		sprintf(outt, "Counter,%d\r\n",nb);
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+
+	for (SkillStatusMap::const_iterator itr = mSkillStatus.begin(); itr != mSkillStatus.end(); ++itr)
+	{
+		SkillStatusData const& skillStatus = itr->second;
+		if (skillStatus.uState == SKILL_DELETED)
+			continue;
+
+		//par exemple, les humains on +5 en sword et en mass
+		uint32 bonus = GetUInt32Value(PLAYER_SKILL_BONUS_INDEX(skillStatus.pos));
+		//bonus va contenir le temporaire et le permanent  (en LO, et en HI)
+
+		int32 value_ = int32(SKILL_VALUE(GetUInt32Value(PLAYER_SKILL_VALUE_INDEX(skillStatus.pos))));
+		int32 value_max = int32(SKILL_MAX(GetUInt32Value(PLAYER_SKILL_VALUE_INDEX(skillStatus.pos))));
+
+		std::string finalName;
+
+		for (uint32 id = 0; id < sSkillLineStore.GetNumRows(); ++id)
+		{
+			SkillLineEntry const* skillInfo = sSkillLineStore.LookupEntry(id);
+			if (skillInfo)
+			{
+				int loc = GetSession()->GetSessionDbcLocale();
+				std::string name = skillInfo->name[loc];
+
+				if ( itr->first == id )
+				{
+					finalName = name;
+					break;
+				}
+
+				int aa=0;
+			}
+		}
+
+		sprintf(outt, "%d,\"%s\",%d,%d,%d,%d\r\n",  itr->first  ,  finalName.c_str() , value_ ,  value_max  , SKILL_TEMP_BONUS(bonus) , SKILL_PERM_BONUS(bonus) );
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+
+	sprintf(outt, "\r\n#LIST_REPUTATION =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+	// COUNTER
+	{
+		int nb = 0;
+			
+		for ( auto  itr = GetReputationMgr().GetStateList().begin(); itr != GetReputationMgr().GetStateList().end(); ++itr)
+		{
+
+			nb++;
+		}
+
+		sprintf(outt, "Counter,%d\r\n",nb);
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+	
+	for ( auto  itr = GetReputationMgr().GetStateList().begin(); itr != GetReputationMgr().GetStateList().end(); ++itr)
+    {
+		 const RepListID& faction_1 = itr->first;
+        const FactionState& faction_2 = itr->second;
+
+
+		ReputationRank rank = GetReputationRank(faction_2.ID) ;
+
+		int32 reput = GetReputationMgr().GetReputation(faction_2.ID);
+
+
+
+		FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_2.ID);
+
+		std::string nameeeee = std::string(factionEntry->name[0]);
+
+		std::string rank_str = "??rank inconnu??";
+
+		if ( rank == REP_HATED ) { rank_str = "HATED";            reput = 36000 + 3000 + 3000 + reput; }
+		if ( rank == REP_HOSTILE ) { rank_str = "HOSTILE";        reput = 3000 + 3000        + reput ;  }
+		if ( rank == REP_UNFRIENDLY ) { rank_str = "UNFRIENDLY";  reput =  3000              + reput; }
+		if ( rank == REP_NEUTRAL ) { rank_str = "NEUTRAL"; }
+		if ( rank == REP_FRIENDLY ) { rank_str = "FRIENDLY";  reput -= 3000; }
+		if ( rank == REP_HONORED ) { rank_str = "HONORED";   reput -= 3000;  reput -= 6000; }
+		if ( rank == REP_REVERED ) { rank_str = "REVERED";   reput -= 3000;  reput -= 6000; reput -= 12000;}
+		if ( rank == REP_EXALTED ) { rank_str = "EXALTED";   reput -= 3000;   reput -= 6000; reput -= 12000; reput -= 21000;}
+
+        //if (faction.needSave)
+       // {
+        //    stmtDel.PExecute(m_player->GetGUIDLow(), faction.ID);
+        //    stmtIns.PExecute(m_player->GetGUIDLow(), faction.ID, faction.Standing, faction.Flags);
+        //    faction.needSave = false;
+        //}
+
+
+		sprintf(outt, "%d,\"%s\",\"%s\",%d\r\n",   faction_2.ID  ,  nameeeee.c_str()   , rank_str.c_str() , reput );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		int aa=0;
+    }
+
+
+
+	{
+		sprintf(outt, "\r\n#LIST_HONOR =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		// TODO
+
+	}
+
+
+	//save talent tree
+	{
+
+		sprintf(outt, "\r\n#LIST_TALENT_TREE =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		int nbTotalPoint = 0;
+		int nbTotalSpells = 0;
+
+		for (unsigned int i = 0; i < sTalentStore.GetNumRows(); ++i)
+		{
+			TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
+
+			if (!talentInfo)
+				continue;
+
+			TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+
+			if (!talentTabInfo)
+				continue;
+
+			if ((getClassMask() & talentTabInfo->ClassMask) == 0)
+				continue;
+
+			int loc = GetSession()->GetSessionDbcLocale();
+
+			int maxRank = -1;
+
+			
+
+			for (int j = 0; j < MAX_TALENT_RANK; ++j)
+			{
+				if (talentInfo->RankID[j])
+				{
+					uint32 spell_id__ = talentInfo->RankID[j];   
+
+					bool playerHasSpell = false;
+
+					for (PlayerSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+					{
+						//SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+						SpellEntry const* spellInfo___ = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
+						if (!spellInfo___)
+						continue;
+
+						if ( itr->first == spell_id__ )
+						{
+							playerHasSpell = true;
+							break;
+						}
+
+
+					}
+
+
+					if (   playerHasSpell   )
+					{
+
+						maxRank = j;
+					}
+
+					int a=0;
+				}
+			}
+
+			//  maxRank = 0 veut dire qu'on a mis 1 point dans ce talen
+			
+			if ( maxRank >= 0 )
+			{
+				uint32 spell_id__ = talentInfo->RankID[maxRank];   
+				bool passivv = IsPassiveSpell(talentInfo->RankID[maxRank]);
+
+				std::string spellNameStr = "??spellname??";
+				SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spell_id__);
+				if (spellInfo)
+				{
+					spellNameStr = std::string( spellInfo->SpellName[loc] );
+				}
+				else
+				{
+					int erer=0;
+				}
+
+				sprintf(outt, "%d,\"%s\",%d\r\n", spell_id__ ,  spellNameStr.c_str(),  maxRank+1   );
+				fwrite(outt, 1, strlen(outt), fout);
+
+				nbTotalPoint += maxRank+1;
+
+				nbTotalSpells ++;
+
+			}
+
+
+		}
+
+
+		sprintf(outt, "nbTotalTalentPoint,%d\r\n", nbTotalPoint);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "nbTotalTalentSpells,%d\r\n", nbTotalSpells);
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		int nbPointDispo = getLevel() - 9;
+		if ( nbPointDispo < 0 ) { nbPointDispo = 0; }
+
+		// a titre indicatif, on dit le nombdre de point qu'il doit rester logiquement au joueur
+		// celui ci peut etre faux, pour les GM par exemple
+		int nbPointUnspent = nbPointDispo - nbTotalPoint;
+		sprintf(outt, "pointUnspentShouldBe,%d\r\n", nbPointUnspent);
+		fwrite(outt, 1, strlen(outt), fout);
+
+	}
+
+	
+	/*
+	//!  ASUP   !!!!!!
+	//save explored areas
+	{
+
+		int loc = GetSession()->GetSessionDbcLocale();
+
+		int nbAreaExplored = 0;
+		//int nbAreaTotal = 0;
+
+		sprintf(outt, "\r\n#LIST_EXPLORED_AREAS =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		int generalVisitID = 0;
+
+		for (uint32 i = 0; i < PLAYER_EXPLORED_ZONES_SIZE; ++i) // string
+		{
+			const uint32 explorred = GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + i) ;
+
+			for(int areaFlag=0; areaFlag<32; areaFlag++)
+			{
+				uint32 val = (uint32)(1 << (areaFlag % 32));
+
+				//uint32 mappId = GetMapId();
+
+				if ( explorred & val )
+				{
+
+				
+
+
+					bool areaFound = false;
+					uint32 areaFound_mapID = 0;
+					std::string areaName = "?????"; 
+
+					AreaTableEntry const* aEntry = nullptr;
+					for (uint32 i = 0; i <= sAreaStore.GetNumRows(); i++)
+					{
+						//if (area_flag != 0)
+						{
+							if (AreaTableEntry const* AreaEntry = sAreaStore.LookupEntry(i))
+							{
+								//if (AreaEntry->exploreFlag == area_flag)
+								{
+									// area_flag found but it lets test map_id too
+									//if (AreaEntry->mapid == map_id)
+
+									uint32 mapID =  AreaEntry->mapid;
+
+
+									AreaTableEntry const* p = GetAreaEntryByAreaFlagAndMap(generalVisitID, mapID);
+									if ( p != 0 )
+									{
+										areaFound = true;
+										areaFound_mapID = mapID;
+										areaName = std::string( p->area_name[loc] );
+										break;
+									}
+
+									int aaaaa=0;
+
+								}
+							}
+						}
+					}
+
+
+
+
+				
+
+
+
+
+
+					if ( !areaFound )
+					{
+						//erreur etrange ????
+						areaName = "??errorr???"; 
+						int a=0;
+					}
+					else
+					{
+	
+					}
+
+					sprintf(outt, "%d,%d,%d,\"%s\"\r\n",  areaFound_mapID ,  i, areaFlag ,  areaName.c_str()  );
+					fwrite(outt, 1, strlen(outt), fout);
+
+
+					nbAreaExplored++;
+					
+				}
+
+
+				generalVisitID++;
+			}
+
+			int a=0;
+		}
+
+		sprintf(outt, "nbAreaVisited,%d\r\n", nbAreaExplored);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		//sprintf(outt, "nbAreaTotal,%d\r\n", nbAreaTotal);
+		//fwrite(outt, 1, strlen(outt), fout);
+
+	}
+	*/
+
+
+	//save list GRYPHONS KNOWN
+	{
+		sprintf(outt, "\r\n#LIST_GRYPHON_NAMES =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		// COUNTER
+		{
+			int nb = 0;
+			
+			for(int iNode=1; iNode< TaxiMaskSize*32;  iNode++)
+			{
+				bool knownnn = m_taxi.IsTaximaskNodeKnown( iNode) ;
+				if ( knownnn )
+				{
+
+						nb++;
+				}
+			}
+
+			sprintf(outt, "Counter,%d\r\n",nb);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+
+
+
+		//sprintf(outt, "GryphonListNames,");
+		//fwrite(outt, 1, strlen(outt), fout);
+		for(int iNode=1; iNode< TaxiMaskSize*32;  iNode++)
+		{
+			bool knownnn = m_taxi.IsTaximaskNodeKnown( iNode) ;
+			if ( knownnn )
+			{
+
+				std::string taxiiName = "?ERROR?";
+
+				if ( iNode < sTaxiNodesStore.GetNumRows() )
+				{
+					TaxiNodesEntry const* nodeEntry = sTaxiNodesStore.LookupEntry(iNode);
+					if (nodeEntry)
+					{
+						int loc = GetSession()->GetSessionDbcLocale();
+						taxiiName = nodeEntry->name[loc];
+					}
+					else
+					{
+						taxiiName = "?ERROR?";
+						int aa=0; // error ????
+					}
+				}
+
+				sprintf(outt, "%d,\"%s\"\r\n",iNode, taxiiName.c_str());
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+		}
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+
+
+
+	{
+
+		sprintf(outt, "\r\n#LIST_EXPLORED_AREAS_2 =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		int nbAreaExplored = 0;
+		int nbAreaTotal = 0;
+
+		
+
+		std::map<std::string,  std::vector<MAP_SECONDA>  > mapsList;
+		Richard_GetListExplored(mapsList,nbAreaExplored,nbAreaTotal);
+
+		sprintf(outt, "nbAreaVisited,%d\r\n", nbAreaExplored);
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "nbAreaTotal,%d\r\n", nbAreaTotal);
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		for (const auto& elemI : mapsList)
+		{
+			for (const auto& elemJ : elemI.second)
+			{
+				sprintf(outt, "\"%s\",\"%s\",%d\r\n", elemI.first.c_str() ,  elemJ.name.c_str()  ,  elemJ.explored  );
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+		}
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+	}
+
+	/*
+	{
+
+		sprintf(outt, "\r\n#ELITE_GRIS_TUES_COMMUN =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "0\r\n"); // NOT USED ANYMORE
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+	*/
+
+
+	{
+
+		sprintf(outt, "\r\n#LIST_NPC_KILLED =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "Counter,%d\r\n", m_richa_NpcKilled.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_NpcKilled.size(); i++)
+		{
+			sprintf(outt, "%d,%d\r\n", m_richa_NpcKilled[i].npc_id , m_richa_NpcKilled[i].nb_killed);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+	{
+
+		sprintf(outt, "\r\n#LIST_PAGE_DISCOVERED =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "Counter,%d\r\n", m_richa_pageDiscovered.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_pageDiscovered.size(); i++)
+		{
+			sprintf(outt, "%d,%d,%d,%d\r\n", m_richa_pageDiscovered[i].pageId , m_richa_pageDiscovered[i].objectID, m_richa_pageDiscovered[i].itemID, 0);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+	{
+
+		sprintf(outt, "\r\n#LIST_LUNARFESTIVAL_ELDERFOUND =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "Counter,%d\r\n", m_richa_lunerFestivalElderFound.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+		{
+			sprintf(outt, "%d,%d\r\n", m_richa_lunerFestivalElderFound[i].year , m_richa_lunerFestivalElderFound[i].questId);
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+	}
+
+	{
+
+
+		sprintf(outt, "\r\n#LIST_MAISON_TAVERN =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "Counter,%d\r\n", m_richa_ListeMaison.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_ListeMaison.size(); i++)
+		{
+			//AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+			AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(m_richa_ListeMaison[i].areaid);
+
+			sprintf(outt, "%d,%d,%s\r\n", m_richa_ListeMaison[i].mapid , m_richa_ListeMaison[i].areaid ,  areaEntry ? areaEntry->area_name[0] : "unknown");
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+
+
+	}
+
+
+
+	{
+		sprintf(outt, "\r\n#LIST_INSTANCES_SAVES =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		Player* player = this;
+		if (!player) player = m_session->GetPlayer();
+		uint32 counter = 0;
+
+		Player::BoundInstancesMap& binds = player->GetBoundInstances();
+		for (Player::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
+		{
+			DungeonPersistentState* state = itr->second.state;
+			std::string timeleft = secsToTimeString(state->GetResetTime() - time(nullptr), true);
+			if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
+			{
+				sprintf(outt, "map: %d (%s) inst: %d perm: %s canReset: %s TTR: %s\r\n",
+								itr->first, entry->name[0], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+								state->CanReset() ? "yes" : "no", timeleft.c_str());
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+			else
+			{
+				sprintf(outt, "bound for a nonexistent map %u\r\n", itr->first);
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+			counter++;
+		}
+
+		sprintf(outt, "player binds: %d\r\n", counter);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		counter = 0;
+
+		if (Group* group = player->GetGroup())
+		{
+			Group::BoundInstancesMap& binds = group->GetBoundInstances();
+			for (Group::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
+			{
+				DungeonPersistentState* state = itr->second.state;
+				std::string timeleft = secsToTimeString(state->GetResetTime() - time(nullptr), true);
+
+				if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
+				{
+					sprintf(outt, "map: %d (%s) inst: %d perm: %s canReset: %s TTR: %s\r\n",
+									itr->first, entry->name[0], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+									state->CanReset() ? "yes" : "no", timeleft.c_str());
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+				else
+				{
+					sprintf(outt, "bound for a nonexistent map %u\r\n", itr->first);
+					fwrite(outt, 1, strlen(outt), fout);
+				}
+				counter++;
+			}
+		}
+		sprintf(outt, "group binds: %d\r\n", counter);
+		fwrite(outt, 1, strlen(outt), fout);
+
+	}
+	
+
+	{
+		sprintf(outt, "\r\n#LES_CONSTANTES =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		sprintf(outt, "name,%s\r\n", GetName());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		uint8 race = getRace();
+		std::string raceStr = "?race?";
+		if ( race == RACE_HUMAN ) { raceStr = "HUMAN"; }
+		if ( race == RACE_ORC ) { raceStr = "ORC"; }
+		if ( race == RACE_DWARF ) { raceStr = "DWARF"; }
+		if ( race == RACE_NIGHTELF ) { raceStr = "NIGHTELF"; }
+		if ( race == RACE_UNDEAD ) { raceStr = "UNDEAD"; }
+		if ( race == RACE_TAUREN ) { raceStr = "TAUREN"; }
+		if ( race == RACE_GNOME ) { raceStr = "GNOME"; }
+		if ( race == RACE_TROLL ) { raceStr = "TROLL"; }
+		if ( race == RACE_GOBLIN ) { raceStr = "GOBLIN"; }
+		sprintf(outt, "race,%s\r\n", raceStr.c_str() );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		uint8 classe = getClass();
+		std::string classeStr = "?class?";
+		if ( classe == CLASS_WARRIOR ) { classeStr = "WARRIOR"; }
+		if ( classe == CLASS_PALADIN ) { classeStr = "PALADIN"; }
+		if ( classe == CLASS_HUNTER ) { classeStr = "HUNTER"; }
+		if ( classe == CLASS_ROGUE ) { classeStr = "ROGUE"; }
+		if ( classe == CLASS_PRIEST ) { classeStr = "PRIEST"; }
+		if ( classe == CLASS_SHAMAN ) { classeStr = "SHAMAN"; }
+		if ( classe == CLASS_MAGE ) { classeStr = "MAGE"; }
+		if ( classe == CLASS_WARLOCK ) { classeStr = "WARLOCK"; }
+		if ( classe == CLASS_DRUID ) { classeStr = "DRUID"; }
+		sprintf(outt, "class,%s\r\n", classeStr.c_str() );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		uint8 gendere = getGender();
+		std::string gendereStr = "?gendere?";
+		if ( gendere == GENDER_FEMALE ) { gendereStr = "FEMALE"; }
+		if ( gendere == GENDER_MALE ) { gendereStr = "MALE"; }
+		if ( gendere == GENDER_NONE ) { gendereStr = "NONE"; }
+		sprintf(outt, "gender,%s\r\n", gendereStr.c_str() );
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+		uint8 skin       = GetByteValue(PLAYER_BYTES, 0);
+		uint8 face       = GetByteValue(PLAYER_BYTES, 1);
+		uint8 hairstyle  = GetByteValue(PLAYER_BYTES, 2);
+		uint8 haircolor  = GetByteValue(PLAYER_BYTES, 3);
+		uint8 facialhair = GetByteValue(PLAYER_BYTES_2, 0);
+
+		sprintf(outt, "apparence_skin,%d\r\n", skin );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_face,%d\r\n", face );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_hairstyle,%d\r\n", hairstyle );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_haircolor,%d\r\n", haircolor );
+		fwrite(outt, 1, strlen(outt), fout);
+		sprintf(outt, "apparence_facialhair,%d\r\n", facialhair );
+		fwrite(outt, 1, strlen(outt), fout);
+
+		
+
+	}
+
+	sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
+	fwrite(outt, 1, strlen(outt), fout);
+
+
+	fclose(fout);
+	fout = NULL;
+
+
+	// pour faciliter le debug, je vais copier coller le fichier quotidien dans des fichiers qui vont tout garder
+	// du coup je pourrai me permettre de regulierement effacer l'interieur du dossier TEMP qui va grossir vite
+	char nameFile2[2048];
+	sprintf(nameFile2, "RICHARDS/TEMP/_ri_stat_%s_%d_%02d_%02d_%02d_%02d_%02d.txt",
+		playerName,
+		now->tm_year + 1900,
+		now->tm_mon+1,
+		now->tm_mday,
+		now->tm_hour,
+		now->tm_min,
+		now->tm_sec
+		);
+	BOOL succesCopy = CopyFileA(nameFile,nameFile2,TRUE);
+	if ( !succesCopy )
+	{
+		DWORD laster = GetLastError();
+
+		BASIC_LOG("WARNING FAIL COPY FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		Sleep(20000);
+
+		//c'est deja arrive je sais pas pk, j'ai rajoute getlasterror.
+
+		//on va reessayer...
+		BOOL succesCopy2 = CopyFileA(nameFile,nameFile2,TRUE);
+		if ( succesCopy2 )
+		{
+			BASIC_LOG("try 2 - ca a marche .");
+			int aaa=0;
+		}
+		else
+		{
+			DWORD laster2 = GetLastError();
+			BASIC_LOG("try 2 - ca a PAS marche !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			int aaa=0;
+		}
+		
+	}
+
+}
+
+void Player::richard_saveToLog()
+{
+	int aaa=0;
+
+	/*
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// richard : generation outfile :
+
+	BASIC_LOG("Start Save custom outfile....");
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	char outt[4096];
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//// sauvegarde des custom variables - pour aux humain IRL (Richard, Diane )
+	{
+		ObjectGuid const& guiiddd = GetObjectGuid();
+		uint32 entryy = guiiddd.GetEntry();
+		uint64 guid = guiiddd.GetRawValue();
+		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid);
+		
+		char irlName[256];
+		// #LISTE_ACCOUNT_HERE
+		// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( player_account == 5 || player_account == 10 )
+		{
+			strcpy_s(irlName,"richard");
+		}
+		else if ( player_account == 6 || player_account == 9 )
+		{
+			strcpy_s(irlName,"diane");
+		}
+		else if ( player_account == 7  ) // grandjuge
+		{
+			strcpy_s(irlName,"dieu");
+		}
+		else
+		{
+			irlName[0] = 0;
+		}
+
+
+		if ( irlName[0] != 0 )
+		{
+
+			int paragonBeforeSave = 0;
+			int paragonProgressBeforeSave = 0;
+
+
+			char nameFile2[2048];
+			sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+
+			//Deja, avant de supprimer le fichier, on regarde les anciennes valeurs
+			{
+				std::ifstream infile(nameFile2);
+
+				int nbOk = 0;
+				bool error = false;
+
+				int lineConsts = 0;
+				const int Line_First = lineConsts; lineConsts++;
+				const int Line_Version = lineConsts; lineConsts++;
+				const int Line_Name = lineConsts; lineConsts++;
+				const int Line_Paragon = lineConsts; lineConsts++;
+				const int Line_ParagonProgress = lineConsts; lineConsts++;
+				//const int Line_End = lineConsts; lineConsts++;
+
+				std::string line;
+				int lineCount = 0;
+				while (std::getline(infile, line))
+				{
+					if ( lineCount == Line_First )
+					{
+						if ( line != "HUMAIN_STAT" )
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+
+					else if ( lineCount == Line_Version )
+					{
+						if ( line != "VERSION_4" ) // version
+						{
+							error = true; break;
+						}
+						else
+						{
+							nbOk++;
+						}
+					}
+					else if ( lineCount == Line_Name )
+					{
+						int aa=0;
+					}
+					else if ( lineCount == Line_Paragon )
+					{
+						int value = atoi(line.c_str());
+						paragonBeforeSave = value;
+					}
+					else if ( lineCount == Line_ParagonProgress )
+					{
+						int value = atoi(line.c_str());
+						paragonProgressBeforeSave = value;
+					}
+					else
+					{
+						error = true;
+						break;
+					}
+
+
+					lineCount++;
+				}
+
+
+
+				if ( nbOk != 2 || error )
+				{
+					BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE HUMAN (%s) !!!!!!!!!!!", irlName );
+
+					//si erreur, on reset tout
+					paragonBeforeSave = 0;
+					paragonProgressBeforeSave = 0;
+				}
+
+
+				infile.close();
+
+			}
+
+
+
+
+			//char nameFile2[2048];
+			//sprintf(nameFile2, "RICHARDS/_ri_human_%s.txt",irlName);
+			FILE* fcustom = fopen(nameFile2, "wb");
+			
+			sprintf(outt, "HUMAIN_STAT\r\n"); // juste un code pour savoir si tout est ok
+			fwrite(outt, 1, strlen(outt), fcustom);
+	
+			sprintf(outt, "VERSION_4\r\n"); // la version
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			sprintf(outt, "%s\r\n",irlName); // name
+			fwrite(outt, 1, strlen(outt), fcustom);
+
+			if (
+				//m_richar_paragon >= m_richar_paragon_COMMUN 
+				getLevel() == 60// seul un niveau 60 peut updater le niveau courant de paragon
+				)
+			{
+				sprintf(outt, "%d\r\n",m_richar_paragon);
+				fwrite(outt, 1, strlen(outt), fcustom);
+
+				int32 currentRepParagon = GetReputationMgr().GetReputation(93) - 21000;
+				sprintf(outt, "%d\r\n",currentRepParagon);
+				fwrite(outt, 1, strlen(outt), fcustom);
+			}
+			else
+			{
+				sprintf(outt, "%d\r\n",paragonBeforeSave);
+				fwrite(outt, 1, strlen(outt), fcustom);
+
+				sprintf(outt, "%d\r\n",paragonProgressBeforeSave);
+				fwrite(outt, 1, strlen(outt), fcustom);
+			}
+
+			fclose(fcustom); fcustom=0;
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////
+
+
+
+
+	BASIC_LOG("END Save custom outfile.");
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	*/
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 Player::~Player()
 {
+
+
     CleanupsBeforeDelete();
 
     // it must be unloaded already in PlayerLogout and accessed only for loggined player
@@ -2272,7 +4914,97 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 
     // XP to money conversion processed in Player::RewardQuest
     if (level >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+	{
+
+
+
+
+
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// RICHARD PARAGON
+
+		// en fait je vais revenir en arriere - le plus simple, c'est que SEUL les youhaicoin paragon peuvent faire monter le paragon
+		// #NO_XP_FOR_PARAGON
+
+		/*
+		//if (   strcmp( GetName() , "Grandjuge") == 0 )
+		{
+			if ( xp > 0 )
+			{
+
+				// pour passer 1 paragon, il faut 371 336 XP
+				// pour passer un level de reputation, il faut 21 000
+				const float coeffXPToParagon = 21000.0f/371336.0f;   // ATTENTION, CE NOMBRE EST COPIE COLLE 2 FOIS DANS LE CODE
+
+				int repToAdd = (int)((float)xp * coeffXPToParagon);
+
+
+				int aaa=0;
+
+				FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(93);
+
+
+				int32 currentRep = GetReputationMgr().GetReputation(93);
+
+				//la reputation du Paragon doit etre entre 21000 et 42000
+
+				if ( currentRep > 42000 ) // si c'est trop grand (ca ne devrait pas arriver, mais on sait jamais)
+				{
+					if ( repToAdd < 10000 )
+					{
+						GetReputationMgr().SetReputation(factionEntry1,21000 + repToAdd); // on se remet a 21000 + l'XP a ajouter
+					}
+					else
+					{
+						GetReputationMgr().SetReputation(factionEntry1,21000); // on se remet a 21000
+					}
+				}
+				else
+				{
+
+			
+					int newRep = currentRep + repToAdd;
+
+					if ( newRep > 42000 )
+					{
+						repToAdd = 42010 - currentRep;
+
+						m_richar_paragon++;
+
+						char messageOut[256];
+						sprintf(messageOut, "Paragon %d !", m_richar_paragon);
+						Say(messageOut, LANG_UNIVERSAL);
+					}
+
+			
+					GetReputationMgr().ModifyReputation(factionEntry1,repToAdd);
+
+				}
+			}
+
+			int aa=0;
+
+		}
+
+		*/
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
         return;
+	}
+
+
+
+
 
     // XP resting bonus for kill
     uint32 rested_bonus_xp = victim ? GetXPRestBonus(xp) : 0;
@@ -5652,6 +8384,75 @@ void Player::SendCinematicStart(uint32 CinematicSequenceId)
     SendDirectMessage(data);
 }
 
+
+
+
+
+void Player::Richard_InformDiscoveredNewArea(int areaFlag)
+{
+
+	std::map<std::string,  std::vector<MAP_SECONDA>  > mapsList;
+	int nbAreaExplored = 0;
+	int nbAreaTotal = 0;
+	Richard_GetListExplored(mapsList,nbAreaExplored,nbAreaTotal);
+
+
+	//on recherche l'area flag :
+	bool areaFound = false;
+	for (const auto& elemI : mapsList)
+	{
+		for (const auto& elemJ : elemI.second)
+		{
+			elemI.first.c_str() ;
+			elemJ.name.c_str()  ;
+			elemJ.explored ;
+
+			
+			if ( elemJ.areaFlag__ == areaFlag )
+			{
+				areaFound = true;
+
+				int nbSubZone=0;
+				int nbSubDiscovered = 0;
+
+				if ( elemI.first == "AAA__ROOT_0" )
+				{
+					nbSubZone = 1;
+					nbSubDiscovered = 1;
+				}
+				else
+				{
+					
+					for (const auto& elemK : elemI.second)
+					{
+						if ( elemK.explored ) { nbSubDiscovered++; }
+						nbSubZone++;
+					}
+				}
+
+				BASIC_LOG("RICHAR:  %s has discovered new : %s,%s  score=%d/%d ",  GetName()  ,  elemI.first.c_str(),  elemJ.name.c_str(),  nbSubDiscovered,  nbSubZone  );
+
+				char messageOut[2048];
+				sprintf(messageOut, "Decouverte zone (%d/%d)", nbSubDiscovered, nbSubZone);
+				Say(messageOut, LANG_UNIVERSAL);
+
+
+				//pour l'instan je cache
+				//Say("INFO", LANG_UNIVERSAL);
+				
+
+				break;
+			}
+			
+		}
+
+		if (  areaFound ) { break; }
+	}
+
+}
+
+
+
 void Player::CheckAreaExploreAndOutdoor()
 {
     if (!isAlive())
@@ -5708,6 +8509,10 @@ void Player::CheckAreaExploreAndOutdoor()
     {
         SetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset, (uint32)(currFields | val));
 
+
+		Richard_InformDiscoveredNewArea(areaFlag);
+
+
         AreaTableEntry const* p = GetAreaEntryByAreaFlagAndMap(areaFlag, GetMapId());
         if (!p)
         {
@@ -5716,7 +8521,11 @@ void Player::CheckAreaExploreAndOutdoor()
         else if (p->area_level > 0)
         {
             uint32 area = p->ID;
-            if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+           
+			
+			///////// if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+			if ( false )
+			// RICHARD : on s'assuer que cette action raporte du Paragon !
             {
                 SendExplorationExperience(area, 0);
             }
@@ -7890,6 +10699,153 @@ bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
     // where this?
     return false;
 }
+
+
+
+
+
+
+
+
+
+
+uint32 Player::richard_countItem(uint32 item,  bool inBankAlso , bool inEquipmentAlso ,  bool inKeyRingAlso,   bool inInventoryAlso ) const
+{
+	//bool inBankAlso = false; // count bank or not
+	//bool inEquipmentAlso = false;
+	//bool inKeyRingAlso = false;
+	//bool inInventoryAlso = true;
+
+	uint32 tempcount = 0;
+
+	if (inEquipmentAlso)
+	{
+		for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+	}
+
+
+	if (inKeyRingAlso)
+	{
+		for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+	}
+
+	if (inInventoryAlso)
+	{
+		for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+				{
+
+					Item* pItem = GetItemByPos(i, j);
+
+					if (pItem)
+					{
+						//	BASIC_LOG("RICHAR: item = %d",pItem->GetEntry());
+					}
+					else
+					{
+						//	BASIC_LOG("RICHAR: item = nothing");
+					}
+
+					if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+					{
+						tempcount += pItem->GetCount();
+					}
+				}
+			}
+		}
+
+		for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i) // les 16 place du packback de default
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+	}
+
+	if (inBankAlso)
+	{
+		for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+		{
+			Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+			if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+			{
+				tempcount += pItem->GetCount();
+			}
+		}
+		for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+		{
+			if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			{
+				for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+				{
+					Item* pItem = GetItemByPos(i, j);
+					if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
+					{
+						tempcount += pItem->GetCount();
+					}
+				}
+			}
+		}
+	}
+
+	//BASIC_LOG("RICHAR: _ %s has %d item id %d", GetName(), tempcount, item);
+
+	return tempcount;
+}
+
+
+
+void Player::richard_countItem_pokeball(uint32& itemKeyRin0 , uint32& quantity ) const
+{
+
+	itemKeyRin0 = 0;
+	quantity = 0;
+
+	Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, KEYRING_SLOT_START);
+	if (pItem && pItem->GetEntry()  && !pItem->IsInTrade())
+	{
+		if ( pItem->GetEntry() >= 100000  &&    pItem->GetEntry() < 300000 )
+		{
+			itemKeyRin0 = pItem->GetEntry();
+			quantity = pItem->GetCount();
+		}
+	}
+
+
+
+
+
+	return ;
+}
+
+
+
+
+
+
+
+
+
+
 
 
 bool Player::HasItemCount(uint32 item, uint32 count, bool inBankAlso) const
@@ -10487,6 +13443,9 @@ void Player::RemoveItemFromBuyBackSlot(uint32 slot, bool del)
     }
 }
 
+
+
+
 uint32 Player::GetMaxKeyringClientSize() const
 {
 	// Normal player level: safely rely on client GUI expected values
@@ -10495,6 +13454,11 @@ uint32 Player::GetMaxKeyringClientSize() const
 	// abnormal player level (GM mode): use the full available slots though Classic client is limited to 16 above level 60 (big guys know what they do)
 	return KEYRING_SLOT_END - KEYRING_SLOT_START;
 }
+
+
+
+
+
 
 void Player::SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2, uint32 itemid /*= 0*/) const
 {
@@ -11630,12 +14594,233 @@ bool Player::CanSeeStartQuest(Quest const* pQuest) const
 
 bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 {
-    return SatisfyQuestStatus(pQuest, msg) && SatisfyQuestExclusiveGroup(pQuest, msg) &&
+
+
+	////////
+	// DEBUG AREA RICHARD
+
+	if (
+		pQuest->GetQuestId() == 5283
+		|| pQuest->GetQuestId() == 5284
+		|| pQuest->GetQuestId() == 5301
+		|| pQuest->GetQuestId() == 5302
+		|| pQuest->GetQuestId() == 3638
+		|| pQuest->GetQuestId() == 3639
+
+		|| pQuest->GetQuestId() == 2760
+
+		|| pQuest->GetQuestId() == 3444
+
+		)
+	{
+		int a = 0;
+		int id = pQuest->GetQuestId();
+
+		bool b0 = SatisfyQuestStatus(pQuest, msg);
+		bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
+		bool b2 = SatisfyQuestClass(pQuest, msg);
+		bool b3 = SatisfyQuestRace(pQuest, msg);
+		bool b4 = SatisfyQuestLevel(pQuest, msg);
+		bool b5 = SatisfyQuestSkill(pQuest, msg);
+		bool b6 = SatisfyQuestReputation(pQuest, msg);
+		bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
+		bool b8 = SatisfyQuestTimed(pQuest, msg);
+		bool b9 = SatisfyQuestNextChain(pQuest, msg);
+		bool ba = SatisfyQuestPrevChain(pQuest, msg);
+		bool bb = pQuest->IsActive();
+
+		bool final__ = b0 & b1 & b2 & b3 & b4 & b5 & b6 & b7 & b8 & b9 & ba & bb;
+
+		int abnbn = 0;
+	}
+
+	//////////////////////////////////
+
+
+
+
+	bool retnum =
+     SatisfyQuestStatus(pQuest, msg) && SatisfyQuestExclusiveGroup(pQuest, msg) &&
            SatisfyQuestClass(pQuest, msg) && SatisfyQuestRace(pQuest, msg) && SatisfyQuestLevel(pQuest, msg) &&
            SatisfyQuestSkill(pQuest, msg) && SatisfyQuestCondition(pQuest, msg) && SatisfyQuestReputation(pQuest, msg) &&
            SatisfyQuestPreviousQuest(pQuest, msg) && SatisfyQuestTimed(pQuest, msg) &&
            SatisfyQuestNextChain(pQuest, msg) && SatisfyQuestPrevChain(pQuest, msg) &&
            pQuest->IsActive();
+
+
+
+
+
+	// RICHARD DEBUG INFO :
+	if (!retnum)
+	{
+		bool b0 = SatisfyQuestStatus(pQuest, msg);
+		bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
+		bool b2 = SatisfyQuestClass(pQuest, msg);
+		bool b3 = SatisfyQuestRace(pQuest, msg);
+		bool b4 = SatisfyQuestLevel(pQuest, msg);
+		bool b5 = SatisfyQuestSkill(pQuest, msg);
+		bool b6 = SatisfyQuestReputation(pQuest, msg);
+		bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
+		bool b8 = SatisfyQuestTimed(pQuest, msg);
+		bool b9 = SatisfyQuestNextChain(pQuest, msg);
+		bool ba = SatisfyQuestPrevChain(pQuest, msg);
+		bool bb = pQuest->IsActive();
+
+
+
+
+		std::string finalMessage;
+
+
+		finalMessage += "RICHARD: ";
+		finalMessage += std::string(GetName());
+		finalMessage += " can t take quest ";
+		finalMessage += std::to_string(pQuest->GetQuestId());
+		finalMessage += " because :";
+
+		
+		//BASIC_LOG("RICHAR: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
+		
+		
+		if (!b2) { finalMessage += std::string("-- SatisfyQuestClass"); }
+		else if (!b3) { finalMessage += std::string("-- SatisfyQuestRace"); }
+		else if (!b4) 
+		{ 
+			finalMessage += std::string("-- SatisfyQuestLevel("); 
+			finalMessage += std::to_string(pQuest->GetMinLevel());
+			finalMessage += std::string(")"); 
+		}
+		else if (!b5) { finalMessage += std::string("-- SatisfyQuestSkill"); }
+
+		
+
+		else if (!b0) 
+		{
+
+			QuestStatusMap::const_iterator itr = mQuestStatus.find(pQuest->GetQuestId());
+
+			if (itr != mQuestStatus.end() && itr->second.m_status != QUEST_STATUS_NONE)
+			{
+				finalMessage += std::string("-- SatisfyQuestStatus:"); 
+
+				if ( itr->second.m_status == QUEST_STATUS_COMPLETE )
+				{
+					finalMessage += std::string("(complete) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_UNAVAILABLE )
+				{
+					finalMessage += std::string("(unvailable) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_INCOMPLETE )
+				{
+					finalMessage += std::string("(incomplete) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_FAILED )
+				{
+					finalMessage += std::string("(failed) ");
+				}
+				else if ( itr->second.m_status == QUEST_STATUS_AVAILABLE )
+				{
+					finalMessage += std::string("(available?????) "); // ne devrait pas etre utilisé ?????
+				}
+				else
+				{
+					finalMessage += std::string("(???) "); 
+				}
+
+			}
+
+			
+		}
+
+		else if (!b7)
+		{
+			//BASIC_LOG("     b7 - SatisfyQuestPreviousQuest");
+
+			std::string fullmessage = "-- SatisfyQuestPreviousQuest list = ";
+
+
+			for (Quest::PrevQuests::const_iterator iter = pQuest->prevQuests.begin(); iter != pQuest->prevQuests.end(); ++iter)
+			{
+				uint32 prevId = abs(*iter);
+				fullmessage += std::to_string(prevId);
+				fullmessage += " ";
+
+			}
+
+			finalMessage += std::string(fullmessage.c_str());
+
+		}
+
+		else if (!b1) 
+		{ 
+
+			std::string fullmessage = "-- SatisfyQuestExclusiveGroup list = ";
+
+
+			Quest const* qInfo = pQuest;
+
+
+			ExclusiveQuestGroupsMapBounds bounds = sObjectMgr.GetExclusiveQuestGroupsMapBounds(qInfo->GetExclusiveGroup());
+
+			MANGOS_ASSERT(bounds.first != bounds.second);           // must always be found if qInfo->ExclusiveGroup != 0
+
+			for (ExclusiveQuestGroupsMap::const_iterator iter = bounds.first; iter != bounds.second; ++iter)
+			{
+				uint32 exclude_Id = iter->second;
+
+				// skip checked quest id, only state of other quests in group is interesting
+				if (exclude_Id == qInfo->GetQuestId())
+					continue;
+
+				QuestStatusMap::const_iterator i_exstatus = mQuestStatus.find(exclude_Id);
+
+				// alternative quest already started or completed
+				if (i_exstatus != mQuestStatus.end() 
+					&&
+					(i_exstatus->second.m_status == QUEST_STATUS_COMPLETE || 
+						i_exstatus->second.m_status == QUEST_STATUS_INCOMPLETE))
+				{
+					//if (msg)
+					//	SendCanTakeQuestResponse(INVALIDREASON_DONT_HAVE_REQ);
+
+					fullmessage += std::to_string(exclude_Id);
+					fullmessage += " ";
+				}
+			}
+
+
+			finalMessage += std::string(fullmessage.c_str());
+
+
+		}
+
+
+		else if (!b6) { finalMessage += std::string("-- SatisfyQuestReputation"); }
+		
+		else if (!b8) { finalMessage += std::string("-- SatisfyQuestTimed"); }
+		else if (!b9) { finalMessage += std::string("-- SatisfyQuestNextChain"); }
+		else if (!ba) { finalMessage += std::string("-- SatisfyQuestPrevChain"); }
+		else if (!bb) { finalMessage += std::string("-- IsActive"); }
+		else 
+		{
+			finalMessage += std::string("-- ERROR UNKONWN REASON ??????????????");
+		}
+
+
+		BASIC_LOG(finalMessage.c_str());
+
+
+	}
+
+
+
+	return retnum;
+
+
+
+
 }
 
 bool Player::CanAddQuest(Quest const* pQuest, bool msg) const
@@ -12018,6 +15203,854 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////
+	//richard : add coin in quest reward
+	int32 questLevel = pQuest->GetQuestLevel();
+	int32 playerLevel = this->getLevel();
+	uint32 questType = pQuest->GetType();
+	bool questIsDungeon = questType & QUEST_TYPE_DUNGEON;
+	bool questIsElite = questType & QUEST_TYPE_ELITE;
+	bool questIsRaid = questType & QUEST_TYPE_RAID;
+	bool questIsLegendary = questType & QUEST_TYPE_LEGENDARY;
+	bool questIsEscort = questType & QUEST_TYPE_ESCORT;
+	uint32 questID = pQuest->GetQuestId();
+	bool questIsHarder = questIsDungeon | questIsElite | questIsRaid | questIsLegendary | questIsEscort;
+
+
+
+	//si c'est = a true, ca veut dire qu'une quete verte ou grises donnera des youhaicoi comme si c'etait une quete jaune
+	//on fait ca pour les event
+	bool rewardGreyAndGreenAsYellow_event = false;
+
+
+	//
+	//
+	//
+	//
+	// Cette longue liste est en 2 exemplaires : un dans __RICHARD_ALL.txt et un dans Player.cpp
+	// donc IMPORTANT de maintenanir LA MEME liste des 2 cotés
+	// toutefois attention a pas la copier coller betement - les 2 listes ne sont pas communes pour les comment-out
+	// en effet, celle de __RICHARD_ALL.txt va comment-out les quete qu'on ne doit pas reset regulierement
+	// alors que la liste de Player.cpp ca comment-out les quetes qui ne merite pas les youhaicoin bonus
+	//
+	//
+	if ( questID==0
+	//
+	// Ci Dessous - les quetes ouverture des cadeaux de Noel   2
+	//	
+	||questID==6963 //# Horde    - faut retrouver le bonhomme de neige - 1 - demarré par "Kaymard Copperpinch"
+	||questID==6983 //# Horde    - faut retrouver le bonhomme de neige - 2
+	||questID==6984 //# Horde    - faut retrouver le bonhomme de neige - 3
+	||questID==7042 //# Alliance - ou faut retrouver le bonhomme de neige - 1 - demarré par Wulmort Jinglepocket a Ironforge
+	||questID==7043 //# Alliance - ou faut retrouver le bonhomme de neige - 2
+	||questID==7045 //# Alliance - ou faut retrouver le bonhomme de neige - 3
+	||questID==6961 //# Horde    - Great-father Winter is Here! - demarré par "Kaymard Copperpinch"
+	||questID==7021 //# Horde    - Great-father Winter is Here! - demarré par "Whulwert Copperpinch"
+	||questID==7024 //# Horde    - Great-father Winter is Here! - demarré par  Nardstrum Copperpinch a Under City
+	||questID==7022 //# Horde    - Great-father Winter is Here! - demarré par  Nardstrum Copperpinch a Under City
+	||questID==7023 //# Horde    - Great-father Winter is Here! - demarré par  Nardstrum Copperpinch a Under City
+	||questID==8746 //# Horde    - quete de Metzen le cerf - demarré par "Kaymard Copperpinch"
+	||questID==8762 //# Alliance - quete de Metzen le cerf -
+	||questID==6964 //# Horde    - Speak with Sagorne Creststrider in the Valley of Wisdom of Orgrimmar
+	||questID==7061 //# Horde    - suite de 6964 - deliver it to Cairne Bloodhoof in Thunder Bluff
+	||questID==7062 //# Alliance - "The reason for the season" - Speak with Historian Karnik at the Explorer's League in Ironforge
+	||questID==7063 //# Alliance - suite de 7062 - deliver it to King Magni Bronzebeard in Ironforge
+	||questID==8763 //# Alliance - "The Hero of the Day" - demande 300 en cooking - il faut donner du "Deeprock Salt" a une machine et en echange elle donne du "Preserved Holly" - donne par Wulmort a IronForge
+	||questID==8799 //# Horde    - "The Hero of the Day"  version Horde de 8763
+	||questID==6962 //# Horde    - "Treats for Great-father Winter" - Faut donner des cookie et du lait ai pere noel - donné par pere noel
+	||questID==7025 //# Alliance - version Alliance de 6962
+	//
+	//  Ci Dessous - les quetes ouverture des cadeaux de Noel   21
+	//
+	||questID==8827 //# Alliance - "Winter's Presents" - je crois que c'est juste pour aller voir le pere noel pour ouvrir les cadeaux - donné par "Wonderform Operator" trouvable un peu partout
+	||questID==8828 //# Horde    - version Horde de 8827
+	//||questID==8744 //# A Carefully Wrapped Present
+	//||questID==8768 //# A Gaily Wrapped Present
+	//||questID==8769 //# A Ticking Present  
+	//||questID==8788 //# A Gently Shaken Gift    <----- PAS DE BONUS YOUHAICOIN - car sont deja dans les cadeaux
+	//||questID==8803 //# A Festive Gift
+	//||questID==8767 //# A Gently Shaken Gift
+	//
+	//  Ci Dessous - les quetes de la saint valentin  8
+	//
+	||questID==8903 // Alliance - suite de quete Alliance qui se commence aupre de Mottar a SW
+	||questID==9024 // Alliance - suite de 8903
+	||questID==9025 // Alliance - suite de 9024
+	||questID==9026 // Alliance - suite de 9025
+	||questID==9027 // Alliance - suite de 9026
+	||questID==9028 // Alliance - suite de 9027
+	||questID==8899 // Alliance - transmettre une lettre de Aldris (Darnassus) -> Colara ( SW )
+	||questID==8897 // Alliance - transmettre une lettre de                    -> Colara ( SW )
+	||questID==8898 // Alliance - transmettre une lettre de                    -> Colara ( SW )
+	||questID==8900 // Horde    - transmettre une lettre de                    -> Elenia ( UC ) 
+	||questID==8901 // Horde    - transmettre une lettre de                    -> Elenia ( UC ) 
+	||questID==8902 // Horde    - transmettre une lettre de                    -> Elenia ( UC ) 
+	||questID==8904 // Horde    - suite de quete Horde qui se commence aupre de Fenstad Argyle a UC
+	||questID==8979 // Horde    - suite de 8904
+	||questID==8980 // Horde    - suite de 8979
+	||questID==8982 // Horde    - suite de 8980
+	||questID==8983 // Horde    - suite de 8982
+	||questID==8984 // Horde    - suite de 8983
+	||questID==8981 // Horde    - quete : Faire des cadeaux
+	||questID==8993 // Alliance - quete : Faire des cadeaux
+	||questID==9029 // quete: un chaudron Bouillonnant - je crois que c'est la quete de fin Horde/Alliance de la suite de 6 quetes. récompense : des beaux habits
+	//
+	//  Ci Dessous - les quetes de la fete des morts
+	//
+	||questID==8149
+	||questID==8150
+	//
+	//  Ci Dessous - les quetes pour halloween  12
+	//
+	||questID==1658  // Alliance
+	||questID==8373  // Alliance  
+	||questID==8311  // Alliance
+	||questID==8353  // Alliance
+	||questID==8355  // Alliance
+	||questID==8356  // Alliance
+	||questID==8357  // Alliance
+	||questID==1657  // Horde
+	||questID==8322  // Horde
+	||questID==8409  // Horde
+	||questID==8312  // Horde
+	||questID==8354  // Horde
+	||questID==8358  // Horde
+	||questID==8359  // Horde
+	||questID==8360  // Horde
+	//
+	//  Ci Dessous - les quetes pour Lunar Festival  (nouvel an chinois)  7
+	//
+	|| questID == 8868 // Elune's Blessing - donné par Valadar a Moonglade - Raid ? - il faut tuer Omen - en récompense, donne une lenterne qui permet de placer des rayons de lumiere sur la map
+	//|| questID == 8619 // Morndeep the Elder 
+	//|| questID == 8635 // Splitrock the Elder 
+	//|| questID == 8636 // Rumblerock the Elder 
+	//|| questID == 8642 // Silvervein the Elder
+	//|| questID == 8651 // Ironband the Elder
+	//|| questID == 8727 // Farwhisper the Elder
+	//|| questID == 8645 // Obsidian the Elder
+	//|| questID == 8643 // Highpeak the Elder
+	//|| questID == 8644 // Stonefort the Elder
+	//|| questID == 8646 // Hammershout the Elder
+	//|| questID == 8647 // Bellowrage the Elder
+	//|| questID == 8648 // Darkcore the Elder
+	//|| questID == 8649 // Stormbrow the Elder
+	//|| questID == 8650 // Snowcrown the Elder
+	//|| questID == 8652 // Graveborn the Elder
+	//|| questID == 8653 // Goldwell the Elder
+	//|| questID == 8654 // Primestone the Elder
+	//|| questID == 8670 // Runetotem the Elder
+	//|| questID == 8671 // Ragetotem the Elder
+	//|| questID == 8672 // Stonespire the Elder
+	//|| questID == 8673 // Bloodhoof the Elder    <----- PAS DE YOUHAICOIN CADEAU POUR LES 50 ELDER - ca fait trop
+	//|| questID == 8674 // Winterhoof the Elder
+	//|| questID == 8675 // Skychaser the Elder
+	//|| questID == 8676 // Wildmane the Elder
+	//|| questID == 8677 // Darkhorn the Elder
+	//|| questID == 8678 // Elder Proudhorn
+	//|| questID == 8679 // Grimtotem the Elder
+	//|| questID == 8680 // Windtotem the Elder
+	//|| questID == 8681 // Thunderhorn the Elder
+	//|| questID == 8682 // Skyseer the Elder
+	//|| questID == 8683 // Dawnstrider the Elder
+	//|| questID == 8684 // Dreamseer the Elder
+	//|| questID == 8685 // Mistwalker the Elder
+	//|| questID == 8686 // High Mountain the Elder
+	//|| questID == 8688 // Windrun the Elder
+	//|| questID == 8713 // Starsong the Elder
+	//|| questID == 8714 // Moonstrike the Elder
+	//|| questID == 8715 // Bladeleaf the Elder
+	//|| questID == 8716 // Starglade the Elder
+	//|| questID == 8717 // Moonwarden the Elder
+	//|| questID == 8718 // Bladeswift the Elder
+	//|| questID == 8719 // Bladesing the Elder
+	//|| questID == 8720 // Skygleam the Elder
+	//|| questID == 8721 // Starweave the Elder
+	//|| questID == 8722 // Meadowrun the Elder
+	//|| questID == 8723 // Nightwind the Elder
+	//|| questID == 8724 // Morningdew the Elder
+	//|| questID == 8725 // Riversong the Elder
+	//|| questID == 8726 // Brightspear the Elder
+	//|| questID == 8866 // Bronzebeard the Elder
+	|| questID == 8872 // The Lunar Festival - demande d'aller voir un responsable du Lunar festival dans une des capitale
+	|| questID == 8870 // comme 8872
+	|| questID == 8871 // comme 8872
+	|| questID == 8873 // comme 8872
+	|| questID == 8875 // comme 8872
+	|| questID == 8867 // suite de 8872 - demande de lancer des feu d'artifices
+	|| questID == 8883 // suite de 8867 - demande d'aller voir Valadar a Moonglade
+	|| questID == 8878 // quete donnée par Fariel Chantétoile a Moonglade : echange des coin of ancestry contre des cadeaux
+	|| questID == 8882 // comme 8878
+	|| questID == 8877 // comme 8878
+	|| questID == 8880 // comme 8878
+	|| questID == 8881 // comme 8878
+	|| questID == 8879 // comme 8878
+	|| questID == 8876 // comme 8878
+	|| questID == 8863 // donné par Valadar a Moonglade
+	|| questID == 8862 // donné par Valadar a Moonglade
+	|| questID == 8865 // donné par Valadar a Moonglade
+	|| questID == 8864 // donné par Valadar a Moonglade
+	//
+	//  Ci Dessous - les quetes du nouvel an occidental
+	//
+	||questID==8860
+	||questID==8861
+	||questID==8827
+	//
+	//  Ci Dessous - les quetes de la semaine de l'enfant (10)
+	//
+	||questID==172  // - quete coté Horde
+	||questID==1468 // - quete coté Alliance
+	||questID==171
+	||questID==5502
+	||questID==3861
+	||questID==925
+	||questID==910
+	||questID==911
+	||questID==558
+	||questID==1800
+	||questID==1687
+	||questID==1479
+	||questID==1558
+	||questID==915
+	||questID==4822
+	//
+	//  Ci Dessous - les quetes de la fete du feu (1)
+	//
+	||questID==9386
+	||questID==9319
+	||questID==9322
+	||questID==9323
+	||questID==9324
+	||questID==9325
+	||questID==9326
+	||questID==9330
+	||questID==9368
+	||questID==9365
+	||questID==9339
+	||questID==9332
+	||questID==9331
+	||questID==9367
+	||questID==9389
+	//
+	//  Ci Dessous - les quetes de l ouverture des portes anquiraj  22
+	//
+	//||questID==8795  //PAS DE BONUS YOUHAICOIN
+	//||questID==8796  //PAS DE BONUS YOUHAICOIN
+	//||questID==8831  //PAS DE BONUS YOUHAICOIN
+	//||questID==8833  //PAS DE BONUS YOUHAICOIN
+	//||questID==8835  //PAS DE BONUS YOUHAICOIN
+	//||questID==8837  //PAS DE BONUS YOUHAICOIN
+	//||questID==8839  //PAS DE BONUS YOUHAICOIN
+	//||questID==8841  //PAS DE BONUS YOUHAICOIN
+	//||questID==8843  //PAS DE BONUS YOUHAICOIN
+	//||questID==8845  //PAS DE BONUS YOUHAICOIN
+	//
+	// Ci Dessous - les quetes de la foire de sombre lune ( 4 et 5 )
+	//
+	||questID==7929
+	||questID==7926
+	||questID==7939
+	||questID==7941
+	||questID==7942
+	||questID==7946
+	||questID==7981
+	||questID==8223
+	//
+	// Ci Dessous - les quetes du concours de peche   14   15
+	//
+	//||questID==8229  //PAS DE BONUS YOUHAICOIN
+	//||questID==8194  //PAS DE BONUS YOUHAICOIN
+	//||questID==8225  //PAS DE BONUS YOUHAICOIN
+	//||questID==8193  //PAS DE BONUS YOUHAICOIN
+	//
+	// Ci Dessous - la quete d'arene de strongleronce  16
+	//
+	//||questID==7838  //PAS DE BONUS YOUHAICOIN
+	//
+	//
+	// FIN LISTE
+	//
+		)
+	{
+		rewardGreyAndGreenAsYellow_event = true;
+	}
+
+	
+	if (
+		//ici mettre la liste d'exception 
+		// des quetes qui raportent PAS de youhaicoin :
+
+		// les quetes du vendeur youhainy
+		questID < 20000 
+
+		//je retire les 5 quetes d'ouverture de cadeaux de noel.
+		//on a deja plein de youhaicoin dans les cadeaux qu'on ouvre !
+		&& questID != 8744 
+		&& questID != 8768
+		&& questID != 8769 
+		&& questID != 8788 
+		&& questID != 8803 
+		&& questID != 8767
+
+		// pas de youhaicoin pour les 50 Elder du nouvel an chinois
+		&& questID != 8619 // Morndeep the Elder 
+		&& questID != 8635 // Splitrock the Elder 
+		&& questID != 8636 // Rumblerock the Elder 
+		&& questID != 8642 // Silvervein the Elder
+		&& questID != 8651 // Ironband the Elder
+		&& questID != 8727 // Farwhisper the Elder
+		&& questID != 8645 // Obsidian the Elder
+		&& questID != 8643 // Highpeak the Elder
+		&& questID != 8644 // Stonefort the Elder
+		&& questID != 8646 // Hammershout the Elder
+		&& questID != 8647 // Bellowrage the Elder
+		&& questID != 8648 // Darkcore the Elder
+		&& questID != 8649 // Stormbrow the Elder
+		&& questID != 8650 // Snowcrown the Elder
+		&& questID != 8652 // Graveborn the Elder
+		&& questID != 8653 // Goldwell the Elder
+		&& questID != 8654 // Primestone the Elder
+		&& questID != 8670 // Runetotem the Elder
+		&& questID != 8671 // Ragetotem the Elder
+		&& questID != 8672 // Stonespire the Elder
+		&& questID != 8673 // Bloodhoof the Elder
+		&& questID != 8674 // Winterhoof the Elder
+		&& questID != 8675 // Skychaser the Elder
+		&& questID != 8676 // Wildmane the Elder
+		&& questID != 8677 // Darkhorn the Elder
+		&& questID != 8678 // Elder Proudhorn
+		&& questID != 8679 // Grimtotem the Elder
+		&& questID != 8680 // Windtotem the Elder
+		&& questID != 8681 // Thunderhorn the Elder
+		&& questID != 8682 // Skyseer the Elder
+		&& questID != 8683 // Dawnstrider the Elder
+		&& questID != 8684 // Dreamseer the Elder
+		&& questID != 8685 // Mistwalker the Elder
+		&& questID != 8686 // High Mountain the Elder
+		&& questID != 8688 // Windrun the Elder
+		&& questID != 8713 // Starsong the Elder
+		&& questID != 8714 // Moonstrike the Elder
+		&& questID != 8715 // Bladeleaf the Elder
+		&& questID != 8716 // Starglade the Elder
+		&& questID != 8717 // Moonwarden the Elder
+		&& questID != 8718 // Bladeswift the Elder
+		&& questID != 8719 // Bladesing the Elder
+		&& questID != 8720 // Skygleam the Elder
+		&& questID != 8721 // Starweave the Elder
+		&& questID != 8722 // Meadowrun the Elder
+		&& questID != 8723 // Nightwind the Elder
+		&& questID != 8724 // Morningdew the Elder
+		&& questID != 8725 // Riversong the Elder
+		&& questID != 8726 // Brightspear the Elder
+		&& questID != 8866 // Bronzebeard the Elder
+
+		)
+	
+	{
+
+		//jaune, c'est tout le temps entre   lvlPlayer-2  et  lvlPlayer+2
+		//vert ca depend : pour un player 10, le vert va etre entre 5 et 7    pour un player lvl 50 le vert va etre entre 40 et 47... donc je vais considere que le vert sera entre  lvl-7 et lvl-3
+
+		char typeQuestChar[256];
+		strcpy(typeQuestChar, "ERROR");
+
+		int nbCoinToReceiveMax = 0;
+		if (!questIsHarder &&     questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est jaune 
+		{
+			strcpy(typeQuestChar, "easy-jaune");
+			nbCoinToReceiveMax = 1;
+		}
+		else if (!questIsHarder &&  questLevel >= playerLevel + 3)  // si la quete est orange ou plus
+		{
+			strcpy(typeQuestChar, "easy-orange");
+			nbCoinToReceiveMax = 2;
+		}
+		else if (questIsHarder &&     questLevel >= playerLevel - 7 && questLevel <= playerLevel - 3) // si la quete est dongeon et verte
+		{
+			strcpy(typeQuestChar, "hard-vert");
+			nbCoinToReceiveMax = 1;
+		}
+		else if (questIsHarder &&    questLevel >= playerLevel - 2 && questLevel <= playerLevel + 2) // si la quete est dongeon et jaune
+		{
+			strcpy(typeQuestChar, "hard-jaune");
+			nbCoinToReceiveMax = 2;
+		}
+		else if (questIsHarder &&    questLevel >= playerLevel + 3)  // si la quete est dongeon et orange ou plus
+		{
+			strcpy(typeQuestChar, "hard-orange");
+			nbCoinToReceiveMax = 3;
+		}
+		else
+		{
+			strcpy(typeQuestChar, "tooEasy");
+			nbCoinToReceiveMax = 0;
+		}
+
+
+
+		if ( rewardGreyAndGreenAsYellow_event )
+		{
+			if ( nbCoinToReceiveMax < 2 )
+			{
+				nbCoinToReceiveMax = 2;
+			}
+		}
+
+
+
+		int nbCoinToReceiveReally = rand() % (nbCoinToReceiveMax + 1);     //  0 to nbCoinToReceive
+
+		BASIC_LOG("RICHAR:  add coin in quest reward - player=%d questLvl=%d quest=%s nbCoin=%d/%d",
+			playerLevel,
+			questLevel,
+			typeQuestChar,
+			nbCoinToReceiveReally, nbCoinToReceiveMax
+			);
+
+			// id dans la base de donnée
+		const uint32 coinItemID1 = 30000; 
+		const uint32 coinItemID2 = 30007;
+
+
+		
+		char prefix[32];
+		prefix[0] = 0;
+
+		if ( rewardGreyAndGreenAsYellow_event )
+		{
+			//rajouter ca me permet de voir si les quete sont dans la bonne catégorie :  event ou pas  event
+			sprintf_s(prefix,"event - ");
+		}
+
+
+		if (nbCoinToReceiveReally > 0)
+		{
+			uint32 newCoin_ = urand(0,1) == 0 ?  coinItemID1  :  coinItemID2 ;
+
+			ItemPosCountVec dest;
+			if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newCoin_, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+			{
+				Item* item = StoreNewItem(dest, newCoin_, true, Item::GenerateItemRandomPropertyId(newCoin_));
+				SendNewItem(item, nbCoinToReceiveReally, true, false);
+
+				if ( newCoin_ == coinItemID1 )
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "%s+%d/%d youhaicoin paragon!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
+				else
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "%s+%d/%d youhaicoin cadeau!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
+			}
+			else
+			{
+				if ( newCoin_ == coinItemID1 )
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "ERREUR : je n'ai pas recu mes %d youhaicoin paragon car inventaire plein",nbCoinToReceiveReally);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
+				else
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "ERREUR : je n'ai pas recu mes %d youhaicoin cadeau car inventaire plein",nbCoinToReceiveReally);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
+			}
+
+
+
+			
+		}
+		else if (nbCoinToReceiveReally == 0 && nbCoinToReceiveMax > 0)
+		{
+			char messageOut[2048];
+			sprintf(messageOut, "%s+%d/%d youhaicoin :(",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
+			Say(messageOut, LANG_UNIVERSAL);
+		}
+
+	}
+
+
+	//cas special du paragon
+	if ( questID == 20001 )
+	{
+		uint8 questGiverType = questGiver->GetTypeId();
+		Unit* quesGiverUnit = 0;
+		if ( questGiverType == TYPEID_UNIT )
+		{
+			quesGiverUnit = dynamic_cast<Unit*>(questGiver);
+			if ( quesGiverUnit )
+			{
+				
+				int aa=0;
+				
+			}
+			else
+			{
+				Say("ERREUR 632 : en parler a Richard",LANG_UNIVERSAL);
+			}
+		}
+
+
+		int currentParagonLvl = GetParagonLevelFromItem();
+
+
+		//bool paragonPasse = false;
+		//for(int i=1; i<100; i++)
+
+		if ( currentParagonLvl >= 2 )
+		{
+			//int countitem = GetItemCount(31000+i);
+			//if ( countitem >= 1 ) // normallement c'est juste 0  ou 1
+			{
+
+				//if ( countitem > 1 )
+				//{
+				//	//etrange
+				//	int aaaaaaaaaaaaaaaaaaaaaaaa=0;
+				//}
+				
+				DestroyItemCount(31000+currentParagonLvl, 1, true);
+
+				int newItemId = 31000+currentParagonLvl+1;
+
+				ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(newItemId);
+
+				if ( !pProto )
+				{
+					//si on arrive la, il faut surement crer un nouveau item paragon
+					char messageOut[2048];
+					sprintf(messageOut, "ERREUR 48 - ne plus toucher a rien et en parler a Richard");
+
+					if ( quesGiverUnit )
+						quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+					sLog.outBasic("RICHAR ERROR : item %d pas trouve ---------------------------------------------------------------" , newItemId );
+				}
+				else
+				{
+
+					ItemPosCountVec dest;
+					int nbCoinToReceiveReally = 1;
+					int newItemreceived = newItemId;
+					if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+					{
+						Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
+						SendNewItem(item, nbCoinToReceiveReally, true, false);
+
+						char messageOut[2048];
+						sprintf(messageOut, "Vous passez Paragon %d !",currentParagonLvl+1);
+
+						if ( quesGiverUnit )
+						{
+							quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+							
+						}
+
+						// spell Paragon Up
+						if (SpellEntry const* spellProto = sSpellTemplate.LookupEntry<SpellEntry>(34000))
+						{
+							CastSpell(this, spellProto, TRIGGERED_OLD_TRIGGERED);
+						}
+
+
+						//on retire le spell du paragon precedent pour pas que le joueur stack les paragon
+						RemoveAurasDueToSpellByCancel(34000 + currentParagonLvl);
+
+
+
+						
+						
+
+
+
+					}
+					else
+					{
+						//ca ne devrait pas arriver car en principe on retire l'item precedent, ce qui libere une place
+
+						char messageOut[2048];
+						sprintf(messageOut, "ERREUR 47 - inventaire plein - ne plus toucher a rien et en parler a Richard");
+						
+						if ( quesGiverUnit )
+							quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+						sLog.outBasic("RICHAR ERROR 47 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
+					}
+
+				}
+
+				//paragonPasse = true;
+				//break;
+			}
+		}
+
+
+		else
+		{
+			
+
+			int newItemId = 31000+2;
+
+			ItemPosCountVec dest;
+			int nbCoinToReceiveReally = 1;
+			int newItemreceived = newItemId;
+			if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+			{
+				Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
+				SendNewItem(item, nbCoinToReceiveReally, true, false);
+
+				char messageOut[2048];
+				sprintf(messageOut, "Vous passez Paragon 2 !");
+
+				if ( quesGiverUnit )
+				{
+					quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+					
+				}
+
+				// spell Paragon Up
+				if (SpellEntry const* spellProto = sSpellTemplate.LookupEntry<SpellEntry>(34000))
+				{
+					CastSpell(this, spellProto, TRIGGERED_OLD_TRIGGERED);
+				}
+
+			}
+			else
+			{
+				char messageOut[2048];
+				sprintf(messageOut, "ERREUR 51 - inventaire plein - ne plus toucher a rien et en parler a Richard");
+
+				if ( quesGiverUnit )
+					quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+				sLog.outBasic("RICHAR ERROR 51 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
+			}
+
+
+
+
+			//si on trouve pas d'item, on va considerer qu'on passe paragon 2.
+			//dans le doute, j'ecris un petit warning dans le log
+			sLog.outBasic("RICHAR WARNING : pas d'item paragon trouve - si le joueur passe vraiment de paragon 1 a 2, alors c est normal."  );
+		}
+	}
+
+
+	//dans le cas des 50 Elder, pour le nouvel an chinois, on sauvegarde 
+	if ( 
+		   questID == 8619 // Morndeep the Elder 
+		|| questID == 8635 // Splitrock the Elder 
+		|| questID == 8636 // Rumblerock the Elder 
+		|| questID == 8642 // Silvervein the Elder
+		|| questID == 8651 // Ironband the Elder
+		|| questID == 8727 // Farwhisper the Elder
+		|| questID == 8645 // Obsidian the Elder
+		|| questID == 8643 // Highpeak the Elder
+		|| questID == 8644 // Stonefort the Elder
+		|| questID == 8646 // Hammershout the Elder
+		|| questID == 8647 // Bellowrage the Elder
+		|| questID == 8648 // Darkcore the Elder
+		|| questID == 8649 // Stormbrow the Elder
+		|| questID == 8650 // Snowcrown the Elder
+		|| questID == 8652 // Graveborn the Elder
+		|| questID == 8653 // Goldwell the Elder
+		|| questID == 8654 // Primestone the Elder
+		|| questID == 8670 // Runetotem the Elder
+		|| questID == 8671 // Ragetotem the Elder
+		|| questID == 8672 // Stonespire the Elder
+		|| questID == 8673 // Bloodhoof the Elder
+		|| questID == 8674 // Winterhoof the Elder
+		|| questID == 8675 // Skychaser the Elder
+		|| questID == 8676 // Wildmane the Elder
+		|| questID == 8677 // Darkhorn the Elder
+		|| questID == 8678 // Elder Proudhorn
+		|| questID == 8679 // Grimtotem the Elder
+		|| questID == 8680 // Windtotem the Elder
+		|| questID == 8681 // Thunderhorn the Elder
+		|| questID == 8682 // Skyseer the Elder
+		|| questID == 8683 // Dawnstrider the Elder
+		|| questID == 8684 // Dreamseer the Elder
+		|| questID == 8685 // Mistwalker the Elder
+		|| questID == 8686 // High Mountain the Elder
+		|| questID == 8688 // Windrun the Elder
+		|| questID == 8713 // Starsong the Elder
+		|| questID == 8714 // Moonstrike the Elder
+		|| questID == 8715 // Bladeleaf the Elder
+		|| questID == 8716 // Starglade the Elder
+		|| questID == 8717 // Moonwarden the Elder
+		|| questID == 8718 // Bladeswift the Elder
+		|| questID == 8719 // Bladesing the Elder
+		|| questID == 8720 // Skygleam the Elder
+		|| questID == 8721 // Starweave the Elder
+		|| questID == 8722 // Meadowrun the Elder
+		|| questID == 8723 // Nightwind the Elder
+		|| questID == 8724 // Morningdew the Elder
+		|| questID == 8725 // Riversong the Elder
+		|| questID == 8726 // Brightspear the Elder
+		|| questID == 8866 // Bronzebeard the Elder
+		)
+	{
+		// 1ere etape, on sauvegarde que ce personnage a rendu la quete pour cette année
+
+		time_t t = time(0);   // get time now
+		struct tm * now = localtime(&t);
+		int day = now->tm_mday;
+		int mon = now->tm_mon+1;
+		int yea = now->tm_year + 1900;
+
+
+		//on verifie qu'il existe pas deja
+		bool trouvee = false;
+		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+		{
+			if ( m_richa_lunerFestivalElderFound[i].year == yea && 
+				m_richa_lunerFestivalElderFound[i].questId == questID )
+			{
+				trouvee = true;
+				break;
+			}
+		}
+
+		if ( !trouvee )
+		{
+			m_richa_lunerFestivalElderFound.push_back(RICHA_LUNARFESTIVAL_ELDERFOUND(yea,questID));
+		}
+		else
+		{
+			char messageOut[256];
+			sprintf(messageOut, "ERREUR 5321 - existe deja cette annee ???");
+			Say(messageOut, LANG_UNIVERSAL);
+		}
+
+		// 2ieme etape, on ecrit un feedback au joueur pour savoir si d'autre perso a lui on deja fait cette quete d'autre années
+		//
+
+		
+		std::vector<int>  associatedPlayerGUID;
+
+		// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+		if ( this->GetGUID() == 4 )// boulette
+		{
+			associatedPlayerGUID.push_back(27); // Bouzigouloum
+		}
+		if ( this->GetGUID() == 27 )//  Bouzigouloum 
+		{
+			associatedPlayerGUID.push_back(4); // boulette
+		}
+		if ( this->GetGUID() == 5 )// Bouillot
+		{
+			associatedPlayerGUID.push_back(28); // Adibou
+		}
+		if ( this->GetGUID() == 28 )// Adibou 
+		{
+			associatedPlayerGUID.push_back(5); //  Bouillot
+		}
+
+		//juste pour le debug je vais lier grandjuge et grandtroll
+		if ( this->GetGUID() == 19 )// grandjuge
+		{
+			associatedPlayerGUID.push_back(29); // grandtroll
+		}
+		if ( this->GetGUID() == 29 )// grandtroll 
+		{
+			associatedPlayerGUID.push_back(19); //  grandjuge
+		}
+
+
+		std::map<int,int> queteConnuEnTout; // sans prendre en compte l annee  -  je n'utilise pas le right
+		std::map<int,int> queteConnuCetteAnnee; // cette l annee   -  je n'utilise pas le right
+
+		// on rempli deja avec le perso courant
+		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+		{
+			queteConnuEnTout[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
+
+			if ( m_richa_lunerFestivalElderFound[i].year == yea )
+			{
+				queteConnuCetteAnnee[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
+			}
+		}
+
+		// ensuite on rempli avec son / ses perso associé au meme joueur
+		for(int i=0; i<associatedPlayerGUID.size(); i++)
+		{
+			std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+			std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+			std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+			std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+			std::string persoNameImport;
+			Player::richa_importFrom_richaracter_(
+				associatedPlayerGUID[i],
+				richa_NpcKilled,
+				richa_pageDiscovered,
+				richa_lunerFestivalElderFound,
+				richa_maisontavern,
+				persoNameImport
+				);
+
+
+			for(int i=0; i<richa_lunerFestivalElderFound.size(); i++)
+			{
+				queteConnuEnTout[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
+
+				if ( richa_lunerFestivalElderFound[i].year == yea )
+				{
+					queteConnuCetteAnnee[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
+				}
+			}
+
+		}//pour chaque perso associé
+
+		char messageOut[256];
+		sprintf(messageOut, "Cette annee : %d/50 / En tout %d/50", queteConnuCetteAnnee.size(), queteConnuEnTout.size()  );
+		Say(messageOut, LANG_UNIVERSAL);
+
+
+
+
+	}
+
+
+	////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     RewardReputation(pQuest);
 
     uint16 log_slot = FindQuestSlot(quest_id);
@@ -12029,10 +16062,37 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
     // Used for client inform but rewarded only in case not max level
     uint32 xp = uint32(pQuest->XPValue(this) * sWorld.getConfig(CONFIG_FLOAT_RATE_XP_QUEST));
 
-    if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////  RICHARD : pour le paragon, on s'assure que GiveXP est tout le temps appelé
+	/////
+
+	//ca c'est l'original :
+      if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         GiveXP(xp, nullptr);
     else
         ModifyMoney(int32(pQuest->GetRewMoneyMaxLevel() * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)));
+		
+
+	// en fait je vais revenir en arriere - le plus simple, c'est que SEUL les youhaicoin paragon peuvent faire monter le paragon
+	// #NO_XP_FOR_PARAGON
+
+		//if ( quest_id == 20001 ) // custom XP win pour la quete qui donne des niveau de paragon
+		//{
+		//	const float coeffXPToParagon = 21000.0f/371336.0f; // ATTENTION, CE NOMBRE EST COPIE COLLE 2 FOIS DANS LE CODE
+		//
+		//	float nbParagonToWin = 100.0f;
+		//
+		//	GiveXP(  (int)(nbParagonToWin / coeffXPToParagon)   , nullptr);
+		//}
+		//else
+		//{
+		//	GiveXP(xp, nullptr);
+		//}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
     // Give player extra money if GetRewOrReqMoney > 0 and get ReqMoney if negative
     ModifyMoney(pQuest->GetRewOrReqMoney());
@@ -13061,6 +17121,73 @@ bool Player::HasQuestForItem(uint32 itemid) const
             if (!qinfo)
                 continue;
 
+
+			//////////////////////////////////////////////////////////////////////////////////////////////////////
+			//
+			//RICHARD:  on recompte les objets pour etre sur  -  car des fois le comptage des item de quete est pas bon
+			//
+			const char* playerName = GetName();
+			bool richardForceGive = false;
+			//richard : debug
+			for (int j = 0; j < QUEST_ITEM_OBJECTIVES_COUNT; ++j)
+			{
+				if (itemid == qinfo->ReqItemId[j])
+				{
+					BASIC_LOG("RICHAR: DEBUG LOOT QUEST - quest[%d/%d]=%d itemIndex=%d/%d  player=%s objet:%d - joueur a quete: %s",
+						i, MAX_QUEST_LOG_SIZE, questid,
+						j, QUEST_ITEM_OBJECTIVES_COUNT,
+						playerName,
+						qinfo->ReqItemId[j],
+						qinfo->GetTitle().c_str()
+						);
+
+					uint32_t richardDoubleCheck = richard_countItem(qinfo->ReqItemId[j], false, false,false, true );
+
+					if (q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
+					{
+						BASIC_LOG("     RICHAR: DEBUG LOOT QUEST - on lui donne car %d / %d - doubleCheckRichard=%d",
+							q_status.m_itemcount[j],
+							qinfo->ReqItemCount[j],
+							richardDoubleCheck
+							);
+					}
+					else
+					{
+
+
+						BASIC_LOG("     RICHAR: DEBUG LOOT QUEST - on lui donne PAS car %d / %d - doubleCheckRichard=%d",
+							q_status.m_itemcount[j],
+							qinfo->ReqItemCount[j],
+							richardDoubleCheck
+
+							);
+
+						//cela va corriger un bug qu'on a deja eu:
+						//le jeu va pas donner l'objet car  m_itemcount est arrivé au compte.
+						//cepandant quand je recompte dans l'inventaire avec richardDoubleCheck, je vois
+						//que en fait j'ai pas assez.
+						//donc dans ce cas special, on va forcer.
+						if (q_status.m_itemcount[j] > richardDoubleCheck // si le vrais recompte est plus petit que ce que le jeu pense
+							&&
+							richardDoubleCheck < qinfo->ReqItemCount[j] // si le vrai recompte d'objet est plus petit que le nombre d'objet demandé par la quete
+							)
+						{
+							BASIC_LOG("     RICHAR: WARNING : on va forcer le loot de l'objet");
+							richardForceGive = true;
+						}
+
+
+					}
+
+				}
+			}
+			//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
             // hide quest if player is in raid-group and quest is no raid quest
             if (GetGroup() && GetGroup()->isRaidGroup() && !qinfo->IsAllowedInRaid() && !InBattleGround())
                 continue;
@@ -13069,7 +17196,23 @@ bool Player::HasQuestForItem(uint32 itemid) const
             // This part for ReqItem drop
             for (int j = 0; j < QUEST_ITEM_OBJECTIVES_COUNT; ++j)
             {
-                if (itemid == qinfo->ReqItemId[j] && q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
+      //          if (itemid == qinfo->ReqItemId[j] && q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
+
+
+				if (
+					itemid == qinfo->ReqItemId[j] &&
+
+					(q_status.m_itemcount[j] < qinfo->ReqItemCount[j]
+						||
+						richardForceGive)
+
+					)
+
+
+
+
+
+
                     return true;
             }
             // This part - for ReqSource
@@ -14824,6 +18967,11 @@ bool Player::_LoadHomeBind(QueryResult* result)
 
 void Player::SaveToDB()
 {
+
+	BASIC_LOG("critical part START - Player::SaveToDB (%s)", GetName() ); // s'il y a un crash pdt cette partie, ca peut etre grave
+
+
+
     // we should assure this: ASSERT((m_nextSave != sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE)));
     // delay auto save at any saves (manual, in code, or autosave)
     m_nextSave = sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE);
@@ -15004,6 +19152,52 @@ void Player::SaveToDB()
     // save pet (hunter pet level and experience and all type pets health/mana).
     if (Pet* pet = GetPet())
         pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+
+
+
+
+
+
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	//RICHARD - auto save of _ri_character_
+	ObjectGuid const& guiiddd = GetObjectGuid();
+	//uint32 entryy = guiiddd.GetEntry();
+	uint64 guid = guiiddd.GetRawValue();
+	richa_exportTo_richaracter_(
+		guiiddd,
+		m_richa_NpcKilled,
+		m_richa_pageDiscovered,
+		m_richa_lunerFestivalElderFound,
+		m_richa_ListeMaison,
+		GetName()
+		);
+
+	richa_exportTo_ristat_();
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	
+
+	BASIC_LOG("critical part END (%02d:%02d) - Player::SaveToDB (%s)", now->tm_hour,now->tm_min      ,   GetName());
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
 }
 
 // fast save function for item/money cheating preventing - save only inventory and money state
@@ -17054,6 +21248,29 @@ inline void BeforeVisibilityDestroy(T* /*t*/, Player* /*p*/)
 template<>
 inline void BeforeVisibilityDestroy<Creature>(Creature* t, Player* p)
 {
+
+
+
+
+	// RICHARD :  si pet/familier trop loin,  le desivoquer et re-invoquer
+	//  IMPROVE_RICHA_MOVEMENT_PET
+	if ( p && t 
+		&& p->GetPetGuid() == t->GetObjectGuid() && ((Creature*)t)->IsPet()
+		&& t->GetOwner() == p )
+	{
+		p->UnsummonPetTemporaryIfAny();
+		p->ResummonPetTemporaryUnSummonedIfAny();
+		int aaaa=0;
+		return;
+	}
+
+
+
+
+
+
+
+
     if (p->GetPetGuid() == t->GetObjectGuid() && ((Creature*)t)->IsPet())
         ((Pet*)t)->Unsummon(PET_SAVE_REAGENTS);
 }
@@ -18913,6 +23130,59 @@ void Player::SetHomebindToLocation(WorldLocation const& loc, uint32 area_id)
     // update sql homebind
     CharacterDatabase.PExecute("UPDATE character_homebind SET map = '%u', zone = '%u', position_x = '%f', position_y = '%f', position_z = '%f' WHERE guid = '%u'",
                                m_homebindMapId, m_homebindAreaId, m_homebindX, m_homebindY, m_homebindZ, GetGUIDLow());
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// RICHARD :  ajouter la   home bind hearthstone inn     make this inn my home    -   au journal des success
+	
+
+	// on regarde s'il existe :
+	bool found = false;
+	for(int i=0; i<m_richa_ListeMaison.size(); i++)
+	{
+		if (   m_richa_ListeMaison[i].mapid == m_homebindMapId 
+			&& m_richa_ListeMaison[i].areaid == m_homebindAreaId 
+			)
+		{
+			found = true;
+			break;
+		}
+		else
+		{
+			
+		}
+
+	}
+
+	if ( found )
+	{
+		char messageOut[2048];
+		sprintf(messageOut, "Taverne deja connue.");
+		Say(messageOut, LANG_UNIVERSAL);
+	}
+	else
+	{
+		char messageOut[2048];
+		sprintf(messageOut, "Nouvelle taverne !");
+		Say(messageOut, LANG_UNIVERSAL);
+
+		RICHA_MAISON_TAVERN tavern(m_homebindMapId,m_homebindAreaId);
+		m_richa_ListeMaison.push_back(tavern);
+	}
+	
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
 }
 
 Object* Player::GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask)

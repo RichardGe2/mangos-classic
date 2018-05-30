@@ -437,6 +437,77 @@ bool ChatHandler::HandleCharacterEraseCommand(char* args)
     return true;
 }
 
+
+bool ChatHandler::HandleRichardCommand_Quit(char* args)
+{
+	uint32 delay = 1;
+	//if (!ExtractUInt32(&args, delay))
+	//    return false;
+
+	uint32 exitcode;
+	if (!ExtractOptUInt32(&args, exitcode, SHUTDOWN_EXIT_CODE))
+		return false;
+
+	// Exit code should be in range of 0-125, 126-255 is used
+	// in many shells for their own return codes and code > 255
+	// is not supported in many others
+	if (exitcode > 125)
+		return false;
+
+	sWorld.ShutdownServ(delay, 0, exitcode);
+	return true;
+}
+
+bool ChatHandler::HandleRichardCommand_clearLootWinners(char* args)
+{
+	if ( !m_session )
+	{
+		return false;
+	}
+
+	Player* playerEnterMessage = m_session->GetPlayer();
+
+	if ( !playerEnterMessage )
+	{
+		return false;
+	}
+	
+	int nbModifie = 0;
+	int nbLoot = 0;
+	for(auto &ent : WorldSession::g_wantLoot )
+	{
+
+		//on efface uniquement les winner qui correspondent au joueur qui a dit le message
+		if ( ent.second.winner == playerEnterMessage )
+		{
+			ent.second.winner = nullptr;
+			ent.second.list.clear();
+			ent.second.messageSentToPlayer_loot = false;
+			ent.second.messageSentToPlayer_po = false;
+			ent.second.okWinDoneOnThisLoot = true; // on signal qu'un OKWIN a été fait sur ce loot
+			nbModifie++;
+		}
+
+		nbLoot++; // nb total de loot
+
+	}
+
+	char messageee[2048];
+	sprintf(messageee, "RICHAR: %s a clean ses %d/%d loots.", playerEnterMessage->GetName(),nbModifie, nbLoot );
+
+	BASIC_LOG(messageee);
+	PSendSysMessage(messageee);
+
+	return true;
+}
+
+
+
+
+
+
+
+
 /// Close RA connection
 bool ChatHandler::HandleQuitCommand(char* /*args*/)
 {

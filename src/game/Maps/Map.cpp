@@ -1453,9 +1453,90 @@ bool DungeonMap::Add(Player* player)
         }
         else
         {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// RICHARD : INSTANCES PERMANENTES - PAS DE RESET DES SAUVEGARDES - 
+			//
+			// j'ai noté la procédure a faire la premiere fois qu'on commence l'instance - voir vers la fin de ____richard_ALL.txt
+			//
+			bool permanennt = false;
+			const char* nameplayer = player->GetName();
+
+			//normallement il devrait pas trop y avoir besoin de faire des check avec les noms.
+			//je pourrai juste mettre    permanennt = true;     qqsoit le nom.
+			//mais je prefere faire ca pour eviter que diane se cree un sauvegarde pour elle en rentrant toute seule dans une instance.
+			//car apres si elle groupe avec Richard, et que Richard a son instance de sauvegardée, dans se cas Richard et Diane ne pourront pas etre dans la meme instance.
+
+
+			if ( //  strcmp ( nameplayer , "Grandjuge" ) == 0  <-- vaut mieux pas, au cas ou on a besoin du grand juge dans l'instance
+				 //  || 
+
+				//lister ici les perso principaux de Richard uniquement
+				// #LISTE_ACCOUNT_HERE  -   ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+				   strcmp(nameplayer, "Bouillot") == 0
+				|| strcmp(nameplayer, "Adibou") == 0
+
+				|| strcmp(nameplayer, "Fghghhopykj") == 0 // je fais des tests d'instances HL avec lui, donc lui il fait sa vie - ne pas le mélanger avec nos perso de game
+
+				)
+			{
+				permanennt = true;
+				player->Say("Sauvegarde permanante ACTIVE", LANG_UNIVERSAL);
+			}
+
+			// set up a solo bind or continue using it
+			if (!playerBind)
+				player->BindToInstance(GetPersistanceState(),
+					//false);
+					//true); 
+					permanennt); // <-- richard
+								 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // set up a solo bind or continue using it
             if (!playerBind)
                 player->BindToInstance(GetPersistanceState(), false);
+
+*/
+
+
+
+
             else
                 // cannot jump to a different instance without resetting it
                 MANGOS_ASSERT(playerBind->state == GetPersistentState());
