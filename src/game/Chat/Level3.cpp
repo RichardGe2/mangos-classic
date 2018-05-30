@@ -258,6 +258,7 @@ bool ChatHandler::HandleReloadAllAreaCommand(char* /*args*/)
     HandleReloadAreaTriggerTeleportCommand((char*)"");
     HandleReloadAreaTriggerTavernCommand((char*)"");
     HandleReloadGameGraveyardZoneCommand((char*)"");
+    HandleReloadTaxiShortcuts((char*)"");
     return true;
 }
 
@@ -753,6 +754,14 @@ bool ChatHandler::HandleReloadSpellThreatsCommand(char* /*args*/)
     sLog.outString("Re-Loading Aggro Spells Definitions...");
     sSpellMgr.LoadSpellThreats();
     SendGlobalSysMessage("DB table `spell_threat` (spell aggro definitions) reloaded.");
+    return true;
+}
+
+bool ChatHandler::HandleReloadTaxiShortcuts(char* /*args*/)
+{
+    sLog.outString("Re-Loading taxi flight shortcuts...");
+    sObjectMgr.LoadTaxiShortcuts();
+    SendGlobalSysMessage("DB table `taxi_shortcuts` (taxi flight shortcuts information) reloaded.");
     return true;
 }
 
@@ -3434,7 +3443,7 @@ bool ChatHandler::HandleGetDistanceCommand(char* args)
     return true;
 }
 
-bool ChatHandler::HandleDieCommand(char* /*args*/)
+bool ChatHandler::HandleDieCommand(char* args)
 {
     Player* player = m_session->GetPlayer();
     Unit* target = getSelectedUnit();
@@ -3452,9 +3461,25 @@ bool ChatHandler::HandleDieCommand(char* /*args*/)
             return false;
     }
 
-    if (target->isAlive())
+    uint32 param;
+    ExtractOptUInt32(&args, param, 0);
+    if (param != 0)
     {
-        player->DealDamage(target, target->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+        if (target->isAlive())
+        {
+            DamageEffectType damageType = DIRECT_DAMAGE;
+            uint32 absorb = 0;
+            uint32 damage = target->GetHealth();
+            player->DealDamageMods(target, damage, &absorb, damageType);
+            player->DealDamage(target, damage, nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+        }
+    }
+    else
+    {
+        if (target->isAlive())
+        {
+            player->DealDamage(target, target->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+        }
     }
 
     return true;
