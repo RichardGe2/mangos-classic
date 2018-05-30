@@ -30,6 +30,13 @@
 #include "Entities/ItemEnchantmentMgr.h"
 #include "Entities/Corpse.h"
 
+
+#include <fstream>
+
+
+
+
+
 INSTANTIATE_SINGLETON_1(LootMgr);
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
@@ -1085,10 +1092,13 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 	int32 richard01_test = 0;
 	int32 richard02_test = 0;
+
+	Creature* creatureLooting = 0;
+
 	if ( lootOrigin ==  1 ) // creature
 	{
 
-		Creature* creatureLooting = GetLootTarget()->GetMap()->GetCreature(  GetLootTarget()->GetObjectGuid()  );
+		creatureLooting = GetLootTarget()->GetMap()->GetCreature(  GetLootTarget()->GetObjectGuid()  );
 		richard02_test = creatureLooting->getLevel();
 		if ( creatureLooting->IsElite() )
 		{
@@ -1208,6 +1218,172 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 					//m_gold = 10001;
 
 				}
+				else if ( goinfo->id  ==  400001 ) // coffre de l'aventurier
+				{
+					
+					// cette ligne ne marche pas
+					// j'aimerai bien reduire le temps de respawn qui est de 60 secondes... enfin c'est low priority c'est pas tres grave
+					//goLooting->SetRespawnTime(1);
+
+
+					uint32 zone_id, area_id;
+					lootOwner->GetZoneAndAreaId(zone_id, area_id);
+					MapEntry const* mapEntry = sMapStore.LookupEntry(lootOwner->GetMapId());
+					AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+					AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(area_id);
+					float posXf = lootOwner->GetPositionX();
+					int posXi = (int)posXf;
+
+					if ( areaEntry )
+					{
+
+						std::ifstream infile("C:\\Users\\Administrator\\Desktop\\wowServ\\_DOC\\youhai_update_mangos_coffreaventure.sql");
+						
+						struct ITEMCOFFREAVENTURIER
+						{
+							int item;
+							std::string region;
+							int x;
+						};
+						std::vector<ITEMCOFFREAVENTURIER> listItem;
+
+						if ( infile )
+						{
+							std::string line;
+							while (std::getline(infile, line))
+							{
+								if ( line.size() > 10 ) // si trop petite ligne ca sert a rien
+								{
+
+									if (
+										   line[0] == '-' && line[1] == '-'  // <-
+										|| line[1] == '-' && line[2] == '-'  // <-- c'est très moche, mais ca va suffir
+										|| line[3] == '-' && line[4] == '-'  // <-
+
+										)
+									{
+										/// si c'est une ligne commentaire
+										int eee=0;
+									}
+
+									else
+									{
+
+										const char* addre1 = strstr( line.c_str() ,   "item = '"  );
+										if ( addre1 )
+										{
+											addre1 += 8;
+											int item = atoi(addre1);
+									
+											const char* addre2 = strstr( line.c_str() ,   "-- "  );
+									
+											std::string regionName;
+									
+											if ( addre2 )
+											{
+												addre2 += 3;
+										
+												for(int i=0; ;i++)
+												{
+													if ( *addre2 == '*' )
+													{
+														addre2++;
+														break;
+													}
+													regionName.push_back(*addre2);
+													addre2++;
+												}
+											}
+
+											int x = atoi(addre2);
+
+											ITEMCOFFREAVENTURIER newww;
+											newww.item = item;
+											newww.region = regionName;
+											newww.x = x;
+											listItem.push_back(newww);
+
+											int aaa=0;
+										}
+
+									}
+								}
+
+							}
+
+							infile.close();
+						}
+						else
+						{
+							lootOwner->Say("ERROR 538F : can't open coffreaventure.sql", LANG_UNIVERSAL);
+						}
+
+
+						
+
+
+
+						bool itemFound = false;
+						if ( listItem.size() <= 0 )
+						{
+							lootOwner->Say("ERROR 548F : coffreaventure.sql - liste vide", LANG_UNIVERSAL);
+						}
+						else
+						{
+							for(int i=0; i<listItem.size(); i++)
+							{
+								if ( listItem[i].region == areaEntry->area_name[0]
+									&& abs(posXi-(listItem[i].x))<=7 )
+								{
+									AddItem(listItem[i].item, 1, 0, 0);
+									itemFound = true;
+									break;
+								}
+
+							}
+
+							if ( !itemFound )
+							{
+								//on ecrit les 2 caracteristique d'un coffre :  area name, et posX. ca devrait suffir pout pas avoir de conflit
+								char messageOut[2048];
+								sprintf(messageOut, "ERROR 598K : Pas d'objet de quete. - *%s*%d   -guid=%d",
+									areaEntry->area_name[0],
+									posXi,
+									GetLootTarget()->GetGUIDLow() 
+								
+								);
+								lootOwner->Say(messageOut, LANG_UNIVERSAL);
+							}
+							else
+							{
+								if (    strcmp( lootOwner->GetName() , "GrandJuge" ) == 0
+									||  strcmp( lootOwner->GetName() , "GrandTroll" ) == 0
+									
+									)
+								{
+									//juste un message d'info pour m'aider a debugger
+									char messageOut[2048];
+									sprintf(messageOut, "INFO : itemFound - listItem.size()=%d - guid=%d",listItem.size() , GetLootTarget()->GetGUIDLow()  );
+									lootOwner->Say(messageOut, LANG_UNIVERSAL);
+								}
+							}
+						}
+
+
+					
+					}
+					else
+					{
+						char messageOut[2048];
+						sprintf(messageOut, "ERROR 598J : wrong areaEntry");
+						lootOwner->Say(messageOut, LANG_UNIVERSAL);
+					}
+
+
+					int aaa=0;
+				}
+
+				int affaa=0;
 
 			}
 
@@ -1255,55 +1431,91 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 		char typeMobChar[256];
 		strcpy(typeMobChar, "ERROR");
 
+		float difficultyParagon1 = 0.0;
 
+		Creature::GetRichardModForMap(  creatureLooting->m_richar_lieuOrigin , creatureLooting->GetName(),  creatureLooting->GetOwner() , &difficultyParagon1  );
+
+		int playerParagon = lootOwner->GetParagonLevelFromItem();
 		int playerlevel = lootOwner->getLevel();
 		int cadavreLevel = abs(richard02_test);
 		bool cadavreElite = richard02_test < 0 ? true : false;
-		int scoreRand = rand() % 100 + 1;     //  1 to 100
-		int scoreToReach = 0;
+		float scoreRand = (float)(rand() % 100 + 1);     //  1 to 100
+		float scoreToReach = 0.0f;
 		if (false) {}
 		else if (!cadavreElite &&    cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature non elite verte
 		{
 			strcpy(typeMobChar, "easy-vert");
-			scoreToReach = 5;
+			scoreToReach = 5.0f;
 		}
 		else if (!cadavreElite &&   cadavreLevel >= playerlevel - 2 && cadavreLevel <= playerlevel + 2) // creature non elite jaune
 		{
 			strcpy(typeMobChar, "easy-jaune");
-			scoreToReach = 10;
+			scoreToReach = 10.0f;
 		}
 		else if (!cadavreElite &&   cadavreLevel >= playerlevel + 3) // creature non elite orange ou plus
 		{
 			strcpy(typeMobChar, "easy-orange");
-			scoreToReach = 15;
+			scoreToReach = 15.0f;
 		}
 		else if (cadavreElite &&     cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature  elite verte
 		{
 			strcpy(typeMobChar, "elite-verte");
-			scoreToReach = 10;
+			scoreToReach = 10.0f;
 		}
 		else if (cadavreElite &&   cadavreLevel >= playerlevel - 2 && cadavreLevel <= playerlevel + 2) // creature  elite jaune
 		{
 			strcpy(typeMobChar, "elite-jaune");
-			scoreToReach = 15;
+			scoreToReach = 15.0f;
 		}
 		else if (cadavreElite &&     cadavreLevel >= playerlevel + 3) // creature  elite orange ou plus
 		{
 			strcpy(typeMobChar, "elite-orange");
-			scoreToReach = 20;
+			scoreToReach = 20.0f;
 		}
 		else
 		{
 			strcpy(typeMobChar, "tooEasy");
-			scoreToReach = 0;
+			scoreToReach = 0.0f;
 		}
 
-		BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%d<=%d/100",
-			playerlevel,
-			cadavreLevel,
-			typeMobChar,
-			scoreRand, scoreToReach
-			);
+
+
+		//on va ajuster le score to reach en fonction du paragon
+		//par exemple un joueur paragon40 qui attaque un mob paragon 20  on doit reduire de 2x  le chance de loot
+		//cette regle ne marchera QUE pour reduire, pas pour augmenter.
+		//un joueur paragon 1 qui s'attaque a un mob fait pour 2 joueurs  aura autant de chance qu'un mob fait pour 1 joueur.
+		//    je dis ca pour garder une retrocompatibilité avec le vieux taux de loot de youhaicoin qui a toujours ete le meme en donjon et a l'exterieur pour les low level.
+		//en gros ce IF ne va concerner que les joueur 60 avec un paragon > 1
+		if ( (float)playerParagon > difficultyParagon1
+			&& difficultyParagon1 > 0.0f
+			&& playerParagon > 0.0f
+			) // si le joueur s'en prends a plus faible que lui
+		{
+			float coeffFacilite = playerParagon / difficultyParagon1;
+
+			scoreToReach /= coeffFacilite;
+
+			BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%.1f<=%.1f/100 -  MalusParagon=%f",
+				playerlevel,
+				cadavreLevel,
+				typeMobChar,
+				scoreRand, scoreToReach,
+				coeffFacilite
+				);
+		}
+		else
+		{
+			BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%.1f<=%.1f/100",
+				playerlevel,
+				cadavreLevel,
+				typeMobChar,
+				scoreRand, scoreToReach
+				);
+		}
+
+
+
+		
 
 		if (scoreRand <= scoreToReach)
 		{
@@ -1314,7 +1526,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			AddItem(   newCoin_   , 1, 0, 0);
 
 
-			char messageOut[256];
+			char messageOut[2048];
 
 			if ( newCoin_ == coinItemID1 )
 			{
@@ -1325,7 +1537,16 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 				sprintf(messageOut, "+1 youhaicoin cadeau!");
 			}
 			lootOwner->Say(messageOut, LANG_UNIVERSAL);
+
+			// Dommage, je prefererai faire parler le cadavre de la creature, mais ca marche pas bien :  le cadavre va bien parler, on voit le message dans la fenetre de conversation
+			// mais.. il n'y a pas une vraie bulle de BD
+			//char messageOut[2048];
+			//sprintf(messageOut, "TEST");
+			//creatureLooting->MonsterSay(messageOut, LANG_UNIVERSAL);
 		}
+
+		
+
 	}
 	else
 	{

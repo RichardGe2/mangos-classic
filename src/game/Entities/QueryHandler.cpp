@@ -461,13 +461,15 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 
 
 			//si le livre n'est pas connu par ce perso, on l'ajoute a la liste de ce perso
+			// a noter qu'on fait ca, MEME si un autre perso assicié connait deja ce livre
 			_player->m_richa_pageDiscovered.push_back( Player::RICHA_PAGE_DISCO_STAT( pageID , objectId, itemId) ); 
 
 
 
 			// par curiosite, on regarde si un autre perso du meme joueur humain connait ce texte
 
-			bool knownByOtherPerso = false;
+			//bool knownByOtherPerso = false;
+			std::vector<std::string> listePersoQuiConnaissentDeja;
 
 			std::vector<int>  associatedPlayerGUID;
 
@@ -505,26 +507,31 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 				std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
 				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+				std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+				std::string persoName;
 				Player::richa_importFrom_richaracter_(
 					associatedPlayerGUID[i],
 					richa_NpcKilled,
 					richa_pageDiscovered,
-					richa_lunerFestivalElderFound
+					richa_lunerFestivalElderFound,
+					richa_maisontavern,
+					persoName
 					);
 
 				for(int j=0; j<richa_pageDiscovered.size(); j++)
 				{
 					if ( richa_pageDiscovered[j].pageId == pageID )
 					{
-						knownByOtherPerso = true;
+						listePersoQuiConnaissentDeja.push_back(persoName);
+						//knownByOtherPerso = true;
 						break;
 					}
 				}//pour chaque page connu du perso associe
 
 
-				if ( knownByOtherPerso )
+				//if ( knownByOtherPerso )
 				{
-					break;
+				//	break; // on break pas car on va remplir la liste de tous les perso qui connaissent
 				}
 
 
@@ -532,11 +539,11 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 
 
 
-			if ( !knownByOtherPerso )
+			if ( listePersoQuiConnaissentDeja.size() == 0 )
 			{
 				if ( comesFromObject ) // dans le succes, on compte QUE les 111 textes qui viennet d'un object et PAS d'un item
 				{
-					char messageOut[256];
+					char messageOut[2048];
 					sprintf(messageOut, "Decouverte d'un nouveau texte!");
 					_player->Say(messageOut, LANG_UNIVERSAL);
 				}
@@ -545,8 +552,13 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 			{
 				if ( comesFromObject ) // dans le succes, on compte QUE les 111 textes qui viennet d'un object et PAS d'un item
 				{
-					char messageOut[256];
-					sprintf(messageOut, "Texte deja connu par un autre Perso.");
+					char messageOut[2048];
+					sprintf(messageOut, "Texte deja connu par %d autre Perso: ",listePersoQuiConnaissentDeja.size());
+					for(int i=0; i<listePersoQuiConnaissentDeja.size(); i++)
+					{
+						strcat(messageOut,listePersoQuiConnaissentDeja[i].c_str());
+						if ( i != listePersoQuiConnaissentDeja.size()-1 ) { strcat(messageOut,", "); }
+					}
 					_player->Say(messageOut, LANG_UNIVERSAL);
 				}
 			}

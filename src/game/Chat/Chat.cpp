@@ -783,7 +783,7 @@ ChatCommand* ChatHandler::getCommandTable()
 		
 		{ "revive",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReviveCommand,              "", nullptr },
         { "dismount",       SEC_PLAYER,         false, &ChatHandler::HandleDismountCommand,            "", nullptr },
-        { "gps",            SEC_MODERATOR,      false, &ChatHandler::HandleGPSCommand,                 "", nullptr },
+        { "gps",            SEC_PLAYER,      false, &ChatHandler::HandleGPSCommand,                 "", nullptr },
         { "guid",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGUIDCommand,                "", nullptr },
         { "help",           SEC_PLAYER,         true,  &ChatHandler::HandleHelpCommand,                "", nullptr },
         { "itemmove",       SEC_GAMEMASTER,     false, &ChatHandler::HandleItemMoveCommand,            "", nullptr },
@@ -1552,6 +1552,8 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 
 
 
+	
+
 
 
 	bool developerInfo = false;
@@ -1721,6 +1723,29 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 			PSendSysMessage(messageOUt);
 			return;
 		}
+
+		// si jamais un perso secondaire veut apprendre le metier d'un autre joueur ...
+		// c'est mieux de faire ca dans tous les cas ,  c'est a dire associer un metier a notre premier perso :
+		if ( false ) {  }
+		if ( itemProtoype->RequiredSkill == SKILL_COOKING )
+		{
+			nameToSearch = "Boulette";
+		}
+		if ( itemProtoype->RequiredSkill == SKILL_ENGINEERING )
+		{
+			nameToSearch = "Bouillot";
+		}
+		// todo : remplir les autres metiers si besoin...
+		else
+		{
+			//sprintf(messageOUt,"INFO : pas de perso primaire associe a ce type de plan");
+			//PSendSysMessage(messageOUt);
+			//return;
+			int aaa=0;
+		}
+
+
+
 
 		//find most recent file
 		time_t t = time(0);   // get time now

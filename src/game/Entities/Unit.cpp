@@ -1323,11 +1323,15 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 				std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
 				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+				std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+				std::string persoNameImport;
 				Player::richa_importFrom_richaracter_(
 					mainPlayerGUID[jj],
 					richa_NpcKilled,
 					richa_pageDiscovered,
-					richa_lunerFestivalElderFound
+					richa_lunerFestivalElderFound,
+					richa_maisontavern,
+					persoNameImport
 					);
 
 				for(int kk=0; kk<richa_NpcKilled.size(); kk++)
@@ -6683,247 +6687,6 @@ uint32 Unit::SpellDamageBonusTaken(Unit* pCaster, SpellEntry const* spellProto, 
 }
 
 
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//richard   add intellect, strengh.... all stats
-float Unit::GetStat(Stats stat) const
-{
-	float valueToReturn = float(GetUInt32Value(UNIT_FIELD_STAT0 + stat));
-
-
-	if (GetTypeId() == TYPEID_PLAYER)
-	{
-		const Player* play = dynamic_cast<const Player*>(this);
-		if (play)
-		{
-			if (stat == STAT_INTELLECT)
-			{
-			//	uint32 nb30002 = play->richard_countItem(30002);
-			//	float multipl = 1.0f + (float)nb30002*1.0f;
-			//	BASIC_LOG("RICHAR: %s intellect %f->%f",m_name.c_str(), valueToReturn, valueToReturn*multipl);
-			//	valueToReturn *= multipl;
-			}
-
-
-			//pour info, le stamina de base du guerrier 60 est 110
-			//la somme de bonus stamina du set bleu guerrier est 131
-			//la somme de bonus stamina du set T3 guerrier est 296
-			//2 possibilités : 
-			//   1- je multiplis les stats, pour mettre en valeur l'equipement
-			//   2- ou j'ajoute le bonus des charm, mais du coup ca peut rendre l'equipement negligeable
-
-			//je pense partir sur 1-  c'est plus sympa
-
-			//voir  GetRichardModForMap  :
-			//les donjons low-level sont ramenés a une dofficulté de 2 joueurs
-			//les donjons high level sont tous raménes a une difficulté de 5 joueurs
-
-			//donc un donjon low level ne demande pas de bonus si c'est fait a 2 joueurs
-			//un donjon high level demanderai un bonus de *2.5 â chaque joueur si c'est fait a 2 joueurs
-
-			//ce qu'il faudrait que je me demande c'est : combien de youhaicoin faudra t'il pour etre a *2.5
-			//est ce qu'on peut dire que etre a *2.5,  veut dire qu'on fait un  *2.5  a 3 stats: genre pour gerrier :  force, agility, stamina
-
-			//TEST TEMP
-			if (stat == STAT_STRENGTH)
-			{
-				int aa=0;
-				//return 1000;
-			}
-			if (stat == STAT_AGILITY)
-			{
-				int aa=0;
-				//return 1000;
-			}
-			if (stat == STAT_STAMINA)
-			{
-				int aa=0;
-				//return 1000;
-			}
-			if (stat == STAT_INTELLECT)
-			{
-				int aa=0;
-				//return 1000;
-			}
-			if (stat == STAT_SPIRIT)
-			{
-				int aa=0;
-				//return 1000;
-			}
-
-
-
-			if (   stat == STAT_STRENGTH
-				|| stat == STAT_AGILITY
-				|| stat == STAT_STAMINA
-				|| stat == STAT_INTELLECT
-				|| stat == STAT_SPIRIT
-				)
-			{
-				if ( play->m_richar_paragon > 1 )
-				{
-					float before=valueToReturn;
-					
-					// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
-					//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
-					float coeffParagon = ((float)play->m_richar_paragon + 1.0) / 2.0;
-
-					valueToReturn *= coeffParagon;
-					
-					char statName[128];
-					statName[0] = 0;
-					if ( stat == STAT_STRENGTH ) { sprintf(statName,"STRENGTH"); }
-					if ( stat == STAT_AGILITY ) { sprintf(statName,"AGILITY"); }
-					if ( stat == STAT_STAMINA ) { sprintf(statName,"STAMINA"); }
-					if ( stat == STAT_INTELLECT ) { sprintf(statName,"INTELLECT"); }
-					if ( stat == STAT_SPIRIT ) { sprintf(statName,"SPIRIT"); }
-					
-					static std::map<std::string,float>  messageSaid;
-
-					char messs[2048];
-					sprintf(messs, "%s - %s  ", play->GetName(),statName );
-
-					std::string newMessage = std::string(messs);
-
-					bool displayMessage = false;
-					if (   messageSaid.find(newMessage) != messageSaid.end() 
-						&& messageSaid[newMessage] == before )
-					{
-
-					}
-					else if (   messageSaid.find(newMessage) != messageSaid.end() 
-						&& messageSaid[newMessage] != before )
-					{
-						messageSaid[newMessage] = before;
-						displayMessage = true;
-					}
-					else if (   messageSaid.find(newMessage) == messageSaid.end()  )
-					{
-						messageSaid[newMessage] = before;
-						displayMessage = true;
-					}
-					
-
-					if ( displayMessage )
-					{
-						BASIC_LOG("RICHAR: PARAGON %s %f.0f->%f.1f", messs  ,   before,valueToReturn );
-					}
-
-					int erereredfdr=0;
-				}
-				
-			}
-			else
-			{
-				BASIC_LOG("RICHAR: ------------------------------- WARNING 4536");
-			}
-
-
-
-
-		}
-		else
-		{
-			BASIC_LOG("RICHAR: ------------------------------- error 4536");
-		}
-
-
-
-	}
-
-
-	return valueToReturn;
-
-}
-
-uint32  Unit::GetResistance(SpellSchools school) const 
-{ 
-	uint32 valueToReturn = GetUInt32Value(UNIT_FIELD_RESISTANCES + school); 
-	
-
-	if (GetTypeId() == TYPEID_PLAYER)
-	{
-		const Player* play = dynamic_cast<const Player*>(this);
-		if (play)
-		{
-			if ( play->m_richar_paragon > 1 )
-			{
-				uint32 before=valueToReturn;
-
-				// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
-				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
-				float coeffParagon = ((float)play->m_richar_paragon + 1.0) / 2.0;
-
-				//valueToReturn *= coeffParagon;
-
-				valueToReturn =  (uint32_t)((float)valueToReturn  *  coeffParagon);
-
-
-				char statName[128];
-				statName[0] = 0;
-				if ( school == SPELL_SCHOOL_NORMAL ) { sprintf(statName,"ARMOR"); }
-				if ( school == SPELL_SCHOOL_HOLY ) { sprintf(statName,"SCHOOL_HOLY"); }
-				if ( school == SPELL_SCHOOL_FIRE ) { sprintf(statName,"SCHOOL_FIRE"); }
-				if ( school == SPELL_SCHOOL_NATURE ) { sprintf(statName,"SCHOOL_NATURE"); }
-				if ( school == SPELL_SCHOOL_FROST ) { sprintf(statName,"SCHOOL_FROST"); }
-				if ( school == SPELL_SCHOOL_SHADOW ) { sprintf(statName,"SCHOOL_SHADOW"); }
-				if ( school == SPELL_SCHOOL_ARCANE ) { sprintf(statName,"SCHOOL_ARCANE"); }
-
-				static std::map<std::string,uint32_t>  messageSaid;
-
-				char messs[2048];
-				sprintf(messs, "%s - %s  ", play->GetName(),statName );
-
-				std::string newMessage = std::string(messs);
-
-				bool displayMessage = false;
-				if (   messageSaid.find(newMessage) != messageSaid.end() 
-					&& messageSaid[newMessage] == before )
-				{
-
-				}
-				else if (   messageSaid.find(newMessage) != messageSaid.end() 
-					&& messageSaid[newMessage] != before )
-				{
-					messageSaid[newMessage] = before;
-					displayMessage = true;
-				}
-				else if (   messageSaid.find(newMessage) == messageSaid.end()  )
-				{
-					messageSaid[newMessage] = before;
-					displayMessage = true;
-				}
-					
-
-				if ( displayMessage )
-				{
-					BASIC_LOG("RICHAR: PARAGON %s  %d->%d",messs,   before,valueToReturn);
-				}
-			}
-
-		}
-	}
-
-
-	return valueToReturn;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
 int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 {
     int32 DoneAdvertisedBenefit = 0;
@@ -8266,6 +8029,49 @@ struct SetSpeedRateHelper
 
 void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
 {
+
+
+
+	// RICHARD  :   augmenter le speed rate des pet/familier  :
+	//  IMPROVE_RICHA_MOVEMENT_PET
+	//ceci pour compenser les qq petit bug de deplacement du familier
+	if (  GetTypeId() != TYPEID_PLAYER )
+	{
+		if (  GetOwner() &&  GetOwner()->GetTypeId() == TYPEID_PLAYER )
+		{
+			const char* unitName = GetName();
+
+			if (m_speed_rate[mtype] != rate)
+			{
+				int aaa=0;
+			}
+
+			float distanceWithOwner = GetDistance(GetOwner()) ;
+			if ( distanceWithOwner > 30.0 )
+			{
+				rate = 9.0f; // s'il est tres loin, il revient très vite
+			}
+			else if ( distanceWithOwner > 15.0 )
+			{
+				rate = 3.0f;
+			}
+			else
+			{
+				rate = 1.5f;
+			}
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
     rate = std::max(rate, 0.01f);
 
     // Update speed only on change
@@ -8770,7 +8576,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 
 
 
-	
+/*	
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//richard : c'est ici que se calcule les point de base lancé par un sort
@@ -8870,16 +8676,16 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 		bool whitelistedSpell = false;
 	
 
-/*
+
 		//de facon arbitraire je prends entre -5 et 5
 		//je considre qu'un sort qui a une petite valeur d'effet est trop suspect pour etre multiplié par le paragon
-		if ( value >= 5   ||   value <= -5  )
-		{
-			whitelistedSpell = true;
-		}
+		//if ( value >= 5   ||   value <= -5  )
+		//{
+		//	whitelistedSpell = true;
+		//}
 
 
-*/
+
 		whitelistedSpell = false;
 
 		
@@ -9117,7 +8923,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+*/
 
 
 

@@ -372,7 +372,19 @@ bool ChatHandler::HandleGPSCommand(char* args)
 
 
 bool ChatHandler::HandleNamegoCommand_richaDemo(char* args)
-{
+{/*
+	Player* target22 = 0;
+    ObjectGuid target_guid22 ;
+    std::string target_name22 = "";
+    if (!ExtractPlayerTarget(&args, &target22, &target_guid22, &target_name22))
+	{
+		//error
+        target22 = 0;
+		target_name22 = "";
+	}
+	*/
+
+
 
 	Player* player = m_session->GetPlayer();
 	if ( player )
@@ -390,11 +402,90 @@ bool ChatHandler::HandleNamegoCommand_richaDemo(char* args)
 			return false;
 		}
 
-		if ( !player->GetTarget() )  
+		ObjectGuid const& guidSelected = player->GetSelectionGuid();
+
+		if ( !guidSelected )
 		{
 			player->Say("je dois selectionner une cible",LANG_UNIVERSAL);
 			return false;
 		}
+
+		if ( !guidSelected.IsPlayer() )
+		{
+			player->Say("la cible doit etre un joueur",LANG_UNIVERSAL);
+			return false;
+		}
+
+
+		Player* target1 = ObjectAccessor::FindPlayer(guidSelected);
+
+		if ( !target1 )
+		{
+			player->Say("ERROR 386",LANG_UNIVERSAL);
+			return false;
+		}
+
+
+		if ( target1 == player )
+		{
+			player->Say("la cible ne peut pas etre moi meme",LANG_UNIVERSAL);
+			return false;
+		}
+
+		
+		//if ( !player->GetTarget() )   // <--- ne pas utiliser  GetTarget  ca ne marchera pas si la cible est sur un autre continent
+		//{
+		//	player->Say("je dois selectionner une cible 2",LANG_UNIVERSAL);
+		//	return false;
+		//}
+		
+
+		if ( target1->GetTypeId() != TYPEID_PLAYER )  
+		{
+			player->Say("la cible doit etre un joueur 2",LANG_UNIVERSAL);
+			return false;
+		}
+
+
+		if ( player->isDead() )  
+		{
+			player->Say("je dois etre vivant",LANG_UNIVERSAL);
+			return false;
+		}
+		if ( target1->isDead() )  
+		{
+			player->Say("la cible doit etre vivante",LANG_UNIVERSAL);
+			return false;
+		}
+
+
+
+		if ( player->IsTaxiFlying() )  
+		{
+			player->Say("je dois pas etre sur Grpyhon",LANG_UNIVERSAL);
+			return false;
+		}
+		if ( target1->IsTaxiFlying() )  
+		{
+			player->Say("la cible pas etre sur Grpyhon",LANG_UNIVERSAL);
+			return false;
+		}
+
+
+
+		if ( player->isInCombat() )  
+		{
+			player->Say("je dois pas etre en combat",LANG_UNIVERSAL);
+			return false;
+		}
+		if ( target1->isInCombat() )  
+		{
+			player->Say("la cible doit pas etre en combat",LANG_UNIVERSAL);
+			return false;
+		}
+
+
+
 
 		bool rett = HandleNamegoCommand(args);
 		return rett;

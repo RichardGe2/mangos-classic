@@ -1050,7 +1050,9 @@ class Player : public Unit
         bool HasItemCount(uint32 item, uint32 count, bool inBankAlso = false) const;
 
 
-		uint32 richard_countItem(uint32 item) const;
+
+		// richa :  essayer plutot d'utiliser   GetItemCount  si possible
+		uint32 richard_countItem(uint32 item,  bool inBankAlso = false , bool inEquipmentAlso = false ,  bool inKeyRingAlso = false,   bool inInventoryAlso = true ) const; 
 		void richard_countItem_pokeball(uint32& itemKeyRin0 , uint32& quantity ) const;
 
 
@@ -2436,8 +2438,8 @@ class Player : public Unit
 		void Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECONDA>  >& mapsList,   int&  nbAreaExplored,  int&  nbAreaTotal);
 		
 
-		int m_richar_paragon; // variable specifique a ce Player : Bouillot, Boulette....
-		int m_richar_paragonProgressFromFile; // only USED during loading, after that, it's always 0
+		//int m_richar_paragon; // variable specifique a ce Player : Bouillot, Boulette....
+		//int m_richar_paragonProgressFromFile; // only USED during loading, after that, it's always 0
 		
 		struct RICHA_NPC_KILLED_STAT
 		{
@@ -2481,17 +2483,32 @@ class Player : public Unit
 		};
 		std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND> m_richa_lunerFestivalElderFound;
 
+		struct RICHA_MAISON_TAVERN
+		{
+			RICHA_MAISON_TAVERN(uint32 a , uint32 b)
+			{
+				mapid = a ;
+				areaid = b;
+			}
+
+			uint32 mapid;
+			uint32 areaid;
+		};
+
 		static void richa_importFrom_richaracter_(
 			uint64 guid__,
 			std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
 			std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
-			std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound);
+			std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+			std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+			std::string& namePerso);
 
 		static void richa_exportTo_richaracter_(
 			uint64 guid__,
 			const std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
 			const std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
 			const std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+			const std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
 			const char* name);
 
 		//va exporter dans   _ri_stat_Grandjuge_2017_04_21.txt
@@ -2499,6 +2516,10 @@ class Player : public Unit
 		//ceci dans un but de debug, et d'archivage
 		//le fichier exporté n'est pas vraiment sensé etre relu et utilisé derriere par le serveur
 		void richa_exportTo_ristat_();
+
+		int GetParagonLevelFromItem();
+
+		std::vector<RICHA_MAISON_TAVERN> m_richa_ListeMaison;
 
 		///////////////////////////////////////////////////////////////////////////////////
 

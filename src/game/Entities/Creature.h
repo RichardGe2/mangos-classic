@@ -845,7 +845,7 @@ class Creature : public Unit
 		//  richar
 		public :  uint32 Richar_GetOriginalEntry() { return  m_originalEntry;  };
 		float Richar_difficuly_health;
-		static float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner);
+		static float GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner,   float* nbPlayerParagon1Needed = 0);
 
 
 };

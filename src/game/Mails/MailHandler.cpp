@@ -174,7 +174,7 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
 
 
 	//////////////////////////////////////////////////////////////////////
-	// RICHARD : interdire les mails des persos primaires vers secondaires
+	// RICHARD : interdire les mails des persos primaires vers secondaires  +  gestion de copie de plan 
 	//
 	{
 		ObjectGuid const& guiiddd = pl->GetObjectGuid();

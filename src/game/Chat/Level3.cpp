@@ -3891,7 +3891,7 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 			BASIC_LOG(messageee);
 			PSendSysMessage(messageee);
 
-			sprintf(messageee, "Paragon = %d", playerTarget->m_richar_paragon );
+			sprintf(messageee, "Paragon = %d", playerTarget->GetParagonLevelFromItem() );
 			BASIC_LOG(messageee);
 			PSendSysMessage(messageee);
 
@@ -3997,11 +3997,15 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 						std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
 						std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 						std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+						std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+						std::string persoNameImport;
 						Player::richa_importFrom_richaracter_(
 							mainPlayerGUID[jj],
 							richa_NpcKilled,
 							richa_pageDiscovered,
-							richa_lunerFestivalElderFound
+							richa_lunerFestivalElderFound,
+							richa_maisontavern,
+							persoNameImport
 							);
 
 						for(int kk=0; kk<richa_NpcKilled.size(); kk++)

@@ -159,6 +159,33 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
 
                     Unit* targetUnit = targetGuid ? _player->GetMap()->GetUnit(targetGuid) : nullptr;
 
+
+
+					// RICHARD :  si le pet est passive, j'empeche l'attaque
+					// je fais cela pour améliorer mes macro qui demande au pet d'attaquer.
+					// je ne peut pas dire "if pet passive" dans les macro
+					// donc je prefere tout simplement bloquer ici coté server.
+					// je PENSE que ca ne devrait pas etre embetant.
+					if (  petUnit && 
+						petUnit->AI() && 
+						petUnit->GetOwner() &&
+						petUnit->GetOwner()->GetTypeId() == TYPEID_PLAYER &&
+						petUnit->AI()->GetReactState() == REACT_PASSIVE )
+					{
+						char messageOut[2048];
+						
+						//  j'arriv pas a mettre de î -  j'ai essayé  ma\xC3\xAE\x8b\x8btre  mais ca marche pas
+						//sprintf(messageOut, "Impossible d'attaquer maiiiitre");  
+						sprintf(messageOut, "Impossible d'attaquer ma\xC3\xAE\xC3\xAE\xC3\xAE\xC3\xAE\xC3\xAEtre");  
+						
+						petUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+						break;
+					}
+
+
+
+
+
                     if (targetUnit && targetUnit != petUnit && petUnit->CanAttack(targetUnit) && targetUnit->isInAccessablePlaceFor((Creature*)petUnit))
                     {
                         // This is true if pet has no target or has target but targets differs.

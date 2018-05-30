@@ -1376,8 +1376,15 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
 
 
-float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner)
+float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner,   float* nbPlayerParagon1Needed )
 {
+
+	//  nbPlayerParagon1Needed  :
+	//  retourne le nombre de joueur paragon 1 (sans modification) qu'il faudrait pour tuer ce mob   -  avec des joueurs de meme lvl que le mob
+
+	if ( nbPlayerParagon1Needed )
+		*nbPlayerParagon1Needed = 1.0f; // par defaut
+
 
 	// RICHARD - ajustement des coeff de difficulté on fonction de la position du mob
 
@@ -1392,7 +1399,9 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 			
 			Player* ownerCastPlayer = (Player*)ownerrr;
 
-			if ( ownerCastPlayer->m_richar_paragon <= 1 )
+			int paralvl = ownerCastPlayer->GetParagonLevelFromItem();
+
+			if ( paralvl <= 1 )
 			{
 				return 1.0;
 			}
@@ -1400,7 +1409,11 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 			{
 				// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
 				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
-				float coeffParagon = ((float)ownerCastPlayer->m_richar_paragon + 1.0) / 2.0;
+				float coeffParagon = ((float)paralvl + 1.0) / 2.0;
+
+				if ( nbPlayerParagon1Needed )
+					*nbPlayerParagon1Needed = coeffParagon;
+
 
 				int aaaa=0;
 				
@@ -1433,29 +1446,30 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 
 	float outNumber = 1.0;
+	float nbPlayerParagon1Needed_out = 1.0f;
 
-	if ( cPosRicha == "Eastern Kingdoms" )		{ outNumber = 1.0; }
-	else if ( cPosRicha == "Kalimdor" )			{ outNumber =  1.0; }
-	else if ( cPosRicha == "Deeprun Tram" )			{ outNumber =  1.0; }
-	else if ( cPosRicha == "Alliance PVP Barracks" )			{ outNumber =  1.0; }
-	else if ( cPosRicha == "Horde PVP Barracks" )			{ outNumber =  1.0; } // j'ai donné le nom au hasard, faudra verifier que c'est bien ca
+	if ( cPosRicha == "Eastern Kingdoms" )		{ outNumber = 1.0;  nbPlayerParagon1Needed_out = 1.0f; }
+	else if ( cPosRicha == "Kalimdor" )			{ outNumber =  1.0;  nbPlayerParagon1Needed_out = 1.0f; }
+	else if ( cPosRicha == "Deeprun Tram" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f;  }
+	else if ( cPosRicha == "Alliance PVP Barracks" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f; }
+	else if ( cPosRicha == "Horde PVP Barracks" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f; } // j'ai donné le nom au hasard, faudra verifier que c'est bien ca
 
 	//donjons low level :  on les ramene a une difficulté de 2 joueurs :  on divise par 5 et multiple par 2
-	else if ( cPosRicha == "Ragefire Chasm" )		{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Wailing Caverns" )		{ outNumber =  2.0f/5.0f; } // 17-24   5 joueurs
-	else if ( cPosRicha == "Deadmines" )			{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Shadowfang Keep" )		{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Blackfathom Deeps" )	{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "The Stockade" )			{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Gnomeregan" )			{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Razorfen Kraul" )		{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Scarlet Monastery" )	{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Razorfen Downs" )		{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Uldaman" )				{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Zul'Farrak" )			{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Maraudon" )				{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Sunken Temple" )		{ outNumber =  2.0f/5.0f; }
-	else if ( cPosRicha == "Blackrock Depths" )		{ outNumber =  2.0f/5.0f; } 
+	else if ( cPosRicha == "Ragefire Chasm" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Wailing Caverns" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; } // 17-24   5 joueurs
+	else if ( cPosRicha == "Deadmines" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Shadowfang Keep" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Blackfathom Deeps" )	{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "The Stockade" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Gnomeregan" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Razorfen Kraul" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Scarlet Monastery" )	{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Razorfen Downs" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Uldaman" )				{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Zul'Farrak" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Maraudon" )				{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Sunken Temple" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Blackrock Depths" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; } 
 	
 
 	//
@@ -1568,6 +1582,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		{
 			mobLower = true;
 			outNumber =  6.0f/5.0f;
+			nbPlayerParagon1Needed_out = 6.0f;
 		}
 
 		// UPPER Spire - mob names list
@@ -1636,6 +1651,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		{
 			mobUpper = true;
 			outNumber =  6.0f/10.0f;
+			nbPlayerParagon1Needed_out = 6.0f;
 		}
 
 		if ( mobLower && mobUpper )
@@ -1644,6 +1660,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 			// dans le doute, on le mets en difficulté la + dure !
 			outNumber =  1.0f;  
+			nbPlayerParagon1Needed_out = 7.5f; // <-- je met entre 5 et 10 ...
 		}
 
 		if ( !mobLower && !mobUpper )
@@ -1652,26 +1669,38 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 			// dans le doute, on le mets en difficulté la + dure !
 			outNumber =  1.0f;  
+			nbPlayerParagon1Needed_out = 7.5f; // <-- je met entre 5 et 10 ...
 		}
 	}      
 	
 	
-	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  5.0f/5.0f; }      // 55-60   5
+	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  5.0f/5.0f; nbPlayerParagon1Needed_out = 5.0f; }      // 55-60   5
 
-	else if ( cPosRicha == "Stratholme" )			{ outNumber =  6.0f/5.0f; }      // 58-60   5
-	else if ( cPosRicha == "Scholomance" )			{ outNumber =  6.0f/5.0f; }      // 58-60   5
+	else if ( cPosRicha == "Stratholme" )			{ outNumber =  6.0f/5.0f; nbPlayerParagon1Needed_out = 6.0f; }      // 58-60   5
+	
+	else if ( cPosRicha == "Scholomance" )			
+	{ 
+		//outNumber =  6.0f/5.0f; nbPlayerParagon1Needed_out = 6.0f;
+		outNumber =  1.0; nbPlayerParagon1Needed_out = 6.0f; // debug
+	}      // 58-60   5
 
-	else if ( cPosRicha == "Molten Core" )			{ outNumber =  7.0f/40.0f; }	// 60+     40
+	else if ( cPosRicha == "Molten Core" )			{ outNumber =  7.0f/40.0f; nbPlayerParagon1Needed_out = 7.0f;}	// 60+     40
 
-	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  8.0f/20.0f; }	// 60+     20
+	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  8.0f/20.0f; nbPlayerParagon1Needed_out = 8.0f;}	// 60+     20
 
-	else if ( cPosRicha == "Onyxias Lair" )			{ outNumber =  9.0f/40.0f; }	// 60+     40
+	else if ( cPosRicha == "Onyxias Lair" )			{ outNumber =  9.0f/40.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60+     40
 	
 	
-	else if ( cPosRicha == "Blackwing Lair" )		{ outNumber =  9.0f/40.0f; }	// 60++    40  
-	else if ( cPosRicha == "Ruins of Ahnqiraj" )	{ outNumber =  9.0f/20.0f; }	// 60++    20
-	else if ( cPosRicha == "Temple of Ahnqiraj" )	{ outNumber =  10.0f/40.0f; }	// 60+++   40
-	else if ( cPosRicha == "Naxxramas" )			{ outNumber =  11.0f/40.0f; }	// 60++++  40
+	else if ( cPosRicha == "Blackwing Lair" )		{ outNumber =  9.0f/40.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60++    40  
+	else if ( cPosRicha == "Ruins of Ahnqiraj" )	{ outNumber =  9.0f/20.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60++    20
+	else if ( cPosRicha == "Temple of Ahnqiraj" )	{ outNumber =  10.0f/40.0f; nbPlayerParagon1Needed_out = 10.0f;}	// 60+++   40
+	
+	else if ( cPosRicha == "Naxxramas" )			
+	{ 
+		//outNumber =  11.0f/40.0f; nbPlayerParagon1Needed_out = 11.0f;
+		outNumber =  1.0f; nbPlayerParagon1Needed_out = 11.0f; // temporary test
+
+	}	// 60++++  40
 
 
 	else if ( cPosRicha == "??POSRICH??" )
@@ -1724,7 +1753,8 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		sLog.outBasic("RICHAR: INSTANCE DETECTE : %s",cPosRicha.c_str() ); 
 	} 
 
-
+	if ( nbPlayerParagon1Needed )
+		*nbPlayerParagon1Needed = nbPlayerParagon1Needed_out; // par defaut
 
 	return  outNumber ;
 }

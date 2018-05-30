@@ -393,8 +393,8 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
-	m_richar_paragon = 0;
-	m_richar_paragonProgressFromFile = 0;
+	//m_richar_paragon = 0;
+	//m_richar_paragonProgressFromFile = 0;
 
     m_transport = nullptr;
 
@@ -737,14 +737,14 @@ void Player::Richard_GetListExplored(std::map<std::string,  std::vector<MAP_SECO
 
 void Player::richard_importVariables_END(uint64 guid__)
 {
+
+	/*
 	int lvl = getLevel();
 
 	if ( lvl == 60  )
 	{
 		if ( m_richar_paragon >= 1 )
 		{
-			FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(93);
-			GetReputationMgr().SetReputation(factionEntry1,21000 + m_richar_paragonProgressFromFile);
 			int aaaa=0;
 		}
 		else
@@ -773,7 +773,7 @@ void Player::richard_importVariables_END(uint64 guid__)
 	}
 
 	m_richar_paragonProgressFromFile = 0;
-
+	*/
 }
 
 
@@ -782,6 +782,7 @@ void Player::richa_exportTo_richaracter_(
 			const std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
 			const std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
 			const std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+			const std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
 			const char* characterName
 			)
 {
@@ -799,7 +800,26 @@ void Player::richa_exportTo_richaracter_(
 	char nameFile2[2048];
 	sprintf(nameFile2, "RICHARDS/_ri_character_%d.txt",guid);
 	FILE* fcustom = fopen(nameFile2, "wb"); // w : create an empty file - if file already exist content are discarded , and treated as new empty file
-		
+	
+
+	if ( !fcustom )
+	{
+
+		BASIC_LOG("WARNING IMPORTANT  45RT6 :  arrive pas a ouvrir un fichier pour exporter les data - pause de 60 secondes !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ");
+
+		// je prefere bloquer le serveur plutot que charger n'importe quoi ou prendre le risque d'effacer des data
+		for(int i=0; i<60 ;i++)
+		{
+			Sleep(1000);
+			int aaaa=0;
+		}
+
+		int aaa=0;
+
+		return;
+	}
+
+
 	sprintf(outt, "// generated on %02d/%02d/%d \r\n", now->tm_mday ,now->tm_mon+1,  now->tm_year + 1900 );
 	fwrite(outt, 1, strlen(outt), fcustom);
 
@@ -861,6 +881,24 @@ void Player::richa_exportTo_richaracter_(
 	}
 
 
+
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_MAISON_TAVERN\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+	for(int i=0; i<richa_ListeMaison.size(); i++)
+	{
+		//AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+		AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(  richa_ListeMaison[i].areaid  );
+
+		sprintf(outt, "%d,%d,%s\r\n", richa_ListeMaison[i].mapid , richa_ListeMaison[i].areaid , areaEntry ? areaEntry->area_name[0] : "unknown");
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+	
+
+
 	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
 	fwrite(outt, 1, strlen(outt), fcustom);
 
@@ -879,8 +917,9 @@ void Player::richa_exportTo_richaracter_(
 void Player::richa_importFrom_richaracter_(uint64 guid__,
 	std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
 	std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
-	std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound
-	
+	std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
+	std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+	std::string& namePerso
 	)
 {
 	
@@ -890,8 +929,43 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 
 	std::ifstream infile(nameFile2);
 
+
+
+
+	if ( !infile.is_open() || infile.fail() )
+	{
+		// si on arrive la c'est certainement car un nouveau perso a été créé.
+		//  NON EN FAIT car  richa_exportTo_richaracter_  est appelé au moment de creation du perso
+		// donc il n'y a aucune raison de ne pas pouvroi ouvrir ce fichier
+		// et donc c'est une errur tres grave 
+
+		BASIC_LOG("RICHAR WARNING GRAVE 85XC2 : Can't find save file for guid = %d : !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" , (int32_t)guid__ );
+		
+
+		// je prefere bloquer le serveur plutot que charger n'importe quoi ou prendre le risque d'effacer des data
+		for(int i=0; ;i++)
+		{
+			Sleep(1000);
+			int aaaa=0;
+		}
+
+
+		//on RESET toutes la variables importées par ce TXT :
+		richa_NpcKilled.clear();
+		richa_pageDiscovered.clear();
+		richa_lunerFestivalElderFound.clear();
+		richa_ListeMaison.clear();
+		namePerso = "";
+		
+		return;
+	}
+
+
+
+
 	int nbOk = 0;
 	bool error = false;
+	int errorCode = 0;
 
 
 	if ( richa_NpcKilled.size() != 0 )
@@ -945,7 +1019,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		{
 			if ( line != "CHARACTER_STAT" )
 			{
-				error = true; break;
+				error = true; errorCode = 1; break;
 			}
 			else
 			{
@@ -957,7 +1031,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		{
 			if ( line != "VERSION_254" ) // version
 			{
-				error = true; break;
+				error = true; errorCode = 2; break;
 			}
 			else
 			{
@@ -968,6 +1042,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		else if ( lineCount == 2 )
 		{
 			// character name
+			namePerso = line;
 			int aa=0;
 		}
 
@@ -975,7 +1050,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		{
 			if ( line != "#LIST_NPC_KILLED" ) // version
 			{
-				error = true; break;
+				error = true; errorCode = 3; break;
 			}
 		}
 
@@ -989,7 +1064,12 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		{
 			int npcid=0;
 			int npckilled=0;
-			sscanf(line.c_str(),"%d,%d",&npcid,&npckilled);
+			if ( sscanf(line.c_str(),"%d,%d",&npcid,&npckilled) != 2 )
+			{
+				error = true;
+				errorCode = 4; 
+				break;
+			}
 			richa_NpcKilled.push_back(RICHA_NPC_KILLED_STAT(npcid,npckilled));
 		}
 
@@ -998,7 +1078,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		{
 			if ( line != "#LIST_PAGE_DISCOVERED" ) // version
 			{
-				error = true; break;
+				error = true; errorCode = 5; break;
 			}
 		}
 
@@ -1014,43 +1094,78 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 			int objectid=0;
 			int itemid=0;
 			int unuseddd=0;
-			sscanf(line.c_str(),"%d,%d,%d,%d",&pageid,&objectid,&itemid,&unuseddd);
+			if ( sscanf(line.c_str(),"%d,%d,%d,%d",&pageid,&objectid,&itemid,&unuseddd) != 4 )
+			{
+				error = true;errorCode = 6; 
+				break;
+			}
 
 			if ( objectid == 0 && itemid == 0 )
 			{
-				error = true; break;
+				error = true;errorCode = 7;  break;
 			}
 			if ( objectid != 0 && itemid != 0 )
 			{
-				error = true; break;
+				error = true; errorCode = 8; break;
 			}
 			if ( unuseddd != 0  )
 			{
-				error = true; break;
+				error = true;errorCode = 9;  break;
 			}
 
 			richa_pageDiscovered.push_back(RICHA_PAGE_DISCO_STAT(pageid,objectid,itemid));
 		}
 
 
+
+
+		// mettre les section ici  AVANT les IF qui vont lire dans les sections
 		else if ( line == "#LIST_LUNARFESTIVAL_ELDERFOUND" )
 		{
 			currentSectionName = line;
 			currentSectionLine = 0;
 		}
+		else if ( line == "#LIST_MAISON_TAVERN" )
+		{
+			currentSectionName = line;
+			currentSectionLine = 0;
+		}
+
+
+
+
 
 		else if ( currentSectionName == "#LIST_LUNARFESTIVAL_ELDERFOUND" )
 		{
 			int year=0;
 			int questid=0;
-			sscanf(line.c_str(),"%d,%d",&year,&questid);
+			int nbnb = sscanf(line.c_str(),"%d,%d",&year,&questid) ;
+			if ( nbnb != 2 )
+			{
+				error = true;errorCode = 10; 
+				break;
+			}
 			richa_lunerFestivalElderFound.push_back(RICHA_LUNARFESTIVAL_ELDERFOUND(year,questid));
+			currentSectionLine++;
+		}
+
+		else if ( currentSectionName == "#LIST_MAISON_TAVERN" )
+		{
+			int mapid=0;
+			int areaid=0;
+			char sonzename[4096];
+			if ( sscanf(line.c_str(),"%d,%d,%s",&mapid,&areaid,sonzename) != 3 )
+			{
+				error = true;errorCode = 11; 
+				break;
+			}
+			richa_ListeMaison.push_back(RICHA_MAISON_TAVERN(mapid,areaid));
 			currentSectionLine++;
 		}
 
 		else
 		{
-			error = true;
+			error = true;errorCode = 12; 
 			break;
 		}
 
@@ -1060,35 +1175,48 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 
 	if ( richa_NpcKilled.size() != nbNpcKilled )
 	{
-		error = true;
+		error = true;errorCode = 13; 
 	}
 	if ( richa_pageDiscovered.size() != nbPageDiscoverd )
 	{
-		error = true;
+		error = true;errorCode = 14; 
 	}
 
 
-	if ( nbOk != 3 || error )
+	if ( nbOk != 3 || error ||  errorCode != 0 )
 	{
 		if ( error )
 		{
 			int aaaaa=0;
 		}
 
-		BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - create NEW CUSTOM SAVE FILE (%d) !!!!!!!!!!!", guid__ );
-		Sleep(5000);
+		char finalErro[4096];
+		sprintf(finalErro,"RICHAR WARNING GRAVE cant load save for guid= %d   errorCode= %d -  JE BLOQUE LE SERVER !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" ,
+			(uint32_t)guid__  , 
+			errorCode );
+
+		BASIC_LOG(finalErro);
+
+		// je prefere bloquer le serveur plutot que charger n'importe quoi ou prendre le risque d'effacer des data
+		for(int i=0; ;i++)
+		{
+			Sleep(1000);
+			int aaaa=0;
+		}
 
 
 		//si on arrive dans cette erreur, ca veut dire que    _ri_character_%d.txt
-		//n'a pas été chargé correctment... ou n'existe pas . le seul cas ou c'est normal, c'est quand on cree un nouveau personnage
+		//n'a pas été chargé correctment.
 		
 
-		// 1) on RESET toutes la variables importées par ce TXT :
+		//on RESET toutes la variables importées par ce TXT :
 		richa_NpcKilled.clear();
 		richa_pageDiscovered.clear();
 		richa_lunerFestivalElderFound.clear();
+		richa_ListeMaison.clear();
+		namePerso = "";
 
-		// 2) un nouveau fichier sera créé lors du premier log out du perso
+
 	}
 
 
@@ -1100,7 +1228,7 @@ void Player::richard_importVariables_START(uint64 guid__)
 	BASIC_LOG("Start richard_importVariables....");
 
 
-
+	/*
 	//on set toute les valeurs par default - au cas ou la variable existe pas
 	m_richar_paragon = 0;
 	m_richar_paragonProgressFromFile = 0;
@@ -1108,7 +1236,7 @@ void Player::richard_importVariables_START(uint64 guid__)
 
 	/////////////////////////////////////////////////////////////////////
 	//importation des variable propres au humain : diane, richard
-
+	
 	{
 
 		uint32 player_account = sObjectMgr.GetPlayerAccountIdByGUID(guid__);
@@ -1249,9 +1377,6 @@ void Player::richard_importVariables_START(uint64 guid__)
 						m_richar_paragonProgressFromFile = fromFile_paragoProgress;
 						//fromFile_paragoProgress;
 
-						//FactionEntry const* factionEntry1 = sFactionStore.LookupEntry(93);
-						//GetReputationMgr().SetReputation(factionEntry1,21000 + fromFile_paragoProgress);
-						//GetReputationMgr().SetReputation(factionEntry1,21000 + 1); // sera initialise pendant  richard_importVariables_END
 					}
 					else
 					{
@@ -1272,20 +1397,40 @@ void Player::richard_importVariables_START(uint64 guid__)
 
 
 	}
-
+	*/
 
 	//////////////////////////////////////////////////////////////////////
 
+	std::string persoNameImport;
 	richa_importFrom_richaracter_(
 		guid__,
 		m_richa_NpcKilled,
 		m_richa_pageDiscovered,
-		m_richa_lunerFestivalElderFound
+		m_richa_lunerFestivalElderFound,
+		m_richa_ListeMaison,
+		persoNameImport
 		);
 
 
 	BASIC_LOG("FINISH richard_importVariables");
 }
+
+
+int Player::GetParagonLevelFromItem()
+{
+	for(int i=1; i<100; i++)
+	{
+		int countitem = GetItemCount(31000+i);
+		if ( countitem >= 1 ) // normallement c'est juste 0  ou 1
+		{
+			return i;
+		}
+	}
+
+	return 0;
+}
+
+
 
 void Player::richa_exportTo_ristat_()
 {
@@ -1324,13 +1469,31 @@ void Player::richa_exportTo_ristat_()
 	fwrite(outt, 1, strlen(outt), fout);
 
 
-	sprintf(outt, "youhaicoin,%d\r\n", richard_countItem(coinItemID1) +  richard_countItem(coinItemID2));
+	int nbyouhaiCadeau = richard_countItem(coinItemID2, true, true, true, true);
+	int nbyouhaiPara = richard_countItem(coinItemID1, true, true, true, true);
+	
+	int nbyouhaiCadeau_2 = GetItemCount(coinItemID2,true);
+	int nbyouhaiPara_2 = GetItemCount(coinItemID1,true);
+
+
+	if ( nbyouhaiCadeau != nbyouhaiCadeau_2
+		 || nbyouhaiPara != nbyouhaiPara_2
+		)
+	{
+		// ERREUR GRAVE !
+		BASIC_LOG("WARNING GRAVE 2369 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		Sleep(20000);
+		int rrr=0;
+	}
+
+
+	sprintf(outt, "youhaicoin,%d\r\n", nbyouhaiPara +  nbyouhaiCadeau);
 	fwrite(outt, 1, strlen(outt), fout);
 
-	sprintf(outt, "youhaicoin_paragon,%d\r\n", richard_countItem(coinItemID1) );
+	sprintf(outt, "youhaicoin_paragon,%d\r\n", nbyouhaiPara );
 	fwrite(outt, 1, strlen(outt), fout);
 
-	sprintf(outt, "youhaicoin_cadeau,%d\r\n", richard_countItem(coinItemID2) );
+	sprintf(outt, "youhaicoin_cadeau,%d\r\n", nbyouhaiCadeau );
 	fwrite(outt, 1, strlen(outt), fout);
 
 	sprintf(outt, "level,%d\r\n", getLevel());
@@ -1342,7 +1505,7 @@ void Player::richa_exportTo_ristat_()
 	sprintf(outt, "xpNextLevel,%d\r\n", GetUInt32Value(PLAYER_NEXT_LEVEL_XP));
 	fwrite(outt, 1, strlen(outt), fout);
 
-	sprintf(outt, "paragon,%d\r\n", m_richar_paragon);
+	sprintf(outt, "paragon,%d\r\n", GetParagonLevelFromItem() );
 	fwrite(outt, 1, strlen(outt), fout);
 
 	
@@ -1393,6 +1556,9 @@ void Player::richa_exportTo_ristat_()
 		//Donc pour faciliter la comparaison, je vais arrondir.
 		//ca ne change pas grand chose car les nombre sont de l'ordre du centaine/millier
 		sprintf(outt, "GPS_GetPositionXYZ,%d,%d,%d\r\n", (int)GetPositionX() , (int)GetPositionY() , (int)GetPositionZ());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "GPS_GetOrientation,%.2f\r\n", GetOrientation() );
 		fwrite(outt, 1, strlen(outt), fout);
 		
 		sprintf(outt, "GPS_GetMapId,%d\r\n", GetMapId());
@@ -2626,6 +2792,32 @@ void Player::richa_exportTo_ristat_()
 		fwrite(outt, 1, strlen(outt), fout);
 	}
 
+	{
+
+
+		sprintf(outt, "\r\n#LIST_MAISON_TAVERN =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "Counter,%d\r\n", m_richa_ListeMaison.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_ListeMaison.size(); i++)
+		{
+			//AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
+			AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(m_richa_ListeMaison[i].areaid);
+
+			sprintf(outt, "%d,%d,%s\r\n", m_richa_ListeMaison[i].mapid , m_richa_ListeMaison[i].areaid ,  areaEntry ? areaEntry->area_name[0] : "unknown");
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+
+
+	}
+
 
 
 	{
@@ -2808,7 +3000,9 @@ void Player::richa_exportTo_ristat_()
 
 void Player::richard_saveToLog()
 {
+	int aaa=0;
 
+	/*
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// richard : generation outfile :
 
@@ -2991,7 +3185,7 @@ void Player::richard_saveToLog()
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
+	*/
 
 }
 
@@ -8299,7 +8493,7 @@ void Player::Richard_InformDiscoveredNewArea(int areaFlag)
 
 				BASIC_LOG("RICHAR:  %s has discovered new : %s,%s  score=%d/%d ",  GetName()  ,  elemI.first.c_str(),  elemJ.name.c_str(),  nbSubDiscovered,  nbSubZone  );
 
-				char messageOut[256];
+				char messageOut[2048];
 				sprintf(messageOut, "Decouverte zone (%d/%d)", nbSubDiscovered, nbSubZone);
 				Say(messageOut, LANG_UNIVERSAL);
 
@@ -10576,12 +10770,12 @@ bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
 
 
 
-uint32 Player::richard_countItem(uint32 item) const
+uint32 Player::richard_countItem(uint32 item,  bool inBankAlso , bool inEquipmentAlso ,  bool inKeyRingAlso,   bool inInventoryAlso ) const
 {
-	bool inBankAlso = false; // count bank or not
-	bool inEquipmentAlso = false;
-	bool inKeyRingAlso = false;
-	bool inInventoryAlso = true;
+	//bool inBankAlso = false; // count bank or not
+	//bool inEquipmentAlso = false;
+	//bool inKeyRingAlso = false;
+	//bool inInventoryAlso = true;
 
 	uint32 tempcount = 0;
 
@@ -15509,30 +15703,215 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			{
 				Item* item = StoreNewItem(dest, newCoin_, true, Item::GenerateItemRandomPropertyId(newCoin_));
 				SendNewItem(item, nbCoinToReceiveReally, true, false);
-			}
 
-
-
-			if ( newCoin_ == coinItemID1 )
-			{
-				char messageOut[256];
-				sprintf(messageOut, "%s+%d/%d youhaicoin paragon!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
-				Say(messageOut, LANG_UNIVERSAL);
+				if ( newCoin_ == coinItemID1 )
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "%s+%d/%d youhaicoin paragon!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
+				else
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "%s+%d/%d youhaicoin cadeau!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
 			}
 			else
 			{
-				char messageOut[256];
-				sprintf(messageOut, "%s+%d/%d youhaicoin cadeau!",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
-				Say(messageOut, LANG_UNIVERSAL);
+				if ( newCoin_ == coinItemID1 )
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "ERREUR : je n'ai pas recu mes %d youhaicoin paragon car inventaire plein",nbCoinToReceiveReally);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
+				else
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "ERREUR : je n'ai pas recu mes %d youhaicoin cadeau car inventaire plein",nbCoinToReceiveReally);
+					Say(messageOut, LANG_UNIVERSAL);
+				}
 			}
+
+
+
+			
 		}
 		else if (nbCoinToReceiveReally == 0 && nbCoinToReceiveMax > 0)
 		{
-			char messageOut[256];
+			char messageOut[2048];
 			sprintf(messageOut, "%s+%d/%d youhaicoin :(",prefix, nbCoinToReceiveReally, nbCoinToReceiveMax);
 			Say(messageOut, LANG_UNIVERSAL);
 		}
 
+	}
+
+
+	//cas special du paragon
+	if ( questID == 20001 )
+	{
+		uint8 questGiverType = questGiver->GetTypeId();
+		Unit* quesGiverUnit = 0;
+		if ( questGiverType == TYPEID_UNIT )
+		{
+			quesGiverUnit = dynamic_cast<Unit*>(questGiver);
+			if ( quesGiverUnit )
+			{
+				
+				int aa=0;
+				
+			}
+			else
+			{
+				Say("ERREUR 632 : en parler a Richard",LANG_UNIVERSAL);
+			}
+		}
+
+
+		int currentParagonLvl = GetParagonLevelFromItem();
+
+
+		//bool paragonPasse = false;
+		//for(int i=1; i<100; i++)
+
+		if ( currentParagonLvl >= 2 )
+		{
+			//int countitem = GetItemCount(31000+i);
+			//if ( countitem >= 1 ) // normallement c'est juste 0  ou 1
+			{
+
+				//if ( countitem > 1 )
+				//{
+				//	//etrange
+				//	int aaaaaaaaaaaaaaaaaaaaaaaa=0;
+				//}
+				
+				DestroyItemCount(31000+currentParagonLvl, 1, true);
+
+				int newItemId = 31000+currentParagonLvl+1;
+
+				ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(newItemId);
+
+				if ( !pProto )
+				{
+					//si on arrive la, il faut surement crer un nouveau item paragon
+					char messageOut[2048];
+					sprintf(messageOut, "ERREUR 48 - ne plus toucher a rien et en parler a Richard");
+
+					if ( quesGiverUnit )
+						quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+					sLog.outBasic("RICHAR ERROR : item %d pas trouve ---------------------------------------------------------------" , newItemId );
+				}
+				else
+				{
+
+					ItemPosCountVec dest;
+					int nbCoinToReceiveReally = 1;
+					int newItemreceived = newItemId;
+					if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+					{
+						Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
+						SendNewItem(item, nbCoinToReceiveReally, true, false);
+
+						char messageOut[2048];
+						sprintf(messageOut, "Vous passez Paragon %d !",currentParagonLvl+1);
+
+						if ( quesGiverUnit )
+						{
+							quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+							
+						}
+
+						// spell Paragon Up
+						if (SpellEntry const* spellProto = sSpellTemplate.LookupEntry<SpellEntry>(34000))
+						{
+							CastSpell(this, spellProto, TRIGGERED_OLD_TRIGGERED);
+						}
+
+
+						//on retire le spell du paragon precedent pour pas que le joueur stack les paragon
+						RemoveAurasDueToSpellByCancel(34000 + currentParagonLvl);
+
+
+
+						
+						
+
+
+
+					}
+					else
+					{
+						//ca ne devrait pas arriver car en principe on retire l'item precedent, ce qui libere une place
+
+						char messageOut[2048];
+						sprintf(messageOut, "ERREUR 47 - inventaire plein - ne plus toucher a rien et en parler a Richard");
+						
+						if ( quesGiverUnit )
+							quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+						sLog.outBasic("RICHAR ERROR 47 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
+					}
+
+				}
+
+				//paragonPasse = true;
+				//break;
+			}
+		}
+
+
+		else
+		{
+			
+
+			int newItemId = 31000+2;
+
+			ItemPosCountVec dest;
+			int nbCoinToReceiveReally = 1;
+			int newItemreceived = newItemId;
+			if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+			{
+				Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
+				SendNewItem(item, nbCoinToReceiveReally, true, false);
+
+				char messageOut[2048];
+				sprintf(messageOut, "Vous passez Paragon 2 !");
+
+				if ( quesGiverUnit )
+				{
+					quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+					
+				}
+
+				// spell Paragon Up
+				if (SpellEntry const* spellProto = sSpellTemplate.LookupEntry<SpellEntry>(34000))
+				{
+					CastSpell(this, spellProto, TRIGGERED_OLD_TRIGGERED);
+				}
+
+			}
+			else
+			{
+				char messageOut[2048];
+				sprintf(messageOut, "ERREUR 51 - inventaire plein - ne plus toucher a rien et en parler a Richard");
+
+				if ( quesGiverUnit )
+					quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+				sLog.outBasic("RICHAR ERROR 51 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
+			}
+
+
+
+
+			//si on trouve pas d'item, on va considerer qu'on passe paragon 2.
+			//dans le doute, j'ecris un petit warning dans le log
+			sLog.outBasic("RICHAR WARNING : pas d'item paragon trouve - si le joueur passe vraiment de paragon 1 a 2, alors c est normal."  );
+		}
 	}
 
 
@@ -15677,11 +16056,15 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
 			std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 			std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+			std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+			std::string persoNameImport;
 			Player::richa_importFrom_richaracter_(
 				associatedPlayerGUID[i],
 				richa_NpcKilled,
 				richa_pageDiscovered,
-				richa_lunerFestivalElderFound
+				richa_lunerFestivalElderFound,
+				richa_maisontavern,
+				persoNameImport
 				);
 
 
@@ -16799,7 +17182,7 @@ bool Player::HasQuestForItem(uint32 itemid) const
 
 			//////////////////////////////////////////////////////////////////////////////////////////////////////
 			//
-			//RICHARD:  on recompte les objets pour etre sur
+			//RICHARD:  on recompte les objets pour etre sur  -  car des fois le comptage des item de quete est pas bon
 			//
 			const char* playerName = GetName();
 			bool richardForceGive = false;
@@ -16816,7 +17199,7 @@ bool Player::HasQuestForItem(uint32 itemid) const
 						qinfo->GetTitle().c_str()
 						);
 
-					uint32_t richardDoubleCheck = richard_countItem(qinfo->ReqItemId[j]);
+					uint32_t richardDoubleCheck = richard_countItem(qinfo->ReqItemId[j], false, false,false, true );
 
 					if (q_status.m_itemcount[j] < qinfo->ReqItemCount[j])
 					{
@@ -18826,6 +19209,10 @@ void Player::SaveToDB()
 
 
 
+
+
+
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	//RICHARD - auto save of _ri_character_
 	ObjectGuid const& guiiddd = GetObjectGuid();
@@ -18836,17 +19223,30 @@ void Player::SaveToDB()
 		m_richa_NpcKilled,
 		m_richa_pageDiscovered,
 		m_richa_lunerFestivalElderFound,
+		m_richa_ListeMaison,
 		GetName()
 		);
 
 	richa_exportTo_ristat_();
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	
+
+	BASIC_LOG("critical part END (%02d:%02d) - Player::SaveToDB (%s)", now->tm_hour,now->tm_min      ,   GetName());
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
 
 
-	BASIC_LOG("critical part END - Player::SaveToDB (%s)", GetName());
+
+
+
+
+
+	
 
 
 
@@ -20795,6 +21195,29 @@ inline void BeforeVisibilityDestroy(T* /*t*/, Player* /*p*/)
 template<>
 inline void BeforeVisibilityDestroy<Creature>(Creature* t, Player* p)
 {
+
+
+
+
+	// RICHARD :  si pet/familier trop loin,  le desivoquer et re-invoquer
+	//  IMPROVE_RICHA_MOVEMENT_PET
+	if ( p && t 
+		&& p->GetPetGuid() == t->GetObjectGuid() && ((Creature*)t)->IsPet()
+		&& t->GetOwner() == p )
+	{
+		p->UnsummonPetTemporaryIfAny();
+		p->ResummonPetTemporaryUnSummonedIfAny();
+		int aaaa=0;
+		return;
+	}
+
+
+
+
+
+
+
+
     if (p->GetPetGuid() == t->GetObjectGuid() && ((Creature*)t)->IsPet())
         ((Pet*)t)->Unsummon(PET_SAVE_REAGENTS);
 }
@@ -22654,6 +23077,59 @@ void Player::SetHomebindToLocation(WorldLocation const& loc, uint32 area_id)
     // update sql homebind
     CharacterDatabase.PExecute("UPDATE character_homebind SET map = '%u', zone = '%u', position_x = '%f', position_y = '%f', position_z = '%f' WHERE guid = '%u'",
                                m_homebindMapId, m_homebindAreaId, m_homebindX, m_homebindY, m_homebindZ, GetGUIDLow());
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// RICHARD :  ajouter la   home bind hearthstone inn     make this inn my home    -   au journal des success
+	
+
+	// on regarde s'il existe :
+	bool found = false;
+	for(int i=0; i<m_richa_ListeMaison.size(); i++)
+	{
+		if (   m_richa_ListeMaison[i].mapid == m_homebindMapId 
+			&& m_richa_ListeMaison[i].areaid == m_homebindAreaId 
+			)
+		{
+			found = true;
+			break;
+		}
+		else
+		{
+			
+		}
+
+	}
+
+	if ( found )
+	{
+		char messageOut[2048];
+		sprintf(messageOut, "Taverne deja connue.");
+		Say(messageOut, LANG_UNIVERSAL);
+	}
+	else
+	{
+		char messageOut[2048];
+		sprintf(messageOut, "Nouvelle taverne !");
+		Say(messageOut, LANG_UNIVERSAL);
+
+		RICHA_MAISON_TAVERN tavern(m_homebindMapId,m_homebindAreaId);
+		m_richa_ListeMaison.push_back(tavern);
+	}
+	
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
 }
 
 Object* Player::GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask)
