@@ -299,6 +299,7 @@ enum eConfigBoolValues
     CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVE,
     CONFIG_BOOL_DEATH_BONES_WORLD,
     CONFIG_BOOL_DEATH_BONES_BG,
+    CONFIG_BOOL_LONG_TAXI_PATHS_PERSISTENCE,
     CONFIG_BOOL_ALL_TAXI_PATHS,
     CONFIG_BOOL_SKILL_FAIL_LOOT_FISHING,
     CONFIG_BOOL_SKILL_FAIL_GAIN_FISHING,
@@ -565,6 +566,7 @@ class World
         void InvalidatePlayerDataToAllClient(ObjectGuid guid) const;
 
         static TimePoint GetCurrentClockTime() { return m_currentTime; }
+        static uint32 GetCurrentDiff() { return m_currentDiff; }
 
     protected:
         void _UpdateGameTime();
@@ -655,6 +657,7 @@ class World
         std::vector<std::string> m_spamRecords;
 
         static TimePoint m_currentTime;
+        static uint32 m_currentDiff;
 };
 
 extern uint32 realmID;
