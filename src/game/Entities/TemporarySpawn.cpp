@@ -184,13 +184,10 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
                 UnSummon();
                 return;
             }
-            if (!GetCharmerGuid())
+            if (m_timer <= update_diff)
             {
-                if (m_timer <= update_diff)
-                {
-                    UnSummon();
-                    return;
-                }
+                UnSummon();
+                return;
             }
             m_timer -= update_diff;
             break;

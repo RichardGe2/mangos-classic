@@ -581,7 +581,14 @@ bool ChatHandler::HandleNamegoCommand(char* args)
         if (needReportToTarget(target))
             ChatHandler(target).PSendSysMessage(LANG_SUMMONED_BY, playerLink(player->GetName()).c_str());
 
-        if (!target->TaxiFlightInterrupt())
+        // stop flight if need
+        if (target->IsTaxiFlying())
+        {
+            target->GetMotionMaster()->MovementExpired();
+            target->m_taxi.ClearTaxiDestinations();
+        }
+        // save only in non-flight case
+        else
             target->SaveRecallPosition();
 
         // before GM
@@ -714,7 +721,13 @@ bool ChatHandler::HandleGonameCommand(char* args)
             ChatHandler(target).PSendSysMessage(LANG_APPEARING_TO, GetNameLink().c_str());
 
         // stop flight if need
-        if (!_player->TaxiFlightInterrupt())
+        if (_player->IsTaxiFlying())
+        {
+            _player->GetMotionMaster()->MovementExpired();
+            _player->m_taxi.ClearTaxiDestinations();
+        }
+        // save only in non-flight case
+        else
             _player->SaveRecallPosition();
 
         // to point to see at target with same orientation
@@ -1904,7 +1917,13 @@ bool ChatHandler::HandleTeleGroupCommand(char* args)
             ChatHandler(pl).PSendSysMessage(LANG_TELEPORTED_TO_BY, nameLink.c_str());
 
         // stop flight if need
-        if (!pl->TaxiFlightInterrupt())
+        if (pl->IsTaxiFlying())
+        {
+            pl->GetMotionMaster()->MovementExpired();
+            pl->m_taxi.ClearTaxiDestinations();
+        }
+        // save only in non-flight case
+        else
             pl->SaveRecallPosition();
 
         pl->TeleportTo(tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
@@ -1988,7 +2007,13 @@ bool ChatHandler::HandleGroupgoCommand(char* args)
             ChatHandler(pl).PSendSysMessage(LANG_SUMMONED_BY, nameLink.c_str());
 
         // stop flight if need
-        if (!pl->TaxiFlightInterrupt())
+        if (pl->IsTaxiFlying())
+        {
+            pl->GetMotionMaster()->MovementExpired();
+            pl->m_taxi.ClearTaxiDestinations();
+        }
+        // save only in non-flight case
+        else
             pl->SaveRecallPosition();
 
         // before GM
@@ -2035,7 +2060,13 @@ bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y,
     }
 
     // stop flight if need
-    if (!player->TaxiFlightInterrupt())
+    if (player->IsTaxiFlying())
+    {
+        player->GetMotionMaster()->MovementExpired();
+        player->m_taxi.ClearTaxiDestinations();
+    }
+    // save only in non-flight case
+    else
         player->SaveRecallPosition();
 
     player->TeleportTo(mapid, x, y, z, ort);

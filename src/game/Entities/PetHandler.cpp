@@ -219,13 +219,13 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                     {
                         // No action for Hunter pets, Hunters must use their Dismiss Pet spell
                         if (pet->getPetType() != HUNTER_PET)
-                            pet->ForcedDespawn();
+                            petUnit->SetDeathState(CORPSE);
                     }
                     else
                     {
                         // dismissing a summoned pet is like killing them (this prevents returning a soulshard...)
                         if (creature && creature->IsTemporarySummon())
-                            creature->ForcedDespawn();
+                            petUnit->SetDeathState(CORPSE);
                         else
                             _player->BreakCharmOutgoing(petUnit);
                     }

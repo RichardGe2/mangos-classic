@@ -41,6 +41,8 @@ add_executable(${EXECUTABLE_NAME}
   ${EXECUTABLE_SRCS}
 )
 
+add_dependencies(${EXECUTABLE_NAME} RevisionGenerator)
+
 target_link_libraries(${EXECUTABLE_NAME}
   shared
 )
