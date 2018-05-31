@@ -1312,6 +1312,7 @@ void World::SetInitialWorldSettings()
 
 
 
+
 	////////////////////////////////////////////////////////
 	//richard - init message
 	BASIC_LOG("MODE RICHARD VERSION 13 -  version youhai4 ");
