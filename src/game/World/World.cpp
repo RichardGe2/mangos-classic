@@ -90,6 +90,7 @@ float  World::m_relocation_lower_limit_sq     = 10.f * 10.f;
 uint32 World::m_relocation_ai_notify_delay    = 1000u;
 
 TimePoint World::m_currentTime = TimePoint();
+uint32 World::m_currentDiff = 0;
 
 /// World constructor
 World::World(): mail_timer(0), mail_timer_expires(0)
@@ -211,6 +212,8 @@ World::AddSession_(WorldSession* s)
             // prevent decrease sessions count if session queued
             if (RemoveQueuedSession(old->second))
                 decrease_session = false;
+            // do not remove replaced session from queue if listed
+            delete old->second;
         }
     }
 
@@ -533,6 +536,7 @@ void World::LoadConfigSettings(bool reload)
 
     setConfigMinMax(CONFIG_UINT32_MAINTENANCE_DAY, "MaintenanceDay", 4, 0, 6);
 
+    setConfig(CONFIG_BOOL_LONG_TAXI_PATHS_PERSISTENCE, "LongFlightPathsPersistence", false);
     setConfig(CONFIG_BOOL_ALL_TAXI_PATHS, "AllFlightPaths", false);
 
     setConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL, "Instance.IgnoreLevel", false);
@@ -952,9 +956,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Creature template spells...");
     sObjectMgr.LoadCreatureTemplateSpells();
 
-    sLog.outString("Loading SpellsScriptTarget...");
-    sSpellMgr.LoadSpellScriptTarget();                      // must be after LoadCreatureTemplates and LoadGameobjectInfo
-
     sLog.outString("Loading ItemRequiredTarget...");
     sObjectMgr.LoadItemRequiredTarget();
 
@@ -975,6 +976,9 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Loading Creature Data...");
     sObjectMgr.LoadCreatures();
+
+    sLog.outString("Loading SpellsScriptTarget...");
+    sSpellMgr.LoadSpellScriptTarget();                      // must be after LoadCreatureTemplates, LoadCreatures and LoadGameobjectInfo
 
     sLog.outString("Loading Creature Addon Data...");
     sObjectMgr.LoadCreatureAddons();                        // must be after LoadCreatureTemplates() and LoadCreatures()
@@ -1042,6 +1046,9 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Loading Graveyard-zone links...");
     sObjectMgr.LoadGraveyardZones();
+
+    sLog.outString("Loading taxi flight shortcuts...");
+    sObjectMgr.LoadTaxiShortcuts();
 
     sLog.outString("Loading spell target destination coordinates...");
     sSpellMgr.LoadSpellTargetPositions();
@@ -1307,7 +1314,7 @@ void World::SetInitialWorldSettings()
 
 	////////////////////////////////////////////////////////
 	//richard - init message
-	BASIC_LOG("MODE RICHARD VERSION 13 -  version youhai3 ");
+	BASIC_LOG("MODE RICHARD VERSION 13 -  version youhai4 ");
 	BASIC_LOG("CMAKE_INTDIR = "  CMAKE_INTDIR);
 	////////////////////////////////////////////////////////
 
@@ -1373,6 +1380,7 @@ void World::DetectDBCLang()
 void World::Update(uint32 diff)
 {
     m_currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
+    m_currentDiff = diff;
 
     ///- Update the different timers
     for (int i = 0; i < WUPDATE_COUNT; ++i)

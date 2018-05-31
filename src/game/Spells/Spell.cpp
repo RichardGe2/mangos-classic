@@ -2038,6 +2038,8 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 
             // Some spells untested, for affected GO type 33. May need further adjustments for spells related.
 
+            std::set<uint32> entriesToUse;
+
             SQLMultiStorage::SQLMSIteratorBounds<SpellTargetEntry> bounds = sSpellScriptTargetStorage.getBounds<SpellTargetEntry>(m_spellInfo->Id);
             for (SQLMultiStorage::SQLMultiSIterator<SpellTargetEntry> i_spellST = bounds.first; i_spellST != bounds.second; ++i_spellST)
             {
@@ -2045,12 +2047,14 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     continue;
 
                 if (i_spellST->type == SPELL_TARGET_TYPE_GAMEOBJECT)
-                {
-                    // search all GO's with entry, within range of m_destN
-                    MaNGOS::GameObjectEntryInPosRangeCheck go_check(*m_caster, i_spellST->targetEntry, x, y, z, radius);
-                    MaNGOS::GameObjectListSearcher<MaNGOS::GameObjectEntryInPosRangeCheck> checker(tempTargetGOList, go_check);
-                    Cell::VisitGridObjects(m_caster, checker, radius);
-                }
+                    entriesToUse.insert(i_spellST->targetEntry);
+            }
+
+            if (!entriesToUse.empty())
+            {
+                MaNGOS::AllGameObjectEntriesListInPosRangeCheck go_check(x, y, z, entriesToUse, radius);
+                MaNGOS::GameObjectListSearcher<MaNGOS::AllGameObjectEntriesListInPosRangeCheck> checker(tempTargetGOList, go_check);
+                Cell::VisitGridObjects(m_caster, checker, radius);
             }
 
             break;
@@ -2343,6 +2347,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         {
             Unit* pUnitTarget = m_targets.getUnitTarget();
             if (!pUnitTarget)
+                break;
+
+            if (!m_caster->CanAssistSpell(pUnitTarget, m_spellInfo))
                 break;
 
             if (EffectChainTarget <= 1)
@@ -2843,7 +2850,7 @@ void Spell::Prepare()
     if (!m_IsTriggeredSpell)
     {
         // add to cast type slot
-        if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX4_CAN_CAST_WHILE_CASTING) && !m_triggerAutorepeat)
+        if((!m_spellInfo->HasAttribute(SPELL_ATTR_EX4_CAN_CAST_WHILE_CASTING) || IsChanneledSpell(m_spellInfo)) && !m_triggerAutorepeat)
             m_caster->SetCurrentCastedSpell(this);
 
         // will show cast bar
@@ -3816,6 +3823,9 @@ void Spell::SendChannelUpdate(uint32 time, uint32 lastTick) const
 
         m_caster->SetChannelObject(nullptr);
         m_caster->SetUInt32Value(UNIT_CHANNEL_SPELL, 0);
+        m_caster->clearUnitState(UNIT_STAT_CHANNELING);
+        if (m_caster->AI())
+            m_caster->AI()->OnChannelStateChange(m_spellInfo, false);
     }
 
     if (m_caster->GetTypeId() == TYPEID_PLAYER)
@@ -3872,6 +3882,10 @@ void Spell::SendChannelStart(uint32 duration)
         m_caster->SetChannelObject(target);
 
     m_caster->SetUInt32Value(UNIT_CHANNEL_SPELL, m_spellInfo->Id);
+    m_caster->addUnitState(UNIT_STAT_CHANNELING);
+
+    if (m_caster->AI())
+        m_caster->AI()->OnChannelStateChange(m_spellInfo, true, target);
 }
 
 void Spell::SendResurrectRequest(Player* target) const
@@ -4418,6 +4432,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
 
             // simple cases
+            // TODO: To function properly, need to extend to pos/neutral/neg
             bool explicit_target_mode = false;
             bool target_hostile = false;
             bool target_hostile_checked = false;
@@ -4462,7 +4477,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (!target_hostile_checked)
                     {
                         target_hostile_checked = true;
-                        target_hostile = !m_caster->CanAssist(target);
+                        target_hostile = m_caster->CanAttack(target) && m_caster->IsEnemy(target);
                     }
 
                     if (target_hostile)
@@ -4473,7 +4488,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (!target_friendly_checked)
                     {
                         target_friendly_checked = true;
-                        target_friendly = !m_caster->CanAttack(target);
+                        target_friendly = m_caster->CanAssist(target) && m_caster->IsFriend(target);
                     }
 
                     if (target_friendly)
@@ -5931,6 +5946,10 @@ SpellCastResult Spell::CheckItems()
         return SPELL_CAST_OK;
 
     Player* p_caster = (Player*)m_caster;
+    Player* playerTarget = p_caster;
+    if (Unit* target = m_targets.getUnitTarget())
+        if (target->GetTypeId() == TYPEID_PLAYER)
+            playerTarget = (Player*)target;
 
     // cast item checks
     if (m_CastItem)
@@ -6126,7 +6145,7 @@ SpellCastResult Spell::CheckItems()
                 if (!m_IsTriggeredSpell && m_spellInfo->EffectItemType[i])
                 {
                     ItemPosCountVec dest;
-                    InventoryResult msg = p_caster->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, m_spellInfo->EffectItemType[i], 1);
+                    InventoryResult msg = playerTarget->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, m_spellInfo->EffectItemType[i], 1);
                     if (msg != EQUIP_ERR_OK)
                     {
                         p_caster->SendEquipError(msg, nullptr, nullptr, m_spellInfo->EffectItemType[i]);
