@@ -1297,6 +1297,34 @@ static void RewardGroupAtKill_helper(Player* pGroupGuy, Unit* pVictim, uint32 co
     {
         float rate = group_rate * float(pGroupGuy->getLevel()) / sum_level;
 
+
+
+
+
+
+
+		//ORIGINAL :  + on a un grand niveau dans le groupe, plus on ramasse toute l'XP
+		//
+		//RICHARD : nouvelle regle XP : tout le monde a la meme xp :
+		rate = group_rate * 1.0f / ((float)count);
+
+		// TEMPORAIRE : Quand on veut re-equilibrer les XP
+		//if ( count == 2 && strcmp(pGroupGuy->GetName(),"Boulette") == 0 )
+		//{
+		//	BASIC_LOG("RICHAR: ATTENTION MODIF TEMPORARE : on donne RIEN a 1 jouer et TOUT a l autre !!!!!!!!!!!!!!!!");
+		//	rate = group_rate * 1.0f / 100.0f;
+		//}
+		//else if ( count == 2 && strcmp(pGroupGuy->GetName(),"Bouillot") == 0 )
+		//{
+		//	rate = group_rate * 99.0f / 100.0f;
+		//}
+
+
+
+
+
+
+
         // if is in dungeon then all receive full reputation at kill
         // rewarded any alive/dead/near_corpse group member
         pGroupGuy->RewardReputation(pVictim, is_dungeon ? 1.0f : rate);

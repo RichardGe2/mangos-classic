@@ -323,6 +323,9 @@ namespace MaNGOS
                 uint32 nLevelDiff = mob_level - pl_level;
                 if (nLevelDiff > 4)
                     nLevelDiff = 4;
+
+				BASIC_LOG("RICHAR: XP donne par MOB A = (%d,%d,%d) -> %d",pl_level,nBaseExp,nLevelDiff  ,  ((pl_level * 5 + nBaseExp) * (20 + nLevelDiff) / 10 + 1) / 2);
+
                 return ((pl_level * 5 + nBaseExp) * (20 + nLevelDiff) / 10 + 1) / 2;
             }
             else
@@ -331,6 +334,9 @@ namespace MaNGOS
                 if (mob_level > gray_level)
                 {
                     uint32 ZD = GetZeroDifference(pl_level);
+
+					BASIC_LOG("RICHAR: XP donne par MOB B = (%d,%d,%d) -> %d",pl_level,nBaseExp,ZD  ,   (pl_level * 5 + nBaseExp) * (ZD + mob_level - pl_level) / ZD    );
+
                     return (pl_level * 5 + nBaseExp) * (ZD + mob_level - pl_level) / ZD;
                 }
                 return 0;

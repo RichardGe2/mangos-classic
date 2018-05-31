@@ -137,6 +137,12 @@ Creature::Creature(CreatureSubtype subtype) : Unit(),
     m_meleeDamageSchoolMask(SPELL_SCHOOL_MASK_NORMAL), m_originalEntry(0),
     m_creatureInfo(nullptr), m_ai(nullptr), m_ignoreRangedTargets(false)
 {
+
+	Richar_difficuly_health = -1.0f;
+
+
+
+
     m_regenTimer = 200;
     m_valuesCount = UNIT_END;
 
@@ -758,6 +764,12 @@ bool Creature::AIM_Initialize()
 
 bool Creature::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, Team team /*= TEAM_NONE*/, const CreatureData* data /*= nullptr*/, GameEventCreatureData const* eventData /*= nullptr*/)
 {
+
+	
+	m_richar_lieuOrigin = cPos.GetMap()->GetMapName();
+
+
+
     SetMap(cPos.GetMap());
 
     if (!CreateFromProto(guidlow, cinfo, team, data, eventData))
@@ -1174,9 +1186,25 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     float meleeAttackPwr = 0.f;
     float rangedAttackPwr = 0.f;
 
-    float damageMod = _GetDamageMod(rank);
+    float damageMod = _GetDamageMod(    m_richar_lieuOrigin,GetName(),GetOwner(),        rank);
     float damageMulti = cinfo->DamageMultiplier * damageMod;
     bool usedDamageMulti = false;
+
+
+	
+	// richa ASUP
+	if ( GetEntry() ==  7895  ||  GetEntry() ==  4968 )
+	{
+		int aaa=0;
+		const char*  naamee = GetName();
+
+
+		int aaaa=0;
+	}
+
+
+
+
 
     if (CreatureClassLvlStats const* cCLS = sObjectMgr.GetCreatureClassLvlStats(level, cinfo->UnitClass))
     {
@@ -1210,6 +1238,11 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
             rangedAttackPwr = cCLS->BaseRangedAttackPower;
         }
     }
+
+
+
+
+
 
     if (!usedDamageMulti || health == -1 || mana == -1 || armor == -1.f) // some field needs to default to old db fields
     {
@@ -1263,7 +1296,12 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
         }
     }
 
-    health *= _GetHealthMod(rank); // Apply custom config setting
+
+
+	Richar_difficuly_health = _GetHealthMod(  m_richar_lieuOrigin,GetName(),GetOwner(),      rank); // Apply custom config setting
+
+
+    health *= Richar_difficuly_health;
     if (health < 1)
         health = 1;
 
@@ -1275,6 +1313,14 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     SetCreateHealth(health);
     SetMaxHealth(health);
     SetHealth(health);
+
+
+
+	
+
+
+
+
 
     SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, float(health));
 
@@ -1307,8 +1353,10 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
         SetModifierValue(UnitMods(UNIT_MOD_POWER_START + i), BASE_VALUE, float(value));
     }
 
+
     // Armor
     SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, armor);
+
 
     // damage
     SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, mainMinDmg);
@@ -1323,8 +1371,406 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     SetModifierValue(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, rangedAttackPwr * damageMod);
 }
 
-float Creature::_GetHealthMod(int32 Rank)
+
+
+
+
+
+float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner,   float* nbPlayerParagon1Needed )
 {
+
+	//  nbPlayerParagon1Needed  :
+	//  retourne le nombre de joueur paragon 1 (sans modification) qu'il faudrait pour tuer ce mob   -  avec des joueurs de meme lvl que le mob
+
+	if ( nbPlayerParagon1Needed )
+		*nbPlayerParagon1Needed = 1.0f; // par defaut
+
+
+	// RICHARD - ajustement des coeff de difficulté on fonction de la position du mob
+
+	//j ai rajouté ca quand je me suis rendu compte que le pet demoniste etait affaiblie dans les donjons
+	const Unit* ownerrr = richaOwner; //GetOwner();
+	if ( ownerrr )
+	{
+		uint8 ownerid = ownerrr->GetTypeId();
+		if ( ownerid == TYPEID_PLAYER )
+		{
+			// du coup, si le owner est un joueur, on va en profiter pour modifer ici la difficulté de son pet en fonction du paragon du joueur :
+			
+			Player* ownerCastPlayer = (Player*)ownerrr;
+
+			int paralvl = ownerCastPlayer->GetParagonLevelFromItem();
+
+			if ( paralvl <= 1 )
+			{
+				return 1.0;
+			}
+			else
+			{
+				// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
+				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
+				float coeffParagon = ((float)paralvl + 1.0) / 2.0;
+
+				if ( nbPlayerParagon1Needed )
+					*nbPlayerParagon1Needed = coeffParagon;
+
+
+				int aaaa=0;
+				
+				return coeffParagon;
+
+			}
+
+
+		}
+		else
+		{
+			int ggg = 0;
+		}
+	}
+	else
+	{
+		int gggf=0;
+	}
+
+
+	//liste d'exception ici - j'ai en tete les mobs gentils dans les donjons qui vont se battre a nos coté.
+	//style les quetes d'escorte.
+	//d'un coté je me dis que je pourrais prendre tous les mob avec faction gentil.
+	//mais de l'autre je pense que c'est BEACOUP plus safe de faire du cas par cas.
+	//par exemple imaginons un boss mechant qui est gentil a la creation du donjon
+	if ( mobName == "Disciple of Naralex" ) { return 1.0; } // quete d'escorte dans les cavernes des lamentation
+
+
+	static bool messageSaidDungeaon = false;
+
+
+	float outNumber = 1.0;
+	float nbPlayerParagon1Needed_out = 1.0f;
+
+	if ( cPosRicha == "Eastern Kingdoms" )		{ outNumber = 1.0;  nbPlayerParagon1Needed_out = 1.0f; }
+	else if ( cPosRicha == "Kalimdor" )			{ outNumber =  1.0;  nbPlayerParagon1Needed_out = 1.0f; }
+	else if ( cPosRicha == "Deeprun Tram" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f;  }
+	else if ( cPosRicha == "Alliance PVP Barracks" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f; }
+	else if ( cPosRicha == "Horde PVP Barracks" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f; } // j'ai donné le nom au hasard, faudra verifier que c'est bien ca
+
+	//donjons low level :  on les ramene a une difficulté de 2 joueurs :  on divise par 5 et multiple par 2
+	else if ( cPosRicha == "Ragefire Chasm" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Wailing Caverns" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; } // 17-24   5 joueurs
+	else if ( cPosRicha == "Deadmines" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Shadowfang Keep" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Blackfathom Deeps" )	{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "The Stockade" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Gnomeregan" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Razorfen Kraul" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Scarlet Monastery" )	{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Razorfen Downs" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Uldaman" )				{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Zul'Farrak" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Maraudon" )				{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Sunken Temple" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
+	else if ( cPosRicha == "Blackrock Depths" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; } 
+	
+
+	//
+	// donjon High Level : on les ramene a une difficulté de 5 joueurs ou plus
+	//
+	//
+
+	// le cas de  Blackrock Spire  est spécial : 
+	// il y a lower et upper.  5 joueur pour lower  10 pour upper  -  
+	else if ( cPosRicha == "Blackrock Spire" )		
+	{ 
+		bool mobLower = false;
+		bool mobUpper = false;
+
+		// Lower Spire -  mob names
+		if ( 
+			   mobName == "XXxxxxxxxxX"
+			|| mobName == "Scarshield Acolyte"
+			|| mobName == "Scarshield Legionnaire"
+			|| mobName == "Scarshield Raider"
+			|| mobName == "Scarshield Spellbinder"
+			|| mobName == "Scarshield Worg"
+			|| mobName == "Spire Scarab"
+			|| mobName == "Spire Scorpid"
+			|| mobName == "Bloodaxe Evoker"
+			|| mobName == "Bloodaxe Raider"
+			|| mobName == "Bloodaxe Summoner"
+			|| mobName == "Bloodaxe Veteran"
+			|| mobName == "Bloodaxe Warmonger"
+			|| mobName == "Bloodaxe Worg"
+			|| mobName == "Firebrand Darkweaver"
+			|| mobName == "Firebrand Grunt"
+			|| mobName == "Firebrand Invoker"
+			|| mobName == "Scarshield Acolyte"
+			|| mobName == "Scarshield Legionnaire"
+			|| mobName == "Scarshield Raider"
+			|| mobName == "Scarshield Spellbinder"
+			|| mobName == "Scarshield Warlock"
+			|| mobName == "Scarshield Worg"
+			|| mobName == "Smolderthorn Axe Thrower"
+			|| mobName == "Smolderthorn Mystic"
+			|| mobName == "Smolderthorn Shadow Priest"
+			|| mobName == "Spirestone Battle Mage"
+			|| mobName == "Spirestone Enforcer"
+			|| mobName == "Spirestone Ogre Magus"
+			|| mobName == "Spirestone Reaver"
+			|| mobName == "Spirestone Warlord"
+			|| mobName == "Urok Enforcer"
+			|| mobName == "Urok Ogre Mage"
+			|| mobName == "Spire Scarab"
+			|| mobName == "Spire Scorpid"
+			|| mobName == "Spirestone Enforcer"
+			|| mobName == "Spirestone Mystic"
+			|| mobName == "Spirestone Ogre Magus"
+			|| mobName == "Spirestone Reaver"
+			|| mobName == "Smolderthorn Axe Thrower"
+			|| mobName == "Smolderthorn Berserker"
+			|| mobName == "Smolderthorn Headhunter"
+			|| mobName == "Smolderthorn Mystic"
+			|| mobName == "Smolderthorn Seer"
+			|| mobName == "Smolderthorn Shadow Hunter"
+			|| mobName == "Smolderthorn Shadow Priest"
+			|| mobName == "Smolderthorn Witch Doctor"
+			|| mobName == "Spire Spider"
+			|| mobName == "Spire Spiderling"
+			|| mobName == "Bloodaxe Evoker"
+			|| mobName == "Bloodaxe Warmonger"
+			|| mobName == "Bloodaxe Worg Pup"
+			|| mobName == "Bloodaxe Evoker"
+			|| mobName == "Bloodaxe Raider"
+			|| mobName == "Bloodaxe Veteran"
+			|| mobName == "Bloodaxe Worg"
+			|| mobName == "Smolderthorn Berserker"
+			|| mobName == "Smolderthorn Shadow Priest"
+			|| mobName == "Spirestone Warlord"
+
+			|| mobName == "Bannok Grimaxe"
+			|| mobName == "Burning Felguard"
+			|| mobName == "Ghok Bashguud"
+			|| mobName == "Spirestone Butcher"
+			|| mobName == "Urok Doomhowl"
+			|| mobName == "Highlord Omokk"
+			|| mobName == "Spirestone Battle Lord"
+			|| mobName == "Spirestone Lord Magus"
+			|| mobName == "Mor Grayhoof"
+			|| mobName == "Shadow Hunter Vosh'gajin"
+			|| mobName == "War Master Voone"
+			|| mobName == "Crystal Fang"
+			|| mobName == "Mother Smolderweb"
+			|| mobName == "Quartermaster Zigris"
+			|| mobName == "Gizrul the Slavener"
+			|| mobName == "Halycon"
+			|| mobName == "Overlord Wyrmthalak"
+
+			|| mobName == "Firebrand Legionnaire"
+			|| mobName == "Firebrand Dreadweaver"
+			|| mobName == "Firebrand Pyromancer"
+
+
+			//les mini mob
+			|| mobName == "Roach"
+			|| mobName == "Black Rat"
+
+			//les gentils
+			|| mobName == "Warosh"
+
+			//les unkonwn que je mets a la difficulte la plus dure
+			|| mobName == "Mor Grayhoof Trigger"
+			)
+		{
+			mobLower = true;
+			outNumber =  6.0f/5.0f;
+			nbPlayerParagon1Needed_out = 6.0f;
+		}
+
+		// UPPER Spire - mob names list
+		if ( 
+			   mobName == "xxxxxxxxxxxxxxxxxxxxxxxxxxxXXX"
+			|| mobName == "Blackhand Dreadweaver"
+			|| mobName == "Blackhand Summoner"
+			|| mobName == "Blackhand Veteran"
+			|| mobName == "Rage Talon Dragonspawn"
+			|| mobName == "Blackhand Incarcerator"
+			|| mobName == "Rage Talon Dragonspawn"
+			|| mobName == "Rage Talon Flamescale"
+			|| mobName == "Rookery Guardian"
+			|| mobName == "Rookery Hatcher"
+			|| mobName == "Rookery Whelp"
+			|| mobName == "Blackhand Dreadweaver"
+			|| mobName == "Blackhand Elite"
+			|| mobName == "Blackhand Summoner"
+			|| mobName == "Blackhand Veteran"
+			|| mobName == "Rage Talon Dragonspawn"
+			|| mobName == "Rage Talon Flamescale"
+			|| mobName == "Blackhand Assassin"
+			|| mobName == "Blackhand Dragon Handler"
+			|| mobName == "Blackhand Dreadweaver"
+			|| mobName == "Blackhand Elite"
+			|| mobName == "Blackhand Iron Guard"
+			|| mobName == "Blackhand Summoner"
+			|| mobName == "Blackhand Veteran"
+			|| mobName == "Chromatic Dragonspawn"
+			|| mobName == "Chromatic Whelp"
+			|| mobName == "Rage Talon Dragon Guard"
+			|| mobName == "Rage Talon Dragonspawn"
+			|| mobName == "Rage Talon Fire Tongue"
+			|| mobName == "Rage Talon Flamescale"
+			|| mobName == "Blackhand Assassin"
+			|| mobName == "Blackhand Elite"
+			|| mobName == "Blackhand Iron Guard"
+			|| mobName == "Rage Talon Dragon Guard"
+			|| mobName == "Rage Talon Fire Tongue"
+			|| mobName == "Blackhand Assassin"
+			|| mobName == "Blackhand Elite"
+			|| mobName == "Blackhand Iron Guard"
+			|| mobName == "Blackhand Thug"
+			|| mobName == "Rage Talon Dragon Guard"
+			|| mobName == "Blackhand Assassin"
+			|| mobName == "Blackhand Elite"
+			|| mobName == "Blackhand Iron Guard"
+			|| mobName == "Chromatic Elite Guard"
+			|| mobName == "Rage Talon Captain"
+			|| mobName == "Rage Talon Fire Tongue"
+
+			|| mobName == "Pyroguard Emberseer"
+			|| mobName == "Solakar Flamewreath"
+			|| mobName == "Goraluk Anvilcrack"
+			|| mobName == "Jed Runewatcher"
+			|| mobName == "Warchief Rend Blackhand"
+			|| mobName == "General Drakkisath"
+
+			|| mobName == "Scarshield Infiltrator"
+
+
+			|| mobName == "Awbee"
+
+
+			)
+		{
+			mobUpper = true;
+			outNumber =  6.0f/10.0f;
+			nbPlayerParagon1Needed_out = 6.0f;
+		}
+
+		if ( mobLower && mobUpper )
+		{
+			sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown BlackrockSpire Mob - UP ET DOWN: '%s'" ,  mobName.c_str()  );
+
+			// dans le doute, on le mets en difficulté la + dure !
+			outNumber =  1.0f;  
+			nbPlayerParagon1Needed_out = 7.5f; // <-- je met entre 5 et 10 ...
+		}
+
+		if ( !mobLower && !mobUpper )
+		{
+			sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown BlackrockSpire Mob - NI UP NI DOWN: '%s'" ,  mobName.c_str()  );
+
+			// dans le doute, on le mets en difficulté la + dure !
+			outNumber =  1.0f;  
+			nbPlayerParagon1Needed_out = 7.5f; // <-- je met entre 5 et 10 ...
+		}
+	}      
+	
+	
+	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  5.0f/5.0f; nbPlayerParagon1Needed_out = 5.0f; }      // 55-60   5
+
+	else if ( cPosRicha == "Stratholme" )			{ outNumber =  6.0f/5.0f; nbPlayerParagon1Needed_out = 6.0f; }      // 58-60   5
+	
+	else if ( cPosRicha == "Scholomance" )			
+	{ 
+		//outNumber =  6.0f/5.0f; nbPlayerParagon1Needed_out = 6.0f;
+		outNumber =  1.0; nbPlayerParagon1Needed_out = 6.0f; // debug
+	}      // 58-60   5
+
+	else if ( cPosRicha == "Molten Core" )			{ outNumber =  7.0f/40.0f; nbPlayerParagon1Needed_out = 7.0f;}	// 60+     40
+
+	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  8.0f/20.0f; nbPlayerParagon1Needed_out = 8.0f;}	// 60+     20
+
+	else if ( cPosRicha == "Onyxias Lair" )			{ outNumber =  9.0f/40.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60+     40
+	
+	
+	else if ( cPosRicha == "Blackwing Lair" )		{ outNumber =  9.0f/40.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60++    40  
+	else if ( cPosRicha == "Ruins of Ahnqiraj" )	{ outNumber =  9.0f/20.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60++    20
+	else if ( cPosRicha == "Temple of Ahnqiraj" )	{ outNumber =  10.0f/40.0f; nbPlayerParagon1Needed_out = 10.0f;}	// 60+++   40
+	
+	else if ( cPosRicha == "Naxxramas" )			
+	{ 
+		//outNumber =  11.0f/40.0f; nbPlayerParagon1Needed_out = 11.0f;
+		outNumber =  1.0f; nbPlayerParagon1Needed_out = 11.0f; // temporary test
+
+	}	// 60++++  40
+
+
+	else if ( cPosRicha == "??POSRICH??" )
+	{
+		// diane a deja eu ce warning pdt qu'elle survollait en griphon entre Darnassus  et Theramor
+		// a l'epoque j'avais pas le nom du mob, donc a refaire le vol
+		// j'ai pas eussi a revoir le message en faisant le vol
+		// peut etre que Diane a survolé un bateau ? ca fait ptete ca quand on rentre dans bateau.
+		// je sais pas... ca doit pas etre bien grave mais a surveiller, ca sertai cool de le repro
+		// 
+		// c'est fort probable que ce soit un totem, car j'avais pas rajouté la position pour le totem
+		// example de mob a aller voir :   "Foulweald Warrior"   qui invoque un   "Strength of Earth Totem II"
+
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region A - mob=%s : '%s'" , mobName.c_str() ,  cPosRicha.c_str()  );
+		outNumber =  1.0;
+	}
+	else if ( cPosRicha == "" )
+	{
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region B - mob=%s : '%s'" , mobName.c_str() , cPosRicha.c_str()  );
+		outNumber =  1.0;
+	}
+	else
+	{
+		static bool messageDisplayed = false;
+
+
+
+		sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown region C - mob=%s : '%s'" , mobName.c_str() , cPosRicha.c_str()  );
+
+
+		if ( !messageDisplayed )
+		{
+			MessageBoxA(NULL, cPosRicha.c_str(),  "unkownZone", NULL);
+			messageDisplayed = true;
+		}
+
+
+
+		outNumber =  1.0;
+	}
+
+
+
+
+	if (    cPosRicha != "Eastern Kingdoms"
+		&&  cPosRicha != "Kalimdor"
+		&& !messageSaidDungeaon) 
+	{ 
+		messageSaidDungeaon=true;  
+		sLog.outBasic("RICHAR: INSTANCE DETECTE : %s",cPosRicha.c_str() ); 
+	} 
+
+	if ( nbPlayerParagon1Needed )
+		*nbPlayerParagon1Needed = nbPlayerParagon1Needed_out; // par defaut
+
+	return  outNumber ;
+}
+
+
+
+float Creature::_GetHealthMod(    const std::string& cPosRicha,const std::string& mobName, const Unit* richaOwner,               int32 Rank)
+{
+
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
+	if ( modRicha > 0.0f )
+	{
+		return modRicha;
+	}
+
+
     switch (Rank)                                           // define rates for each elite rank
     {
         case CREATURE_ELITE_NORMAL:
@@ -1342,8 +1788,17 @@ float Creature::_GetHealthMod(int32 Rank)
     }
 }
 
-float Creature::_GetDamageMod(int32 Rank)
+float Creature::_GetDamageMod(     const std::string& cPosRicha,const std::string& mobName, const Unit* richaOwner,            int32 Rank)
 {
+
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
+	if ( modRicha > 0.0f )
+	{
+		return modRicha;
+	}
+
+
+
     switch (Rank)                                           // define rates for each elite rank
     {
         case CREATURE_ELITE_NORMAL:
@@ -1361,8 +1816,18 @@ float Creature::_GetDamageMod(int32 Rank)
     }
 }
 
-float Creature::_GetSpellDamageMod(int32 Rank)
+float Creature::_GetSpellDamageMod(     const std::string& cPosRicha,const std::string& mobName,const Unit* richaOwner,                int32 Rank)
 {
+
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
+	if ( modRicha > 0.0f )
+	{
+		return modRicha;
+	}
+
+
+
+
     switch (Rank)                                           // define rates for each elite rank
     {
         case CREATURE_ELITE_NORMAL:
@@ -1450,7 +1915,12 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
     uint32 curhealth = data->curhealth;
     if (curhealth)
     {
-        curhealth = uint32(curhealth * _GetHealthMod(GetCreatureInfo()->Rank));
+
+
+		Richar_difficuly_health = _GetHealthMod(m_richar_lieuOrigin,GetName(),GetOwner(),       GetCreatureInfo()->Rank);
+
+
+        curhealth = uint32(curhealth * Richar_difficuly_health);
         if (curhealth < 1)
             curhealth = 1;
     }

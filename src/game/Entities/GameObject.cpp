@@ -1520,9 +1520,9 @@ void GameObject::Use(Unit* user)
                 if (owner->GetTypeId() != TYPEID_PLAYER)
                     return;
 
-                // accept only use by player from same group as owner, excluding owner itself (unique use already added in spell effect)
-                if (player == (Player*)owner || (info->summoningRitual.castersGrouped && !player->IsInSameRaidWith(((Player*)owner))))
-                    return;
+                // accept only use by player from same group as owner, excluding owner itself (unique use already added in spell effect)	
+				if (player == (Player*)owner || (info->summoningRitual.castersGrouped && !player->IsInSameRaidWith(((Player*)owner))))
+					return;
 
                 // expect owner to already be channeling, so if not...
                 if (!owner->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
@@ -1546,7 +1546,7 @@ void GameObject::Use(Unit* user)
 
             if (info->summoningRitual.animSpell)
                 player->CastSpell(player, info->summoningRitual.animSpell, TRIGGERED_NONE);
-
+	
             // full amount unique participants including original summoner, need more
             if (GetUniqueUseCount() < info->summoningRitual.reqParticipants)
                 return;

@@ -24,6 +24,19 @@
 #include "Server/WorldSession.h"
 #include "Server/Opcodes.h"
 #include "Log.h"
+
+
+//#include "World.h"
+//#include "ObjectMgr.h"
+//#include "ObjectGuid.h"
+//#include "Player.h"
+//#include "NPCHandler.h"
+//#include "SQLStorages.h"
+//#include <iostream>
+//#include <string>
+//#include <fstream>
+
+
 #include "World/World.h"
 #include "Globals/ObjectMgr.h"
 #include "Entities/ObjectGuid.h"
@@ -31,6 +44,7 @@
 #include "Entities/Corpse.h"
 #include "Entities/NPCHandler.h"
 #include "Server/SQLStorages.h"
+
 
 void WorldSession::SendNameQueryOpcode(Player* p) const
 {
@@ -346,6 +360,229 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 
     uint32 pageID;
     recv_data >> pageID;
+
+
+
+
+
+
+	/////////////////////////////////////////////
+	// RICHARD : decouverte d'un livre
+
+	//a noter que  HandlePageTextQueryOpcode  est appelé QUE si le client n'a pas la page dans ses fichier de cache
+	//d'ou l'important ce bien cleaner le cache de client  (dossier WDB)
+
+	//il faudra peut etre que je definisse mieux qu'est ce qu'un texte a decouvrir et s'il y a des textes qu'on prends pas en compte dans l'achievement
+
+	//commane pour voir les gameobject qui ont du texte :
+	//SELECT entry,NAME,data0 FROM gameobject_template WHERE TYPE=9 AND data0>0
+	//il y en a 108
+	//
+	//j'avais oublié les objets type GAMEOBJECT_TYPE_GOOBER
+	//la bonne commande est donc :
+	//SELECT entry,NAME,data0,data7 FROM gameobject_template WHERE TYPE=9 AND data0>0 OR TYPE=10 AND data7>0
+	//il y en a 111
+
+	if ( pageID )
+	{
+
+		//on chercher si  pageID  est dans  m_richa_pageDiscovered
+		bool existInDataBase_ofThisPerso = false;
+		bool comesFromObject = false;
+		for(int i=0; i<_player->m_richa_pageDiscovered.size(); i++)
+		{
+			if ( _player->m_richa_pageDiscovered[i].pageId == pageID )
+			{
+				existInDataBase_ofThisPerso = true;
+				if ( _player->m_richa_pageDiscovered[i].objectID != 0 )
+				{
+					comesFromObject = true;
+				}
+				break;
+			}
+		}
+
+		if ( !existInDataBase_ofThisPerso )
+		{
+			int objectId = 0;  // correspond a   object=XXX  dans  vanillagaming
+			int itemId = 0; // correspond a item=xxx
+
+			char command4[2048];
+			sprintf(command4,"SELECT entry FROM gameobject_template WHERE TYPE=9 AND data0=%d",pageID);
+			if (QueryResult* result4 = WorldDatabase.PQuery( command4 ))
+			{
+				if ( result4->GetRowCount() != 1 )
+				{
+					BASIC_LOG("ERROR 8453");
+					_player->Say("ERROR : OBJECT NON TROUVE 001", LANG_UNIVERSAL);
+				}
+
+				BarGoLink bar4(result4->GetRowCount());
+				bar4.step();
+				Field* fields = result4->Fetch();
+				objectId = fields->GetInt32();
+				delete result4;
+
+				comesFromObject = true;
+			}
+			else
+			{
+				//si on arrive la, c'est peut etre un item , example d'item :  5088  -  Control Console Operating Manual
+				//note : les textes venant d'un  item ne font pas parti du succes de tout lire
+				//       mais au cas ou, on va les sauvegarder quand meme - ca coute rien
+
+				char command5[2048];
+				sprintf(command5,"SELECT entry FROM item_template WHERE PageText=%d",pageID);
+				if (QueryResult* result5 = WorldDatabase.PQuery( command5 ))
+				{
+					if ( result5->GetRowCount() != 1 )
+					{
+						BASIC_LOG("ERROR 8453");
+						_player->Say("ERROR : OBJECT NON TROUVE 003", LANG_UNIVERSAL);
+					}
+
+					BarGoLink bar5(result5->GetRowCount());
+					bar5.step();
+					Field* fields = result5->Fetch();
+					itemId = fields->GetInt32();
+					delete result5;
+				}
+				else
+				{
+					//si on arrive ici, le text est ni dans un gameobject ni dans un item... a étudier...
+
+					BASIC_LOG("ERROR 8454  ----  pageID = %d", pageID);
+					_player->Say("ERROR : OBJECT NON TROUVE 002", LANG_UNIVERSAL);
+				}
+			
+
+			}
+
+
+
+			//si le livre n'est pas connu par ce perso, on l'ajoute a la liste de ce perso
+			// a noter qu'on fait ca, MEME si un autre perso assicié connait deja ce livre
+			_player->m_richa_pageDiscovered.push_back( Player::RICHA_PAGE_DISCO_STAT( pageID , objectId, itemId) ); 
+
+
+
+			// par curiosite, on regarde si un autre perso du meme joueur humain connait ce texte
+
+			//bool knownByOtherPerso = false;
+			std::vector<std::string> listePersoQuiConnaissentDeja;
+
+			std::vector<int>  associatedPlayerGUID;
+
+			// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+			if ( _player->GetGUID() == 4 )// boulette
+			{
+				associatedPlayerGUID.push_back(27); // Bouzigouloum
+			}
+			if ( _player->GetGUID() == 27 )//  Bouzigouloum 
+			{
+				associatedPlayerGUID.push_back(4); // boulette
+			}
+			if ( _player->GetGUID() == 5 )// Bouillot
+			{
+				associatedPlayerGUID.push_back(28); // Adibou
+			}
+			if ( _player->GetGUID() == 28 )// Adibou 
+			{
+				associatedPlayerGUID.push_back(5); //  Bouillot
+			}
+
+			//juste pour le debug je vais lier grandjuge et grandtroll
+			if ( _player->GetGUID() == 19 )// grandjuge
+			{
+				associatedPlayerGUID.push_back(29); // grandtroll
+			}
+			if ( _player->GetGUID() == 29 )// grandtroll 
+			{
+				associatedPlayerGUID.push_back(19); //  grandjuge
+			}
+
+
+			for(int i=0; i<associatedPlayerGUID.size(); i++)
+			{
+				std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+				std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+				std::string persoName;
+				Player::richa_importFrom_richaracter_(
+					associatedPlayerGUID[i],
+					richa_NpcKilled,
+					richa_pageDiscovered,
+					richa_lunerFestivalElderFound,
+					richa_maisontavern,
+					persoName
+					);
+
+				for(int j=0; j<richa_pageDiscovered.size(); j++)
+				{
+					if ( richa_pageDiscovered[j].pageId == pageID )
+					{
+						listePersoQuiConnaissentDeja.push_back(persoName);
+						//knownByOtherPerso = true;
+						break;
+					}
+				}//pour chaque page connu du perso associe
+
+
+				//if ( knownByOtherPerso )
+				{
+				//	break; // on break pas car on va remplir la liste de tous les perso qui connaissent
+				}
+
+
+			}//pour chaque perso associé
+
+
+
+			if ( listePersoQuiConnaissentDeja.size() == 0 )
+			{
+				if ( comesFromObject ) // dans le succes, on compte QUE les 111 textes qui viennet d'un object et PAS d'un item
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "Decouverte d'un nouveau texte!");
+					_player->Say(messageOut, LANG_UNIVERSAL);
+				}
+			}
+			else
+			{
+				if ( comesFromObject ) // dans le succes, on compte QUE les 111 textes qui viennet d'un object et PAS d'un item
+				{
+					char messageOut[2048];
+					sprintf(messageOut, "Texte deja connu par %d autre Perso: ",listePersoQuiConnaissentDeja.size());
+					for(int i=0; i<listePersoQuiConnaissentDeja.size(); i++)
+					{
+						strcat(messageOut,listePersoQuiConnaissentDeja[i].c_str());
+						if ( i != listePersoQuiConnaissentDeja.size()-1 ) { strcat(messageOut,", "); }
+					}
+					_player->Say(messageOut, LANG_UNIVERSAL);
+				}
+			}
+
+		
+		}
+		else
+		{
+			if ( comesFromObject ) // dans le succes, on compte QUE les 111 textes qui viennet d'un object et PAS d'un item
+			{
+				char messageOut[256];
+				sprintf(messageOut, "Texte deja connu par ce Perso.");
+				_player->Say(messageOut, LANG_UNIVERSAL);
+			}
+		}
+
+	} // if pageId
+	//////////////////////////////////////////
+
+
+
+
+
+
 
     while (pageID)
     {

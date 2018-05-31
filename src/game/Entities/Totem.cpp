@@ -35,6 +35,15 @@ Totem::Totem() : Creature(CREATURE_SUBTYPE_TOTEM)
 
 bool Totem::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, Unit* owner)
 {
+
+	
+	m_richar_lieuOrigin = cPos.GetMap()->GetMapName();
+
+
+
+
+
+
     SetMap(cPos.GetMap());
 
     Team team = owner->GetTypeId() == TYPEID_PLAYER ? ((Player*)owner)->GetTeam() : TEAM_NONE;
