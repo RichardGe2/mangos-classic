@@ -840,6 +840,14 @@ ChatCommand* ChatHandler::getCommandTable()
 		{ "sto",           SEC_ADMINISTRATOR,     true, &ChatHandler::HandleRichardCommand_Quit,                                        "", nullptr },
 		// exi = exit = arreter le serveur
 		{ "exi",           SEC_ADMINISTRATOR,     true, &ChatHandler::HandleRichardCommand_Quit,                                        "", nullptr },
+		// je donne access a cette command a un joueur 
+		// par contre je la complexifie un peu pour eviter les erreurs betes
+		// si je couple ca avec  wowhainy_shutdownWhenServerStop.exe  , ca me permet d'eteindre ou mettre en veille le Server a partir d'un autre PC
+		{ "stopserverrichard",           SEC_PLAYER,     true, &ChatHandler::HandleRichardCommand_Quit,                                        "", nullptr },
+
+
+
+
 
 
 #ifdef BUILD_PLAYERBOT

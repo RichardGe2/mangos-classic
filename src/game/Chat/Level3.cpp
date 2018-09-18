@@ -3976,11 +3976,12 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 
 			if ( cinfo )
 			{
-				sprintf(messageee, "cinfo->MinMeleeDmg = %f", cinfo->MinMeleeDmg );
+				//je repro la formule utilisée dans  Creature::SelectLevel :
+				sprintf(messageee, "base attack - min dmg = %f", cinfo->MinMeleeDmg * cinfo->DamageMultiplier );
 				BASIC_LOG(messageee);
 				PSendSysMessage(messageee);
 
-				sprintf(messageee, "cinfo->MaxMeleeDmg = %f", cinfo->MaxMeleeDmg );
+				sprintf(messageee, "base attack - max dmg = %f", cinfo->MaxMeleeDmg * cinfo->DamageMultiplier );
 				BASIC_LOG(messageee);
 				PSendSysMessage(messageee);
 
@@ -5413,6 +5414,11 @@ bool ChatHandler::HandleResetAllCommand(char* args)
 	// si jamais ca arrive quand meme, ne PAS connecter les perso, et mettre  at_login = 0   pour chaque perso
 	// si je veux vraiment le faire pour des perso, le faire manuellement,
 	// en faisant    at_login = AT_LOGIN_RESET_TALENTS    ou   AT_LOGIN_RESET_SPELLS
+	//
+	// pour reset les talent d'un joueurs, il faut faire   .reset talents  en selectionnant le joueur.     et pas faire  .reset all talents
+	// a noter que   .modify tp #amout    permet de modifier le nombre de points libres  pour le joueur selectionné.
+	//
+	//
 	BASIC_LOG("RICHAR -  je desactive la commande reset all    car ca affecte TOUS les joueurs !!!");
 	PSendSysMessage("RICHAR : commande desactive - 5398 ");
 	return false;

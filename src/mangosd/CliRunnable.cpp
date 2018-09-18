@@ -440,9 +440,16 @@ bool ChatHandler::HandleCharacterEraseCommand(char* args)
 
 bool ChatHandler::HandleRichardCommand_Quit(char* args)
 {
+	 // temps en seconde
+	//optionel : si je tappe juste : exi, par defaut ca sera 1 seconde
 	uint32 delay = 1;
-	//if (!ExtractUInt32(&args, delay))
-	//    return false;
+	
+
+	if (!ExtractUInt32(&args, delay))
+	{
+		delay = 1;
+	   // return false;
+	}
 
 	uint32 exitcode;
 	if (!ExtractOptUInt32(&args, exitcode, SHUTDOWN_EXIT_CODE))

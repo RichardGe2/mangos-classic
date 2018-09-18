@@ -1316,6 +1316,21 @@ void World::SetInitialWorldSettings()
 	////////////////////////////////////////////////////////
 	//richard - init message
 	BASIC_LOG("MODE RICHARD VERSION 13 -  version youhai4 ");
+
+	char outt[4096];
+
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime(&t);
+
+	sprintf(outt, "Time : %02d/%02d/%d  -  %02d:%02d:%02d",
+		now->tm_mday,
+		now->tm_mon+1,
+		now->tm_year + 1900,
+		now->tm_hour,
+		now->tm_min,
+		now->tm_sec);
+
+	BASIC_LOG(outt);
 	BASIC_LOG("CMAKE_INTDIR = "  CMAKE_INTDIR);
 	////////////////////////////////////////////////////////
 

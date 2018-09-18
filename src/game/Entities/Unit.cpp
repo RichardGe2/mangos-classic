@@ -1291,9 +1291,15 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 
 			if ( groupSize2 != groupSize )
 			{
+				//ce peut arriver par example si Dian_e a été deconnecté.
+				//du coup, la taille du groupe sera 2.
+				//mais quand on enum les joueurs, il n'y a que Richar_d
+				//donc rien de mechant si j'ai ce WARNING a cause de ca.
 				int aaaa=0;
-				BASIC_LOG("RICHAR WARNING !!!!!!!!!!!!!!!!!!! - TML35118 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" );
-				Sleep(20000);
+				BASIC_LOG("RICHAR WARNING !!!! %d != %d !!!!!!!!!!!!!!! - TML35118 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" ,
+					 groupSize2 , groupSize
+					);
+				//Sleep(10000);
 			}
 
 			int	aaaaa=0;
