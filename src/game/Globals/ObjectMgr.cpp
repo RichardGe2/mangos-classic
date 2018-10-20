@@ -4721,6 +4721,18 @@ void ObjectMgr::LoadAreatriggerLocales()
 /// @param serverUp true if the server is already running, false when the server is started
 void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
 {
+
+
+
+	// RICHARD : ne PAS retourner ou delete les Courriers périmés
+	//           do not delete old expired mails
+	return ;
+
+
+
+
+
+
     time_t basetime = time(nullptr);
     DEBUG_LOG("Returning mails current time: hour: %d, minute: %d, second: %d ", localtime(&basetime)->tm_hour, localtime(&basetime)->tm_min, localtime(&basetime)->tm_sec);
     // delete all old mails without item and without body immediately, if starting server

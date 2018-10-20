@@ -775,12 +775,19 @@ ChatCommand* ChatHandler::getCommandTable()
 
 		//RICHARD : commande .killrichard  :  sert juste a sauvegarder une instance
 		{ "killrichard",            SEC_PLAYER,  false, &ChatHandler::HandleDieCommand,                 "", nullptr },
-		// RICHARD command  okwin : sert uniquement quand il y a un loot commun, et que le winner du loot veut permettre aux autre de prendre le loot
-		//                           interdit de faire cette commande dans d'autres cas
+		// OKWIN veut dire que le joueur ne veut plus aucun de ses loots du passé.
+		// concerne les loot dont la gagnant a été décidé,
+		// mais aussi les loots du moment ou le gagnant a pas encore été décidé
+		// ne concerne PAS les loots du future
 		{ "okwin",           SEC_PLAYER,     false, &ChatHandler::HandleRichardCommand_clearLootWinners, "", nullptr },
 		// RICHARD : donner les detail d'un mob selectionné :
 		{ "stat",            SEC_PLAYER,  false, &ChatHandler::Richar_tellMobStats,                 "", nullptr },
+		// celui la je crois que je l'ai utilse juste une fois - pour la database - ne sert plus a rien je crois
 		{ "listeventquest",  SEC_PLAYER,  false, &ChatHandler::Richar_listeventquest,                 "", nullptr },
+		// RICHARD : commande qui permet de ne plus etre considerer en combat - a utiliser uniquement quand le jeu est buggé et nous met en mode combat alors qu'on ne l'est pas - sinon c'est triché
+		{ "notincombat",  SEC_PLAYER,  false, &ChatHandler::Richar_noMoreInComat,                 "", nullptr },
+		// RICHARD : commande pour lister toutes mes commandes custom
+		{ "richardhelp",  SEC_PLAYER,  false, &ChatHandler::Richar_help,                 "", nullptr },
 
 
 		
@@ -1245,7 +1252,7 @@ ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*
 
 
 
-// example  [item=4536]
+// example  [i=4536]
 void ChatHandler::ExecuteCommand_richard_B(const char* text)
 {
 	
@@ -1261,7 +1268,7 @@ void ChatHandler::ExecuteCommand_richard_B(const char* text)
 	}
 
 	int lennn = strlen(text) ;
-	if ( lennn < 8 )
+	if ( lennn < 5 )
 	{
 		return;
 	}
@@ -1275,20 +1282,17 @@ void ChatHandler::ExecuteCommand_richard_B(const char* text)
 
 	if (    text[0] == '['
 		&&  text[1] == 'i'
-		&&  text[2] == 't'
-		&&  text[3] == 'e'
-		&&  text[4] == 'm'
-		&&  text[5] == '='
+		&&  text[2] == '='
 		)
 	{
 		char number[1024];
 		number[0] = 0;
-		for(int i=6; ;i++)
+		for(int i=3; ;i++)
 		{
 			if ( text[i] >= '0' &&  text[i] <= '9' )
 			{
-				number[i-6] = text[i] ;
-				number[i-6+1] = 0;
+				number[i-3] = text[i] ;
+				number[i-3+1] = 0;
 			}
 			else
 			{
@@ -1342,12 +1346,13 @@ bool StrCmp_noCase(const char* a, const char* b)
 
 
 
-// example  [item=savannah lion tusk]  
-//   ou     [item="savannah lion tusk"]  
+// example  [i=canine de lion des savanes]  
+//   ou     [i="canine de lion des savanes"]  
 // la casse n'est PAS prise en compte
 void ChatHandler::ExecuteCommand_richard_C(const char* text)
 {
 
+	int SIZE___ = 3;
 
 	if ( text == 0 )
 	{
@@ -1360,7 +1365,7 @@ void ChatHandler::ExecuteCommand_richard_C(const char* text)
 	}
 
 	int lennn = strlen(text) ;
-	if ( lennn < 8 )
+	if ( lennn < SIZE___+2 )
 	{
 		return;
 	}
@@ -1372,7 +1377,7 @@ void ChatHandler::ExecuteCommand_richard_C(const char* text)
 	}
 
 
-	if ( text[6] == '\"' )
+	if ( text[SIZE___] == '\"' )
 	{
 		if ( text[lennn-2] != '\"' )
 		{
@@ -1381,17 +1386,14 @@ void ChatHandler::ExecuteCommand_richard_C(const char* text)
 	}
 
 
-	if (    text[0] == '['
-		&&  text[1] == 'i'
-		&&  text[2] == 't'
-		&&  text[3] == 'e'
-		&&  text[4] == 'm'
-		&&  text[5] == '='
+	if (    text[SIZE___-3] == '['
+		&&  text[SIZE___-2] == 'i'
+		&&  text[SIZE___-1] == '='
 		)
 	{
 
 		bool guillementUse = false; 
-		int txtOffset = 6;
+		int txtOffset = SIZE___;
 		if ( text[txtOffset] == '\"' )
 		{
 			guillementUse = true;
@@ -1445,6 +1447,260 @@ void ChatHandler::ExecuteCommand_richard_C(const char* text)
 			sprintf(messageOUt,"item '%s' not found.",itemName);
 			PSendSysMessage(messageOUt);
 		}
+
+	}
+
+
+	return;
+
+}
+
+
+// example  [q=L'impact]  
+//   ou     [q="L'impact"]  
+// la casse n'est PAS prise en compte
+void ChatHandler::ExecuteCommand_richard_D(const char* text)
+{
+
+
+	if ( text == 0 )
+	{
+		return;
+	}
+
+	if ( text[0] == 0 )
+	{
+		return;
+	}
+
+	int SIZE___ = 3;
+
+	int lennn = strlen(text) ;
+	if ( lennn < SIZE___+1 )
+	{
+		return;
+	}
+
+
+	if ( text[lennn-1] != ']' )
+	{
+		return;
+	}
+
+
+	if ( text[SIZE___] == '\"' )
+	{
+		if ( text[lennn-2] != '\"' )
+		{
+			return;
+		}
+	}
+
+
+	if (    text[SIZE___-3] == '['
+		&&  text[SIZE___-2] == 'q'
+		&&  text[SIZE___-1] == '='
+		)
+	{
+
+		bool guillementUse = false; 
+		int txtOffset = SIZE___;
+		if ( text[txtOffset] == '\"' )
+		{
+			guillementUse = true;
+			txtOffset++;
+		}
+
+
+		char questName[1024];
+		
+		questName[0] = 0;
+		for(int i=txtOffset; ;i++)
+		{
+			if ( guillementUse && text[i] == '\"' )
+			{
+				break;
+			}
+
+			if ( !guillementUse && text[i] == ']' )
+			{
+				break;
+			}
+
+			if ( text[i] == 0 )
+			{
+				break;
+			}
+
+			questName[i-txtOffset] = text[i] ;
+			questName[i-txtOffset+1] = 0;
+
+		}
+
+		bool objectFound = false;
+
+		Player* playerrr  = m_session->GetPlayer();
+
+		if ( !playerrr )
+		{
+			//error ?
+			return;
+		}
+		
+
+		//QuestLocale const* ql = sObjectMgr.GetQuestLocale(linkedQuest->GetQuestId());
+
+		/*
+		for (uint32 questID = 0; questID < sQuestStorage.GetMaxEntry(); ++questID)
+		{
+			ItemPrototype const* prototype = sItemStorage.LookupEntry<ItemPrototype>(questID);
+
+			if ( prototype && StrCmp_noCase ( prototype->Name1 , questName ) )
+			{
+				objectFound = true;
+				
+				
+
+				break;
+			}
+
+		}
+		*/
+
+		std::string questNameStr = std::string(questName);
+
+		unsigned int nbQuest = 0;
+		unsigned int questID = 0;
+		Quest* queeeFound = 0;
+		for(const auto& ques : sObjectMgr.GetQuestTemplates() )
+		{
+			uint32 idd = ques.first;
+
+			// on est obligé de faire ca, car plusieurs quetes peuvent avoir le meme noms, genre Tome of the Cabal - 
+			// donc il faut s'assurer de prendre la quete qui est dans l'inventaire du joueur
+			bool thisQuestIsInPlayerList = false;
+			for (int i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
+			{
+				uint32 questidFromPlayer = playerrr->GetQuestSlotQuestId(i);
+				if ( questidFromPlayer == idd )
+				{
+					thisQuestIsInPlayerList = true;
+				}
+			}
+
+			
+			Quest* queee = ques.second;
+			std::string title = queee->GetTitle();
+			int aaa=0;
+			if ( thisQuestIsInPlayerList && title == questNameStr )
+			{
+				queeeFound = queee;
+				objectFound = true;
+				questID = idd;
+				int aaa=0;
+			}
+			nbQuest++;
+		}
+
+
+		
+
+
+
+		if ( !objectFound )
+		{
+			char messageOUt[2048];
+			sprintf(messageOUt,"quest '%s' not found.",questName);
+			PSendSysMessage(messageOUt);
+		}
+		else
+		{
+			
+			
+
+			char messageOUt[2048];
+			sprintf(messageOUt,"quest=%d",questID);
+			PSendSysMessage(messageOUt);
+
+			if ( queeeFound->ReqItemCount[0] )
+			{
+				char messageOUt[2048];
+				sprintf(messageOUt,"%d item=%d",queeeFound->ReqItemCount[0] , queeeFound->ReqItemId[0] );
+				PSendSysMessage(messageOUt);
+			}
+			if ( queeeFound->ReqItemCount[1] )
+			{
+				char messageOUt[2048];
+				sprintf(messageOUt,"%d item=%d",queeeFound->ReqItemCount[1] , queeeFound->ReqItemId[1] );
+				PSendSysMessage(messageOUt);
+			}
+			if ( queeeFound->ReqItemCount[2] )
+			{
+				char messageOUt[2048];
+				sprintf(messageOUt,"%d item=%d",queeeFound->ReqItemCount[2] , queeeFound->ReqItemId[2] );
+				PSendSysMessage(messageOUt);
+			}
+			if ( queeeFound->ReqItemCount[3] )
+			{
+				char messageOUt[2048];
+				sprintf(messageOUt,"%d item=%d",queeeFound->ReqItemCount[3] , queeeFound->ReqItemId[3] );
+				PSendSysMessage(messageOUt);
+			}
+			if ( queeeFound->ReqCreatureOrGOCount[0] )
+			{
+				char messageOUt[2048];
+				if ( queeeFound->ReqCreatureOrGOId[0] > 0 )
+				{
+					sprintf(messageOUt,"%d npc=%d",queeeFound->ReqCreatureOrGOCount[0] , queeeFound->ReqCreatureOrGOId[0] );
+				}
+				else
+				{
+					sprintf(messageOUt,"%d object=%d",queeeFound->ReqCreatureOrGOCount[0] , -queeeFound->ReqCreatureOrGOId[0] );
+				}
+				PSendSysMessage(messageOUt);
+			}
+			if ( queeeFound->ReqCreatureOrGOCount[1] )
+			{
+				char messageOUt[2048];
+				if ( queeeFound->ReqCreatureOrGOId[1] > 0 )
+				{
+					sprintf(messageOUt,"%d npc=%d",queeeFound->ReqCreatureOrGOCount[1] , queeeFound->ReqCreatureOrGOId[1] );
+				}
+				else
+				{
+					sprintf(messageOUt,"%d object=%d",queeeFound->ReqCreatureOrGOCount[1] , -queeeFound->ReqCreatureOrGOId[1] );
+				}
+				PSendSysMessage(messageOUt);
+			}
+			if ( queeeFound->ReqCreatureOrGOCount[2] )
+			{
+				char messageOUt[2048];
+				if ( queeeFound->ReqCreatureOrGOId[2] > 0 )
+				{
+					sprintf(messageOUt,"%d npc=%d",queeeFound->ReqCreatureOrGOCount[2] , queeeFound->ReqCreatureOrGOId[2] );
+				}
+				else
+				{
+					sprintf(messageOUt,"%d object=%d",queeeFound->ReqCreatureOrGOCount[2] , -queeeFound->ReqCreatureOrGOId[2] );
+				}
+				PSendSysMessage(messageOUt);
+			}
+			if ( queeeFound->ReqCreatureOrGOCount[3] )
+			{
+				char messageOUt[2048];
+				if ( queeeFound->ReqCreatureOrGOId[3] > 0 )
+				{
+					sprintf(messageOUt,"%d npc=%d",queeeFound->ReqCreatureOrGOCount[3] , queeeFound->ReqCreatureOrGOId[3] );
+				}
+				else
+				{
+					sprintf(messageOUt,"%d object=%d",queeeFound->ReqCreatureOrGOCount[3] , -queeeFound->ReqCreatureOrGOId[3] );
+				}
+				PSendSysMessage(messageOUt);
+			}
+
+		}
+
 
 	}
 
@@ -2545,6 +2801,7 @@ bool ChatHandler::ParseCommands(const char* text)
 		ExecuteCommand_richard_A(text);
 		ExecuteCommand_richard_B(text);
 		ExecuteCommand_richard_C(text);
+		ExecuteCommand_richard_D(text);
 
         if (text[0] != '!' && text[0] != '.')
             return false;

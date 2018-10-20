@@ -396,7 +396,9 @@ bool ChatHandler::HandleNamegoCommand_richaDemo(char* args)
 			return false;
 		}
 
-		if ( player->getLevel() < 20 )  // je crois que ritual of summoning s'apprend au lvl 20
+		// je crois que ritual of summoning s'apprend au lvl 20
+		// si je veux VRAIMENT faire un truc propre, verifier que le joueur connait  ritual of summoning
+		if ( player->getLevel() < 20 )  
 		{
 			player->Say("je dois etre Demoniste niveau 20 pour faire ca",LANG_UNIVERSAL);
 			return false;
@@ -484,11 +486,45 @@ bool ChatHandler::HandleNamegoCommand_richaDemo(char* args)
 			return false;
 		}
 
+		// je mets une variable sale en  static, ca suffira
+		static std::clock_t lastTimeDone = 0;
 
+		bool accept = true;
+		if ( lastTimeDone == 0 )
+		{
+			accept = true;
+		}
+		else
+		{
+			// definir ici le temps de recharge du sort.
+			// normallement le  ritual of summoning  n'a pas de recharge je crois, mais la comme on le cheat un peu, je vais mettre 30 minutes de recharge
+			const double ruleAttenteEnMinutes = 30.0;
 
+			double secondSinceLast =  (double)(std::clock() - lastTimeDone) / (double) CLOCKS_PER_SEC;
+			if ( secondSinceLast / 60.0 >= ruleAttenteEnMinutes )
+			{
+				accept = true;
+			}
+			else
+			{
+				char nnn[2048];
+				sprintf(nnn,"Il faut attendre %d minutes avant la recharge.",  (int)(ruleAttenteEnMinutes - secondSinceLast / 60.0) );
+				player->Say(nnn,LANG_UNIVERSAL);
+				accept = false;
+			}
+		}
 
-		bool rett = HandleNamegoCommand(args);
-		return rett;
+		if ( accept )
+		{
+			lastTimeDone = std::clock();
+			bool rett = HandleNamegoCommand(args);
+			return rett;
+		}
+		else
+		{
+			return false;
+		}
+
 	}
 
 	return false;

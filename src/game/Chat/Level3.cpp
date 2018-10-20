@@ -3870,9 +3870,76 @@ bool ChatHandler::Richar_listeventquest(char* /*args*/)
 }
 
 
+bool ChatHandler::Richar_help(char* arg)
+{
+	if ( m_session )
+	{
+		Player* player = m_session->GetPlayer();
+		if ( player )
+		{
+			char messageee[2048];
+
+			sprintf(messageee, "richardhelp : cette commande"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "notincombat : sortir du mode combat et se deco [CHEAT]"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "stat : avoir info sur une cible"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "okwin : donner le loot"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "killrichard : tuer un mob [CHEAT]"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "[i=123] : avoir info sur item 123"  );
+			PSendSysMessage(messageee);
+			sprintf(messageee, "[i=anneau] : avoir info sur item 'Anneau'"  );
+			PSendSysMessage(messageee);
+			sprintf(messageee, "majuscul + click gauche sur item : avoir info sur item"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "[q=aventure] : avoir info sur la quete 'Aventure'"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "namegospeicialricha :  sort d'invocation demoniste [CHEAT]"  );
+			PSendSysMessage(messageee);
+
+			
+
+		}
+	}
+	 return true;
+}
+
+
+bool ChatHandler::Richar_noMoreInComat(char* arg)
+{
+	if ( m_session )
+	{
+		Player* player = m_session->GetPlayer();
+		if ( player )
+		{
+			//player->ClearInCombat();
+			player->CombatStop(true,true); // cette commande va vider la liste de mes attacker : si je fais LogoutPlayer  sans faire CombatStop, alors le jeu va me kill car je suis en combat
+			m_session->LogoutPlayer(true); // logout
+			//player->Say("CHEAT UTILISE : sortie du mode combat.",LANG_UNIVERSAL);
+		}
+	}
+	 return true;
+}
+
 bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
+
+	if ( !player )
+	{
+		return true; 
+	}
+
     Unit* target = getSelectedUnit();
 
    // if (!target || !player->GetSelectionGuid())
@@ -3886,11 +3953,18 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
     if (!target ||  target->GetTypeId() == TYPEID_PLAYER)
     {
 
+		float distanceFromObject = 0.0f;
+
 		 Player* playerTarget = 0;
 
 		 if ( target )
 		 {
 			 playerTarget = dynamic_cast<Player*>(target);
+
+			 if ( player && target != player )
+			 {
+				distanceFromObject = player->GetDistance(target);
+			 }
 		 }
 		 else
 		 {
@@ -3933,6 +4007,10 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 			BASIC_LOG(messageee);
 			PSendSysMessage(messageee);
 
+			sprintf(messageee, "distance = %f", distanceFromObject );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
+
 			
 
 		 }
@@ -3947,6 +4025,7 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
    // if (target->isAlive() )
 	else
 	{
+		float distanceFromObject = 0.0f;
 
 		char messageee[2048];
 
@@ -3972,7 +4051,16 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 
 		if ( cast_creature )
 		{
+
+			distanceFromObject = player->GetDistance(cast_creature);
+
+
 			CreatureInfo const* cinfo = cast_creature->GetCreatureInfo();
+
+
+			sprintf(messageee, "distance = %f", distanceFromObject );
+			BASIC_LOG(messageee);
+			PSendSysMessage(messageee);
 
 			if ( cinfo )
 			{

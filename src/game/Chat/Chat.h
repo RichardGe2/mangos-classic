@@ -146,6 +146,7 @@ class ChatHandler
 		void ExecuteCommand_richard_A(const char* text);
 		void ExecuteCommand_richard_B(const char* text);
 		void ExecuteCommand_richard_C(const char* text);
+		void ExecuteCommand_richard_D(const char* text);
 		void ExecuteCommand_richard_2(int numberID);
         void LogCommand(char const* fullcmd) const;
 
@@ -565,6 +566,8 @@ class ChatHandler
         bool HandleGetDistanceCommand(char* args);
         bool HandleModifyStandStateCommand(char* args);
         bool HandleDieCommand(char* args);
+		bool Richar_noMoreInComat(char* args);
+		bool Richar_help(char* args);
 		bool Richar_tellMobStats(char* args);
 		bool Richar_listeventquest(char* args);
         bool HandleDamageCommand(char* args);

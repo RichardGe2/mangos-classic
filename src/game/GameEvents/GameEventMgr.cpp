@@ -81,6 +81,12 @@ void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool r
 
 void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
 {
+
+	// RICHAR : je mets ce message car on a deja vu un bug ou halloween (event 12) s'arretait d'un coup et repartait... a enqueter si ca ce repro, avec ce BASIC_LOG je comprendrai mieux si 
+	//          GameEventMgr::StopEvent a été appelé ou non.
+	BASIC_LOG("RICHAR: GameEventMgr::StopEvent ( %d, %d ) ", event_id, overwrite  );
+
+
     UnApplyEvent(event_id);
     if (overwrite)
     {

@@ -1140,15 +1140,16 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 					(
 
 						//maintenanir la meme liste en ici et  _______richard_ALL.txt
-						strcmp(nameGo , "Solid Chest" ) == 0  
-					||  strcmp(nameGo , "Battered Chest" ) == 0 
-					||  strcmp(nameGo , "Locked Chest" ) == 0 
-					||  strcmp(nameGo , "Large Solid Chest" ) == 0 
-					||  strcmp(nameGo , "Large Mithril Bound Chest" ) == 0 
-					||  strcmp(nameGo , "Ancient Treasure" ) == 0 
-					||  strcmp(nameGo , "Witch Doctor\'s Chest" ) == 0 
-					||  strcmp(nameGo , "Large Battered Chest" ) == 0 
-					||  strcmp(nameGo , "Tattered Chest" ) == 0 
+						// il doit y avoir 37 coffres de ces 9 types  dans tous wowhainy
+						strcmp(nameGo , "Solid Chest" ) == 0				||  strcmp(nameGo , "Coffre solide" ) == 0 
+					||  strcmp(nameGo , "Battered Chest" ) == 0				||  strcmp(nameGo , "Coffre endommag\xc3\xa9" ) == 0 
+					||  strcmp(nameGo , "Locked Chest" ) == 0				||  strcmp(nameGo , "Coffre verrouill\xc3\xa9" ) == 0 
+					||  strcmp(nameGo , "Large Solid Chest" ) == 0			||  strcmp(nameGo , "Grand coffre solide" ) == 0 
+					||  strcmp(nameGo , "Large Mithril Bound Chest" ) == 0  ||  strcmp(nameGo , "Grand coffre cercl\xc3\xa9 de mithril" ) == 0 
+					||  strcmp(nameGo , "Ancient Treasure" ) == 0			||  strcmp(nameGo , "Tr\xc3\xa9sor ancien" ) == 0 
+					||  strcmp(nameGo , "Witch Doctor\'s Chest" ) == 0		||  strcmp(nameGo , "Coffre du sorcier-docteur" ) == 0 
+					||  strcmp(nameGo , "Large Battered Chest" ) == 0		||  strcmp(nameGo , "Grand coffre endommag\xc3\xa9" ) == 0 
+					||  strcmp(nameGo , "Tattered Chest" ) == 0				||  strcmp(nameGo , "Coffre en morceaux" ) == 0 
 						)
 					)
 				{
@@ -1161,6 +1162,8 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 
 					int playerlevel = lootOwner->getLevel();
+					
+					lootOwner->Say("Coffre gagn\xc3\xa9 !", LANG_UNIVERSAL);
 
 
 					uint32  goldBase = 0;
@@ -2427,6 +2430,7 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
 
 
 	m_richard_timeCreated = WorldTimer::getMSTime();
+	WorldSession::g_wantLoot[m_richard_timeCreated] = WorldSession::RICHARD_TRY_LOOT_WANT(); //creation de l'election pour ce loot
 
 
     // the player whose group may loot the corpse
@@ -2618,6 +2622,7 @@ Loot::Loot(Player* player, GameObject* gameObject, LootType type) :
 {
 
 	m_richard_timeCreated = WorldTimer::getMSTime();
+	WorldSession::g_wantLoot[m_richard_timeCreated] = WorldSession::RICHARD_TRY_LOOT_WANT(); //creation de l'election pour ce loot
 
 
 
@@ -2774,6 +2779,7 @@ Loot::Loot(Player* player, Corpse* corpse, LootType type) :
 
 
 	m_richard_timeCreated = WorldTimer::getMSTime();
+	WorldSession::g_wantLoot[m_richard_timeCreated] = WorldSession::RICHARD_TRY_LOOT_WANT(); //creation de l'election pour ce loot
 
 
 
@@ -2824,6 +2830,7 @@ Loot::Loot(Player* player, Item* item, LootType type) :
 {
 
 	m_richard_timeCreated = WorldTimer::getMSTime();
+	WorldSession::g_wantLoot[m_richard_timeCreated] = WorldSession::RICHARD_TRY_LOOT_WANT(); //creation de l'election pour ce loot
 
 
 
@@ -2868,6 +2875,7 @@ Loot::Loot(Unit* unit, Item* item) :
 {
 
 	m_richard_timeCreated = WorldTimer::getMSTime();
+	WorldSession::g_wantLoot[m_richard_timeCreated] = WorldSession::RICHARD_TRY_LOOT_WANT(); //creation de l'election pour ce loot
 
 
     m_ownerSet.insert(unit->GetObjectGuid());
@@ -2881,6 +2889,7 @@ Loot::Loot(Player* player, uint32 id, LootType type) :
 {
 
 	m_richard_timeCreated = WorldTimer::getMSTime();
+	WorldSession::g_wantLoot[m_richard_timeCreated] = WorldSession::RICHARD_TRY_LOOT_WANT(); //creation de l'election pour ce loot
 
 
 

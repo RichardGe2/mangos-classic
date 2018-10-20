@@ -329,6 +329,7 @@ class WorldSession
         void HandleRepopRequestOpcode(WorldPacket& recvPacket);
         void HandleAutostoreLootItemOpcode(WorldPacket& recvPacket);
         void HandleLootMoneyOpcode(WorldPacket& recvPacket);
+		bool RichaHandleLootRandom(Loot* loot, int lootTypeItemOrGold);
         void HandleLootOpcode(WorldPacket& recvPacket);
         void HandleLootReleaseOpcode(WorldPacket& recvPacket);
         void HandleLootMasterGiveOpcode(WorldPacket& recvPacket);
@@ -706,14 +707,20 @@ class WorldSession
 	public:
 		RICHARD_TRY_LOOT_WANT_NB() { nbFois = 0; scoreDice = -1; }
 	
-		int nbFois;
+		int nbFois; // sert juste pour le debug - incremente a chaque fois que le joueur envoie sa candidature
 
+		// le dé est lancé entre 2 et 1000.
+		// plus le score est eleve, plus le joueur a de chance d avoir le loot.
+		// qq scores spéciaux :
 		// -1 : pas init
-		// 0  : joueur arrivé en retard.
-		// 1 -> 1000
+		// 0  : le joueur ne veut PAS le loot ( il a fait un OKWIN )
+		// 1  : le joueur arrivé en retard ( mais il veut quand meme le loot )
+		// 2 -> 1000 : cas normal
 		int scoreDice;
 	};
 
+
+	public:
 	class RICHARD_TRY_LOOT_WANT
 	{
 	public:
@@ -727,7 +734,7 @@ class WorldSession
 			okWinDoneOnThisLoot = false;
 		}
 
-
+		//liste des candidats pour ce loot - avec leur score de dès
 		std::map<Player * ,  RICHARD_TRY_LOOT_WANT_NB >  list;
 
 		Player * winner;
