@@ -1376,14 +1376,25 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
 
 
-float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner,   float* nbPlayerParagon1Needed )
+float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner,   float* donjonLevel )
 {
 
-	//  nbPlayerParagon1Needed  :
-	//  retourne le nombre de joueur paragon 1 (sans modification) qu'il faudrait pour tuer ce mob   -  avec des joueurs de meme lvl que le mob
+	//  donjonLevel  :
+	//  c'est un indice indicatif, permettant d'hestimer la difficulté du mob en fonction de sa provenance de donjon.
+	//  ce nombre est utilisé uniquement pour ajuster le probabilité de drop de youhaicoin .
+	//  pour eviter qu'un 60 paragon 30  farme des petit level 60 elite de Scholomance, et loot plein de youhaicoin.
+	//  ce nombre sera donc utilisé uniquement pour les mob lvl 60
+	//
+	// 0 : exterieur
+	// 1 : donjon low level
+	// 2 : premier donjon HL
+	// ...etc...
 
-	if ( nbPlayerParagon1Needed )
-		*nbPlayerParagon1Needed = 1.0f; // par defaut
+
+
+
+	if ( donjonLevel )
+		*donjonLevel = 0.0f; // par defaut
 
 
 	// RICHARD - ajustement des coeff de difficulté on fonction de la position du mob
@@ -1408,11 +1419,21 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 			else
 			{
 				// #PARAGON_COMPUTE  -  ce hashtag est la pour identifier tous les spot ou le paragon va etre utilise pour modifier les characteristiques
+				
+				//ancien calcul :
 				//si 2 joueurs sont paragon N, cela veut dire que dans un groupe de 2, ils vont etre equivalent a N+1 joueurs
-				float coeffParagon = ((float)paralvl + 1.0) / 2.0;
+				//float coeffParagon = ((float)paralvl + 1.0) / 2.0;
 
-				if ( nbPlayerParagon1Needed )
-					*nbPlayerParagon1Needed = coeffParagon;
+				//nouveau calcul
+				// paragon 1 :  + 00 %           coeff : x 1
+				// paragon 2 :  + 20 %           coeff : x 1.2
+				// paragon 3 :  + 40 %           coeff : x 1.4
+				// paragon 4 :  + 60 %           coeff : x 1.6
+				// paragon N :  + ( N-1 ) * 20   coeff : x ( 1 + (N-1)*0.2   )
+				float coeffParagon = ( 1.0f + (  (float)paralvl - 1.0f ) * 0.2f   );
+
+				if ( donjonLevel )
+					*donjonLevel = 0.0; // on s'en fou pour mon pet
 
 
 				int aaaa=0;
@@ -1446,36 +1467,45 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 
 	float outNumber = 1.0;
-	float nbPlayerParagon1Needed_out = 1.0f;
+	float donjonLevel_out = 0.0f;
 
-	if ( cPosRicha == "Eastern Kingdoms" )		{ outNumber = 1.0;  nbPlayerParagon1Needed_out = 1.0f; }
-	else if ( cPosRicha == "Kalimdor" )			{ outNumber =  1.0;  nbPlayerParagon1Needed_out = 1.0f; }
-	else if ( cPosRicha == "Deeprun Tram" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f;  }
-	else if ( cPosRicha == "Alliance PVP Barracks" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f; }
-	else if ( cPosRicha == "Horde PVP Barracks" )			{ outNumber =  1.0; nbPlayerParagon1Needed_out = 1.0f; } // j'ai donné le nom au hasard, faudra verifier que c'est bien ca
+	//pendant longtemps ce coeff etait a 0.40 (2.0/5.0)  pour le donjon low level 5 joueurs
+	//mais c'etait trop facile, et apres etude je me suis rendu compte que les vie des mob etait plutot mutliplié par 2 que par 5  (en comparant les non elite de dehors avec les elite du donjon)
+	//  voir   StudyNPCstats  dans projet :  Wowhainy_webdatabase
+	//donc un peu au pif (mais pas trop) je mets 0.65  
+	const float coeffDiffLowlevel = 0.65;
+
+
+	if ( cPosRicha == "Eastern Kingdoms" )					{ outNumber =  1.0;  donjonLevel_out = 0.0f; }
+	else if ( cPosRicha == "Kalimdor" )						{ outNumber =  1.0;  donjonLevel_out = 0.0f; }
+	else if ( cPosRicha == "Deeprun Tram" )					{ outNumber =  1.0; donjonLevel_out = 0.0f;  }
+	else if ( cPosRicha == "Alliance PVP Barracks" )		{ outNumber =  1.0; donjonLevel_out = 0.0f; }
+	else if ( cPosRicha == "Horde PVP Barracks" )			{ outNumber =  1.0; donjonLevel_out = 0.0f; } // j'ai donné le nom au hasard, faudra verifier que c'est bien ca
 
 	//donjons low level :  on les ramene a une difficulté de 2 joueurs :  on divise par 5 et multiple par 2
-	else if ( cPosRicha == "Ragefire Chasm" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Wailing Caverns" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; } // 17-24   5 joueurs
-	else if ( cPosRicha == "Deadmines" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Shadowfang Keep" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Blackfathom Deeps" )	{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "The Stockade" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Gnomeregan" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Razorfen Kraul" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Scarlet Monastery" )	{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Razorfen Downs" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Uldaman" )				{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Zul'Farrak" )			{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Maraudon" )				{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Sunken Temple" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; }
-	else if ( cPosRicha == "Blackrock Depths" )		{ outNumber =  2.0f/5.0f; nbPlayerParagon1Needed_out = 2.0f; } 
+	else if ( cPosRicha == "Ragefire Chasm" )		{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Wailing Caverns" )		{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; } // 17-24   5 joueurs
+	else if ( cPosRicha == "Deadmines" )			{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Shadowfang Keep" )		{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Blackfathom Deeps" )	{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "The Stockade" )			{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Gnomeregan" )			{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Razorfen Kraul" )		{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Scarlet Monastery" )	{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Razorfen Downs" )		{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Uldaman" )				{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Zul'Farrak" )			{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Maraudon" )				{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Sunken Temple" )		{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; }
+	else if ( cPosRicha == "Blackrock Depths" )		{ outNumber =  coeffDiffLowlevel; donjonLevel_out = 1.0f; } 
 	
 
 	//
 	// donjon High Level : on les ramene a une difficulté de 5 joueurs ou plus
 	//
 	//
+
+	/*
 
 	// le cas de  Blackrock Spire  est spécial : 
 	// il y a lower et upper.  5 joueur pour lower  10 pour upper  -  
@@ -1673,34 +1703,20 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		}
 	}      
 	
-	
-	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  5.0f/5.0f; nbPlayerParagon1Needed_out = 5.0f; }      // 55-60   5
+	*/
 
-	else if ( cPosRicha == "Stratholme" )			{ outNumber =  6.0f/5.0f; nbPlayerParagon1Needed_out = 6.0f; }      // 58-60   5
 	
-	else if ( cPosRicha == "Scholomance" )			
-	{ 
-		//outNumber =  6.0f/5.0f; nbPlayerParagon1Needed_out = 6.0f;
-		outNumber =  1.0; nbPlayerParagon1Needed_out = 6.0f; // debug
-	}      // 58-60   5
-
-	else if ( cPosRicha == "Molten Core" )			{ outNumber =  7.0f/40.0f; nbPlayerParagon1Needed_out = 7.0f;}	// 60+     40
-
-	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  8.0f/20.0f; nbPlayerParagon1Needed_out = 8.0f;}	// 60+     20
-
-	else if ( cPosRicha == "Onyxias Lair" )			{ outNumber =  9.0f/40.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60+     40
-	
-	
-	else if ( cPosRicha == "Blackwing Lair" )		{ outNumber =  9.0f/40.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60++    40  
-	else if ( cPosRicha == "Ruins of Ahnqiraj" )	{ outNumber =  9.0f/20.0f; nbPlayerParagon1Needed_out = 9.0f;}	// 60++    20
-	else if ( cPosRicha == "Temple of Ahnqiraj" )	{ outNumber =  10.0f/40.0f; nbPlayerParagon1Needed_out = 10.0f;}	// 60+++   40
-	
-	else if ( cPosRicha == "Naxxramas" )			
-	{ 
-		//outNumber =  11.0f/40.0f; nbPlayerParagon1Needed_out = 11.0f;
-		outNumber =  1.0f; nbPlayerParagon1Needed_out = 11.0f; // temporary test
-
-	}	// 60++++  40
+	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  1.0f;     donjonLevel_out = 2.0f;  }  
+	else if ( cPosRicha == "Stratholme" )			{ outNumber =  1.066f;     donjonLevel_out = 3.0f;  }    
+	else if ( cPosRicha == "Scholomance" )			{ outNumber =  1.133f;    donjonLevel_out = 4.0f;  }    
+	else if ( cPosRicha == "Blackrock Spire" )		{ outNumber =  1.200f;      donjonLevel_out = 5.0f;  } // je le mets a la limite de difficulté entre 5 et 10 joueurs.  comme ca c'est easy pour moi
+	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  1.0f;      donjonLevel_out = 6.0f;  }	
+	else if ( cPosRicha == "Molten Core" )			{ outNumber =  0.5f;      donjonLevel_out = 7.0f;  }	
+	else if ( cPosRicha == "Onyxias Lair" )			{ outNumber =  0.625f;    donjonLevel_out = 8.0f;  }	
+	else if ( cPosRicha == "Blackwing Lair" )		{ outNumber =  0.75f;     donjonLevel_out = 9.0f;  }	
+	else if ( cPosRicha == "Ruins of Ahnqiraj" )	{ outNumber =  1.25f;     donjonLevel_out = 10.0f; }	
+	else if ( cPosRicha == "Temple of Ahnqiraj" )	{ outNumber =  0.875f;    donjonLevel_out = 11.0f; }	
+	else if ( cPosRicha == "Naxxramas" )			{ outNumber =  1.0f;      donjonLevel_out = 12.0f; }	
 
 
 	else if ( cPosRicha == "??POSRICH??" )
@@ -1753,8 +1769,8 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		sLog.outBasic("RICHAR: INSTANCE DETECTE : %s",cPosRicha.c_str() ); 
 	} 
 
-	if ( nbPlayerParagon1Needed )
-		*nbPlayerParagon1Needed = nbPlayerParagon1Needed_out; // par defaut
+	if ( donjonLevel )
+		*donjonLevel = donjonLevel_out; // par defaut
 
 	return  outNumber ;
 }
@@ -1764,7 +1780,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 float Creature::_GetHealthMod(    const std::string& cPosRicha,const std::string& mobName, const Unit* richaOwner,               int32 Rank)
 {
 
-	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner,NULL);
 	if ( modRicha > 0.0f )
 	{
 		return modRicha;
@@ -1791,7 +1807,7 @@ float Creature::_GetHealthMod(    const std::string& cPosRicha,const std::string
 float Creature::_GetDamageMod(     const std::string& cPosRicha,const std::string& mobName, const Unit* richaOwner,            int32 Rank)
 {
 
-	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner,NULL);
 	if ( modRicha > 0.0f )
 	{
 		return modRicha;
@@ -1819,7 +1835,7 @@ float Creature::_GetDamageMod(     const std::string& cPosRicha,const std::strin
 float Creature::_GetSpellDamageMod(     const std::string& cPosRicha,const std::string& mobName,const Unit* richaOwner,                int32 Rank)
 {
 
-	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner);
+	float modRicha = GetRichardModForMap(cPosRicha,mobName,richaOwner,NULL);
 	if ( modRicha > 0.0f )
 	{
 		return modRicha;

@@ -2914,22 +2914,46 @@ void Player::richa_exportTo_ristat_()
 	{
 		DWORD laster = GetLastError();
 
-		BASIC_LOG("WARNING FAIL COPY FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-		Sleep(20000);
+		BASIC_LOG("WARNING FAIL COPY FILE (GetLastError = %d) (on va retry avec nouveau nom) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" , laster );
+		BASIC_LOG("    nameFile = %s" , nameFile );
+		BASIC_LOG("    nameFile2 = %s" , nameFile2 );
+		//Sleep(20000);
 
 		//c'est deja arrive je sais pas pk, j'ai rajoute getlasterror.
+		//
+		//
+		//en fait je me demande si c'est pas juste si par hasard je me deco a la meme seconde du save auto.
+		//du coup ca va fail car meme file name
+		//du coup je regenere un nouveau nom, avec +1 seconde
+		sprintf(nameFile2, "RICHARDS/TEMP/_ri_stat_%s_%d_%02d_%02d_%02d_%02d_%02d.txt",
+		playerName,
+		now->tm_year + 1900,
+		now->tm_mon+1,
+		now->tm_mday,
+		now->tm_hour,
+		now->tm_min,
+		now->tm_sec+1
+		);
 
-		//on va reessayer...
+
+		//on va reessayer avec le nouveau nom...
 		BOOL succesCopy2 = CopyFileA(nameFile,nameFile2,TRUE);
 		if ( succesCopy2 )
 		{
 			BASIC_LOG("try 2 - ca a marche .");
+			BASIC_LOG("    nameFile = %s" , nameFile );
+			BASIC_LOG("    nameFile2 = %s" , nameFile2 );
 			int aaa=0;
 		}
 		else
 		{
 			DWORD laster2 = GetLastError();
-			BASIC_LOG("try 2 - ca a PAS marche !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			BASIC_LOG("try 2 - ca a PAS marche (GetLastError = %d) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" , laster2);
+			BASIC_LOG("    nameFile = %s" , nameFile );
+			BASIC_LOG("    nameFile2 = %s" , nameFile2 );
+
+			Sleep(20000);
+
 			int aaa=0;
 		}
 		
@@ -8523,9 +8547,7 @@ void Player::CheckAreaExploreAndOutdoor()
             uint32 area = p->ID;
            
 			
-			///////// if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
-			if ( false )
-			// RICHARD : on s'assuer que cette action raporte du Paragon !
+			if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
             {
                 SendExplorationExperience(area, 0);
             }
@@ -14597,43 +14619,43 @@ bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 
 
 	////////
-	// DEBUG AREA RICHARD
-
-	if (
-		pQuest->GetQuestId() == 5283
-		|| pQuest->GetQuestId() == 5284
-		|| pQuest->GetQuestId() == 5301
-		|| pQuest->GetQuestId() == 5302
-		|| pQuest->GetQuestId() == 3638
-		|| pQuest->GetQuestId() == 3639
-
-		|| pQuest->GetQuestId() == 2760
-
-		|| pQuest->GetQuestId() == 3444
-
-		)
+	// DEBUG FOR RICHARD
 	{
-		int a = 0;
-		int id = pQuest->GetQuestId();
+		if (
+			pQuest->GetQuestId() == 5283
+			|| pQuest->GetQuestId() == 5284
+			|| pQuest->GetQuestId() == 5301
+			|| pQuest->GetQuestId() == 5302
+			|| pQuest->GetQuestId() == 3638
+			|| pQuest->GetQuestId() == 3639
 
-		bool b0 = SatisfyQuestStatus(pQuest, msg);
-		bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
-		bool b2 = SatisfyQuestClass(pQuest, msg);
-		bool b3 = SatisfyQuestRace(pQuest, msg);
-		bool b4 = SatisfyQuestLevel(pQuest, msg);
-		bool b5 = SatisfyQuestSkill(pQuest, msg);
-		bool b6 = SatisfyQuestReputation(pQuest, msg);
-		bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
-		bool b8 = SatisfyQuestTimed(pQuest, msg);
-		bool b9 = SatisfyQuestNextChain(pQuest, msg);
-		bool ba = SatisfyQuestPrevChain(pQuest, msg);
-		bool bb = pQuest->IsActive();
+			|| pQuest->GetQuestId() == 2760
 
-		bool final__ = b0 & b1 & b2 & b3 & b4 & b5 & b6 & b7 & b8 & b9 & ba & bb;
+			|| pQuest->GetQuestId() == 3444
 
-		int abnbn = 0;
+			)
+		{
+			int a = 0;
+			int id = pQuest->GetQuestId();
+
+			bool b0 = SatisfyQuestStatus(pQuest, msg);
+			bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
+			bool b2 = SatisfyQuestClass(pQuest, msg);
+			bool b3 = SatisfyQuestRace(pQuest, msg);
+			bool b4 = SatisfyQuestLevel(pQuest, msg);
+			bool b5 = SatisfyQuestSkill(pQuest, msg);
+			bool b6 = SatisfyQuestReputation(pQuest, msg);
+			bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
+			bool b8 = SatisfyQuestTimed(pQuest, msg);
+			bool b9 = SatisfyQuestNextChain(pQuest, msg);
+			bool ba = SatisfyQuestPrevChain(pQuest, msg);
+			bool bb = pQuest->IsActive();
+
+			bool final__ = b0 & b1 & b2 & b3 & b4 & b5 & b6 & b7 & b8 & b9 & ba & bb;
+
+			int abnbn = 0;
+		}
 	}
-
 	//////////////////////////////////
 
 
@@ -14650,170 +14672,171 @@ bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 
 
 
-
+	///////////////////////////////////////////////
 	// RICHARD DEBUG INFO :
-	if (!retnum)
 	{
-		bool b0 = SatisfyQuestStatus(pQuest, msg);
-		bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
-		bool b2 = SatisfyQuestClass(pQuest, msg);
-		bool b3 = SatisfyQuestRace(pQuest, msg);
-		bool b4 = SatisfyQuestLevel(pQuest, msg);
-		bool b5 = SatisfyQuestSkill(pQuest, msg);
-		bool b6 = SatisfyQuestReputation(pQuest, msg);
-		bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
-		bool b8 = SatisfyQuestTimed(pQuest, msg);
-		bool b9 = SatisfyQuestNextChain(pQuest, msg);
-		bool ba = SatisfyQuestPrevChain(pQuest, msg);
-		bool bb = pQuest->IsActive();
-
-
-
-
-		std::string finalMessage;
-
-
-		finalMessage += "RICHARD: ";
-		finalMessage += std::string(GetName());
-		finalMessage += " can t take quest ";
-		finalMessage += std::to_string(pQuest->GetQuestId());
-		finalMessage += " because :";
-
-		
-		//BASIC_LOG("RICHAR: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
-		
-		
-		if (!b2) { finalMessage += std::string("-- SatisfyQuestClass"); }
-		else if (!b3) { finalMessage += std::string("-- SatisfyQuestRace"); }
-		else if (!b4) 
-		{ 
-			finalMessage += std::string("-- SatisfyQuestLevel("); 
-			finalMessage += std::to_string(pQuest->GetMinLevel());
-			finalMessage += std::string(")"); 
-		}
-		else if (!b5) { finalMessage += std::string("-- SatisfyQuestSkill"); }
-
-		
-
-		else if (!b0) 
+		if (!retnum)
 		{
+			bool b0 = SatisfyQuestStatus(pQuest, msg);
+			bool b1 = SatisfyQuestExclusiveGroup(pQuest, msg);
+			bool b2 = SatisfyQuestClass(pQuest, msg);
+			bool b3 = SatisfyQuestRace(pQuest, msg);
+			bool b4 = SatisfyQuestLevel(pQuest, msg);
+			bool b5 = SatisfyQuestSkill(pQuest, msg);
+			bool b6 = SatisfyQuestReputation(pQuest, msg);
+			bool b7 = SatisfyQuestPreviousQuest(pQuest, msg);
+			bool b8 = SatisfyQuestTimed(pQuest, msg);
+			bool b9 = SatisfyQuestNextChain(pQuest, msg);
+			bool ba = SatisfyQuestPrevChain(pQuest, msg);
+			bool bb = pQuest->IsActive();
 
-			QuestStatusMap::const_iterator itr = mQuestStatus.find(pQuest->GetQuestId());
 
-			if (itr != mQuestStatus.end() && itr->second.m_status != QUEST_STATUS_NONE)
-			{
-				finalMessage += std::string("-- SatisfyQuestStatus:"); 
 
-				if ( itr->second.m_status == QUEST_STATUS_COMPLETE )
-				{
-					finalMessage += std::string("(complete) ");
-				}
-				else if ( itr->second.m_status == QUEST_STATUS_UNAVAILABLE )
-				{
-					finalMessage += std::string("(unvailable) ");
-				}
-				else if ( itr->second.m_status == QUEST_STATUS_INCOMPLETE )
-				{
-					finalMessage += std::string("(incomplete) ");
-				}
-				else if ( itr->second.m_status == QUEST_STATUS_FAILED )
-				{
-					finalMessage += std::string("(failed) ");
-				}
-				else if ( itr->second.m_status == QUEST_STATUS_AVAILABLE )
-				{
-					finalMessage += std::string("(available?????) "); // ne devrait pas etre utilisé ?????
-				}
-				else
-				{
-					finalMessage += std::string("(???) "); 
-				}
 
+			std::string finalMessage;
+
+
+			finalMessage += "RICHARD: ";
+			finalMessage += std::string(GetName());
+			finalMessage += " can t take quest ";
+			finalMessage += std::to_string(pQuest->GetQuestId());
+			finalMessage += " because :";
+
+		
+			//BASIC_LOG("RICHAR: %s can t take quest %d because :", GetName(), pQuest->GetQuestId());
+		
+		
+			if (!b2) { finalMessage += std::string("-- SatisfyQuestClass"); }
+			else if (!b3) { finalMessage += std::string("-- SatisfyQuestRace"); }
+			else if (!b4) 
+			{ 
+				finalMessage += std::string("-- SatisfyQuestLevel("); 
+				finalMessage += std::to_string(pQuest->GetMinLevel());
+				finalMessage += std::string(")"); 
 			}
+			else if (!b5) { finalMessage += std::string("-- SatisfyQuestSkill"); }
+
+		
+
+			else if (!b0) 
+			{
+
+				QuestStatusMap::const_iterator itr = mQuestStatus.find(pQuest->GetQuestId());
+
+				if (itr != mQuestStatus.end() && itr->second.m_status != QUEST_STATUS_NONE)
+				{
+					finalMessage += std::string("-- SatisfyQuestStatus:"); 
+
+					if ( itr->second.m_status == QUEST_STATUS_COMPLETE )
+					{
+						finalMessage += std::string("(complete) ");
+					}
+					else if ( itr->second.m_status == QUEST_STATUS_UNAVAILABLE )
+					{
+						finalMessage += std::string("(unvailable) ");
+					}
+					else if ( itr->second.m_status == QUEST_STATUS_INCOMPLETE )
+					{
+						finalMessage += std::string("(incomplete) ");
+					}
+					else if ( itr->second.m_status == QUEST_STATUS_FAILED )
+					{
+						finalMessage += std::string("(failed) ");
+					}
+					else if ( itr->second.m_status == QUEST_STATUS_AVAILABLE )
+					{
+						finalMessage += std::string("(available?????) "); // ne devrait pas etre utilisé ?????
+					}
+					else
+					{
+						finalMessage += std::string("(???) "); 
+					}
+
+				}
 
 			
-		}
-
-		else if (!b7)
-		{
-			//BASIC_LOG("     b7 - SatisfyQuestPreviousQuest");
-
-			std::string fullmessage = "-- SatisfyQuestPreviousQuest list = ";
-
-
-			for (Quest::PrevQuests::const_iterator iter = pQuest->prevQuests.begin(); iter != pQuest->prevQuests.end(); ++iter)
-			{
-				uint32 prevId = abs(*iter);
-				fullmessage += std::to_string(prevId);
-				fullmessage += " ";
-
 			}
 
-			finalMessage += std::string(fullmessage.c_str());
-
-		}
-
-		else if (!b1) 
-		{ 
-
-			std::string fullmessage = "-- SatisfyQuestExclusiveGroup list = ";
-
-
-			Quest const* qInfo = pQuest;
-
-
-			ExclusiveQuestGroupsMapBounds bounds = sObjectMgr.GetExclusiveQuestGroupsMapBounds(qInfo->GetExclusiveGroup());
-
-			MANGOS_ASSERT(bounds.first != bounds.second);           // must always be found if qInfo->ExclusiveGroup != 0
-
-			for (ExclusiveQuestGroupsMap::const_iterator iter = bounds.first; iter != bounds.second; ++iter)
+			else if (!b7)
 			{
-				uint32 exclude_Id = iter->second;
+				//BASIC_LOG("     b7 - SatisfyQuestPreviousQuest");
 
-				// skip checked quest id, only state of other quests in group is interesting
-				if (exclude_Id == qInfo->GetQuestId())
-					continue;
+				std::string fullmessage = "-- SatisfyQuestPreviousQuest list = ";
 
-				QuestStatusMap::const_iterator i_exstatus = mQuestStatus.find(exclude_Id);
 
-				// alternative quest already started or completed
-				if (i_exstatus != mQuestStatus.end() 
-					&&
-					(i_exstatus->second.m_status == QUEST_STATUS_COMPLETE || 
-						i_exstatus->second.m_status == QUEST_STATUS_INCOMPLETE))
+				for (Quest::PrevQuests::const_iterator iter = pQuest->prevQuests.begin(); iter != pQuest->prevQuests.end(); ++iter)
 				{
-					//if (msg)
-					//	SendCanTakeQuestResponse(INVALIDREASON_DONT_HAVE_REQ);
-
-					fullmessage += std::to_string(exclude_Id);
+					uint32 prevId = abs(*iter);
+					fullmessage += std::to_string(prevId);
 					fullmessage += " ";
+
 				}
+
+				finalMessage += std::string(fullmessage.c_str());
+
+			}
+
+			else if (!b1) 
+			{ 
+
+				std::string fullmessage = "-- SatisfyQuestExclusiveGroup list = ";
+
+
+				Quest const* qInfo = pQuest;
+
+
+				ExclusiveQuestGroupsMapBounds bounds = sObjectMgr.GetExclusiveQuestGroupsMapBounds(qInfo->GetExclusiveGroup());
+
+				MANGOS_ASSERT(bounds.first != bounds.second);           // must always be found if qInfo->ExclusiveGroup != 0
+
+				for (ExclusiveQuestGroupsMap::const_iterator iter = bounds.first; iter != bounds.second; ++iter)
+				{
+					uint32 exclude_Id = iter->second;
+
+					// skip checked quest id, only state of other quests in group is interesting
+					if (exclude_Id == qInfo->GetQuestId())
+						continue;
+
+					QuestStatusMap::const_iterator i_exstatus = mQuestStatus.find(exclude_Id);
+
+					// alternative quest already started or completed
+					if (i_exstatus != mQuestStatus.end() 
+						&&
+						(i_exstatus->second.m_status == QUEST_STATUS_COMPLETE || 
+							i_exstatus->second.m_status == QUEST_STATUS_INCOMPLETE))
+					{
+						//if (msg)
+						//	SendCanTakeQuestResponse(INVALIDREASON_DONT_HAVE_REQ);
+
+						fullmessage += std::to_string(exclude_Id);
+						fullmessage += " ";
+					}
+				}
+
+
+				finalMessage += std::string(fullmessage.c_str());
+
+
 			}
 
 
-			finalMessage += std::string(fullmessage.c_str());
-
-
-		}
-
-
-		else if (!b6) { finalMessage += std::string("-- SatisfyQuestReputation"); }
+			else if (!b6) { finalMessage += std::string("-- SatisfyQuestReputation"); }
 		
-		else if (!b8) { finalMessage += std::string("-- SatisfyQuestTimed"); }
-		else if (!b9) { finalMessage += std::string("-- SatisfyQuestNextChain"); }
-		else if (!ba) { finalMessage += std::string("-- SatisfyQuestPrevChain"); }
-		else if (!bb) { finalMessage += std::string("-- IsActive"); }
-		else 
-		{
-			finalMessage += std::string("-- ERROR UNKONWN REASON ??????????????");
+			else if (!b8) { finalMessage += std::string("-- SatisfyQuestTimed"); }
+			else if (!b9) { finalMessage += std::string("-- SatisfyQuestNextChain"); }
+			else if (!ba) { finalMessage += std::string("-- SatisfyQuestPrevChain"); }
+			else if (!bb) { finalMessage += std::string("-- IsActive"); }
+			else 
+			{
+				finalMessage += std::string("-- ERROR UNKONWN REASON ??????????????");
+			}
+
+
+			BASIC_LOG(finalMessage.c_str());
+
+
 		}
-
-
-		BASIC_LOG(finalMessage.c_str());
-
-
 	}
-
 
 
 	return retnum;
@@ -15218,6 +15241,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 
 	////////////////////////////////////////////////////////////////////////////////
 	//richard : add coin in quest reward
+	{
 	int32 questLevel = pQuest->GetQuestLevel();
 	int32 playerLevel = this->getLevel();
 	uint32 questType = pQuest->GetType();
@@ -15797,6 +15821,38 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 						sLog.outBasic("RICHAR ERROR 47 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
 					}
 
+
+
+
+
+
+					//comme c'est 4.5 youhaicon paragon par level, a tous les niveau pair, on doit donner un YCP au joueur
+					if ( currentParagonLvl % 2 == 0 )
+					{
+						ItemPosCountVec dest;
+						int nbCoinToReceiveReally = 1;
+						int newItemreceived = 30000;
+						if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+						{
+							Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
+							SendNewItem(item, nbCoinToReceiveReally, true, false);
+						}
+						else
+						{
+							char messageOut[2048];
+							sprintf(messageOut, "ERREUR 147 - inventaire plein - ne plus toucher a rien et en parler a Richard");
+						
+							if ( quesGiverUnit )
+								quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+							sLog.outBasic("RICHAR ERROR 147 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
+						}
+					}
+
+
+
+
+
 				}
 
 				//paragonPasse = true;
@@ -16030,7 +16086,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 
 
 	}
-
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 

@@ -1434,16 +1434,22 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 		char typeMobChar[256];
 		strcpy(typeMobChar, "ERROR");
 
-		float difficultyParagon1 = 0.0;
+		float difficultyDonjon = 0.0;
 
-		Creature::GetRichardModForMap(  creatureLooting->m_richar_lieuOrigin , creatureLooting->GetName(),  creatureLooting->GetOwner() , &difficultyParagon1  );
+		Creature::GetRichardModForMap(  creatureLooting->m_richar_lieuOrigin , creatureLooting->GetName(),  creatureLooting->GetOwner() , &difficultyDonjon  );
 
 		int playerParagon = lootOwner->GetParagonLevelFromItem();
 		int playerlevel = lootOwner->getLevel();
 		int cadavreLevel = abs(richard02_test);
 		bool cadavreElite = richard02_test < 0 ? true : false;
 		float scoreRand = (float)(rand() % 100 + 1);     //  1 to 100
+		
+		
+		// plus il est petit, plus ca sera rare pour le joueur a looter la youhaicoin
+		// 0.0 :  ne loot pas de youhaicoin
 		float scoreToReach = 0.0f;
+		
+		
 		if (false) {}
 		else if (!cadavreElite &&    cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature non elite verte
 		{
@@ -1484,19 +1490,40 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 
 		//on va ajuster le score to reach en fonction du paragon
-		//par exemple un joueur paragon40 qui attaque un mob paragon 20  on doit reduire de 2x  le chance de loot
 		//cette regle ne marchera QUE pour reduire, pas pour augmenter.
-		//un joueur paragon 1 qui s'attaque a un mob fait pour 2 joueurs  aura autant de chance qu'un mob fait pour 1 joueur.
-		//    je dis ca pour garder une retrocompatibilité avec le vieux taux de loot de youhaicoin qui a toujours ete le meme en donjon et a l'exterieur pour les low level.
+		//un joueur paragon 1 qui s'attaque a un mob fait pour 2 joueurs  aura autant de moins de chance 
 		//en gros ce IF ne va concerner que les joueur 60 avec un paragon > 1
-		if ( (float)playerParagon > difficultyParagon1
-			&& difficultyParagon1 > 0.0f
-			&& playerParagon > 0.0f
-			) // si le joueur s'en prends a plus faible que lui
+		if ( 
+			playerlevel >= 60
+			&& playerParagon > 1 // si je joueur est paragon assez haut pour devoir etre geré autrement
+			) 
 		{
-			float coeffFacilite = playerParagon / difficultyParagon1;
 
-			scoreToReach /= coeffFacilite;
+			
+			// rappel : c'est un malus : ce coefficient ne doit pas depasser 1.0
+			// plus il est petit, plus ca sera rare pour le joueur a looter la youhaicoin
+			// 0.0 :  ne loot pas de youhaicoin
+			float  coeffFacilite = 1.0f;
+
+
+			if ( difficultyDonjon < 2 ) // si le mob est en exterieur ou dans un donjon Low Level, alors un joueur paragon ne peux PAS looter de youhaicoin
+			{
+				coeffFacilite = 0.0f;
+			}
+			else
+			{
+				//
+				//
+				// TODO AMELIORER CA
+				//
+				//
+
+
+				coeffFacilite = 1.0f;
+			}
+
+
+			scoreToReach *= coeffFacilite;  
 
 			BASIC_LOG("RICHAR: add coin on loot - origine=CADAVRE  playerlevel=%d  cadavreLevel=%d cadavreType=%s scoreResult:%.1f<=%.1f/100 -  MalusParagon=%f",
 				playerlevel,
@@ -1982,7 +2009,7 @@ void Loot::Release(Player* player)
                     player->DestroyItem(m_itemTarget->GetBagSlot(), m_itemTarget->GetSlot(), true);
 
 
-
+					//RICHARD - ne pas delete un tas d'objet quand en en desanchante 2
 					//on donne ce qui a été delete APRES le delete
 					//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
 					if ( countBeforeDelete > 1 ) // si on avait + d'un objet stacké
@@ -2049,7 +2076,7 @@ void Loot::Release(Player* player)
                     
 					
 
-
+						//RICHARD - ne pas delete un objet quand en en ouvre 2
 						//on donne ce qui a été delete APRES le delete
 						//WARNING : code copié collé entre  case LOOT_DISENCHANTING:   et    default:
 						if ( countBeforeDelete > 1 ) // si on avait + d'un objet stacké

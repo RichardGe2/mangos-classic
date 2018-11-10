@@ -474,29 +474,29 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 			std::vector<int>  associatedPlayerGUID;
 
 			// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
-			if ( _player->GetGUID() == 4 )// boulette
+			if ( _player->GetGUIDLow() == 4 )// boulette
 			{
 				associatedPlayerGUID.push_back(27); // Bouzigouloum
 			}
-			if ( _player->GetGUID() == 27 )//  Bouzigouloum 
+			if ( _player->GetGUIDLow() == 27 )//  Bouzigouloum 
 			{
 				associatedPlayerGUID.push_back(4); // boulette
 			}
-			if ( _player->GetGUID() == 5 )// Bouillot
+			if ( _player->GetGUIDLow() == 5 )// Bouillot
 			{
 				associatedPlayerGUID.push_back(28); // Adibou
 			}
-			if ( _player->GetGUID() == 28 )// Adibou 
+			if ( _player->GetGUIDLow() == 28 )// Adibou 
 			{
 				associatedPlayerGUID.push_back(5); //  Bouillot
 			}
 
 			//juste pour le debug je vais lier grandjuge et grandtroll
-			if ( _player->GetGUID() == 19 )// grandjuge
+			if ( _player->GetGUIDLow() == 19 )// grandjuge
 			{
 				associatedPlayerGUID.push_back(29); // grandtroll
 			}
-			if ( _player->GetGUID() == 29 )// grandtroll 
+			if ( _player->GetGUIDLow() == 29 )// grandtroll 
 			{
 				associatedPlayerGUID.push_back(19); //  grandjuge
 			}
