@@ -1359,7 +1359,7 @@ int Player::GetParagonLevelFromItem()
 {
 	for(int i=1; i<100; i++)
 	{
-		int countitem = GetItemCount(31000+i);
+		int countitem = GetItemCount(71000+i);
 		if ( countitem >= 1 ) // normallement c'est juste 0  ou 1
 		{
 			return i;
@@ -1379,8 +1379,8 @@ void Player::richa_exportTo_ristat_()
 	char outt[4096];
 
 	// id dans la base de donnée
-	const uint32 coinItemID1 = 30000; 
-	const uint32 coinItemID2 = 30007;
+	const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
+	const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
 
 	char nameFile[2048];
 	const char* playerName = GetName();
@@ -15644,9 +15644,9 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			nbCoinToReceiveReally, nbCoinToReceiveMax
 			);
 
-			// id dans la base de donnée
-		const uint32 coinItemID1 = 30000; 
-		const uint32 coinItemID2 = 30007;
+		// id dans la base de donnée
+		const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
+		const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
 
 
 		
@@ -15742,7 +15742,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 
 		if ( currentParagonLvl >= 2 )
 		{
-			//int countitem = GetItemCount(31000+i);
+			//int countitem = GetItemCount(71000+i);
 			//if ( countitem >= 1 ) // normallement c'est juste 0  ou 1
 			{
 
@@ -15752,9 +15752,9 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 				//	int aaaaaaaaaaaaaaaaaaaaaaaa=0;
 				//}
 				
-				DestroyItemCount(31000+currentParagonLvl, 1, true);
+				DestroyItemCount(71000+currentParagonLvl, 1, true);
 
-				int newItemId = 31000+currentParagonLvl+1;
+				int newItemId = 71000+currentParagonLvl+1;
 
 				ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(newItemId);
 
@@ -15865,7 +15865,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 		{
 			
 
-			int newItemId = 31000+2;
+			int newItemId = 71000+2;
 
 			ItemPosCountVec dest;
 			int nbCoinToReceiveReally = 1;

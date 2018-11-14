@@ -1714,7 +1714,7 @@ void ChatHandler::ExecuteCommand_richard_D(const char* text)
 //deja, on regarde si   text est un lien vers un objet  (joueur a fait  Majuscule + click gauche sur objet)
 //
 // exemple :  |cffffffff|Hitem:2692:0:0:0|h[Hot Spices]|h|r
-// exemple :  |cff1eff00|Hitem:30000:0:0:0|h[YouhaiCoin Paragon]|h|r
+// exemple :  |cff1eff00|Hitem:70010:0:0:0|h[YouhaiCoin Paragon]|h|r
 //exemple :   |cffa335ee|Hitem:13353:0:0:0|h[Book of the Dead]|h|r
 //je crois que le premier nombre est la couleur
 void ChatHandler::ExecuteCommand_richard_A(const char* text)

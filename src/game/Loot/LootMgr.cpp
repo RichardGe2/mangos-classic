@@ -980,8 +980,8 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 
 	// id dans la base de donnée
-	const uint32 coinItemID1 = 30000; 
-	const uint32 coinItemID2 = 30007;
+	const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
+	const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
 
 
 	/*
