@@ -23,7 +23,7 @@ EndScriptData
 
 */
 
-#include "AI/ScriptDevAI/PreCompiledHeader.h"
+#include "AI/ScriptDevAI/include/precompiled.h"
 #include "AI/ScriptDevAI/base/escort_ai.h"
 #include "Globals/ObjectMgr.h"
 #include "GameEvents/GameEventMgr.h"
@@ -117,7 +117,7 @@ struct npc_chicken_cluckAI : public ScriptedAI
     }
 };
 
-CreatureAI* GetAI_npc_chicken_cluck(Creature* pCreature)
+UnitAI* GetAI_npc_chicken_cluck(Creature* pCreature)
 {
     return new npc_chicken_cluckAI(pCreature);
 }
@@ -380,7 +380,7 @@ struct npc_injured_patientAI : public ScriptedAI
     }
 };
 
-CreatureAI* GetAI_npc_injured_patient(Creature* pCreature)
+UnitAI* GetAI_npc_injured_patient(Creature* pCreature)
 {
     return new npc_injured_patientAI(pCreature);
 }
@@ -401,12 +401,12 @@ void npc_doctorAI::BeginEvent(Player* pPlayer)
     switch (m_creature->GetEntry())
     {
         case DOCTOR_ALLIANCE:
-            for (uint8 i = 0; i < ALLIANCE_COORDS; ++i)
-                m_vPatientSummonCoordinates.push_back(&AllianceCoords[i]);
+            for (auto& AllianceCoord : AllianceCoords)
+                m_vPatientSummonCoordinates.push_back(&AllianceCoord);
             break;
         case DOCTOR_HORDE:
-            for (uint8 i = 0; i < HORDE_COORDS; ++i)
-                m_vPatientSummonCoordinates.push_back(&HordeCoords[i]);
+            for (auto& HordeCoord : HordeCoords)
+                m_vPatientSummonCoordinates.push_back(&HordeCoord);
             break;
     }
 
@@ -493,10 +493,14 @@ void npc_doctorAI::PatientSaved(Creature* /*soldier*/, Player* pPlayer, Location
                         Patient->SetDeathState(JUST_DIED);
                 }
 
-                if (pPlayer->GetQuestStatus(QUEST_TRIAGE_A) == QUEST_STATUS_INCOMPLETE)
-                    pPlayer->GroupEventHappens(QUEST_TRIAGE_A, m_creature);
-                else if (pPlayer->GetQuestStatus(QUEST_TRIAGE_H) == QUEST_STATUS_INCOMPLETE)
-                    pPlayer->GroupEventHappens(QUEST_TRIAGE_H, m_creature);
+                switch (m_creature->GetEntry())
+                {
+                    case DOCTOR_ALLIANCE: pPlayer->RewardPlayerAndGroupAtEventExplored(QUEST_TRIAGE_A, m_creature); break;
+                    case DOCTOR_HORDE:    pPlayer->RewardPlayerAndGroupAtEventExplored(QUEST_TRIAGE_H, m_creature); break;
+                    default:
+                        script_error_log("Invalid entry for Triage doctor. Please check your database");
+                        return;
+                }
 
                 Reset();
                 return;
@@ -570,7 +574,7 @@ void npc_doctorAI::UpdateAI(const uint32 uiDiff)
 				, TEMPSPAWN_TIMED_OOC_DESPAWN, 5000))
 
             {
-                // 2.4.3, this flag appear to be required for client side item->spell to work (TARGET_SINGLE_FRIEND)
+                // 2.4.3, this flag appear to be required for client side item->spell to work (TARGET_UNIT_FRIEND)
                 Patient->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP);
 
                 m_lPatientGuids.push_back(Patient->GetObjectGuid());
@@ -601,7 +605,7 @@ bool QuestAccept_npc_doctor(Player* pPlayer, Creature* pCreature, const Quest* p
     return true;
 }
 
-CreatureAI* GetAI_npc_doctor(Creature* pCreature)
+UnitAI* GetAI_npc_doctor(Creature* pCreature)
 {
     return new npc_doctorAI(pCreature);
 }
@@ -814,7 +818,7 @@ struct npc_garments_of_questsAI : public npc_escortAI
     }
 };
 
-CreatureAI* GetAI_npc_garments_of_quests(Creature* pCreature)
+UnitAI* GetAI_npc_garments_of_quests(Creature* pCreature)
 {
     return new npc_garments_of_questsAI(pCreature);
 }
@@ -847,7 +851,7 @@ struct npc_guardianAI : public ScriptedAI
     }
 };
 
-CreatureAI* GetAI_npc_guardian(Creature* pCreature)
+UnitAI* GetAI_npc_guardian(Creature* pCreature)
 {
     return new npc_guardianAI(pCreature);
 }
@@ -997,7 +1001,7 @@ struct npc_redemption_targetAI : public ScriptedAI
     }
 };
 
-CreatureAI* GetAI_npc_redemption_target(Creature* pCreature)
+UnitAI* GetAI_npc_redemption_target(Creature* pCreature)
 {
     return new npc_redemption_targetAI(pCreature);
 }
@@ -1067,7 +1071,7 @@ struct npc_the_cleanerAI : public ScriptedAI
     }
 };
 
-CreatureAI* GetAI_npc_the_cleaner(Creature* pCreature)
+UnitAI* GetAI_npc_the_cleaner(Creature* pCreature)
 {
     return new npc_the_cleanerAI(pCreature);
 }

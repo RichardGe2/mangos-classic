@@ -96,7 +96,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
     }
 
     Group* initiatorGroup = initiator->GetGroup();
-    if (initiatorGroup && initiatorGroup->isBGGroup())
+    if (initiatorGroup && initiatorGroup->isBattleGroup())
         initiatorGroup = initiator->GetOriginalGroup();
     if (!initiatorGroup)
         initiatorGroup = initiator->GetGroupInvite();
@@ -109,7 +109,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
     }
 
     Group* recipientGroup = recipient->GetGroup();
-    if (recipientGroup && recipientGroup->isBGGroup())
+    if (recipientGroup && recipientGroup->isBattleGroup())
         recipientGroup = recipient->GetOriginalGroup();
 
     // player already in another group
@@ -405,7 +405,7 @@ void WorldSession::HandleMinimapPingOpcode(WorldPacket& recv_data)
 
 void WorldSession::HandleRandomRollOpcode(WorldPacket& recv_data)
 {
-    uint32 minimum, maximum, roll;
+    uint32 minimum, maximum;
     recv_data >> minimum;
     recv_data >> maximum;
 
@@ -415,7 +415,7 @@ void WorldSession::HandleRandomRollOpcode(WorldPacket& recv_data)
     /********************/
 
     // everything is fine, do it
-    roll = urand(minimum, maximum);
+    uint32 roll = urand(minimum, maximum);
 
     // DEBUG_LOG("ROLL: MIN: %u, MAX: %u, ROLL: %u", minimum, maximum, roll);
 
@@ -508,7 +508,7 @@ void WorldSession::HandleGroupChangeSubGroupOpcode(WorldPacket& recv_data)
         group->ChangeMembersGroup(player, groupNr);
     else
     {
-        if (ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(name.c_str()))
+        if (ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(name))
             group->ChangeMembersGroup(guid, groupNr);
     }
 }
@@ -530,7 +530,7 @@ void WorldSession::HandleGroupAssistantLeaderOpcode(WorldPacket& recv_data)
     /********************/
 
     // everything is fine, do it
-    group->SetAssistant(guid, (flag == 0 ? false : true));
+    group->SetAssistant(guid, (flag != 0));
 }
 
 void WorldSession::HandlePartyAssignmentOpcode(WorldPacket& recv_data)
@@ -912,12 +912,12 @@ void WorldSession::HandleGroupSwapSubGroupOpcode(WorldPacket& recv_data)
     auto getMemberSlotInfo = [&group](std::string const& playerName, uint8& subgroup, ObjectGuid& guid)
     {
         auto slots = group->GetMemberSlots();
-        for (auto i = slots.begin(); i != slots.end(); ++i)
+        for (auto& slot : slots)
         {
-            if ((*i).guid && (*i).name == playerName)
+            if (slot.guid && slot.name == playerName)
             {
-                subgroup = (*i).group;
-                guid = (*i).guid;
+                subgroup = slot.group;
+                guid = slot.guid;
                 return true;
             }
         }

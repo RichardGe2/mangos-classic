@@ -60,7 +60,7 @@ void WorldSession::SendNameQueryOpcode(Player* p) const
     data << uint32(p->getGender());
     data << uint32(p->getClass());
 
-    SendPacket(data);
+    SendPacket(data, true);
 }
 
 void WorldSession::SendNameQueryOpcodeFromDB(ObjectGuid guid) const
@@ -106,7 +106,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     data << uint32(pGender);                                // gender
     data << uint32(pClass);                                 // class
 
-    session->SendPacket(data);
+    session->SendPacket(data, true);
     delete result;
 }
 
@@ -341,10 +341,10 @@ void WorldSession::HandleNpcTextQueryOpcode(WorldPacket& recv_data)
 
             data << pGossip->Options[i].Language;
 
-            for (int j = 0; j < 3; ++j)
+            for (auto Emote : pGossip->Options[i].Emotes)
             {
-                data << pGossip->Options[i].Emotes[j]._Delay;
-                data << pGossip->Options[i].Emotes[j]._Emote;
+                data << Emote._Delay;
+                data << Emote._Emote;
             }
         }
     }

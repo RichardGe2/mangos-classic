@@ -25,6 +25,7 @@
 #include "Common.h"
 #include "Globals/SharedDefines.h"
 #include "Spells/SpellAuraDefines.h"
+#include "Spells/SpellTargetDefines.h"
 #include "Server/DBCStructure.h"
 #include "Server/DBCStores.h"
 #include "Entities/DynamicObject.h"
@@ -91,8 +92,8 @@ WeaponAttackType GetWeaponAttackType(SpellEntry const* spellInfo);
 
 inline bool IsSpellHaveEffect(SpellEntry const* spellInfo, SpellEffects effect)
 {
-    for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
-        if (SpellEffects(spellInfo->Effect[i]) == effect)
+    for (unsigned int i : spellInfo->Effect)
+        if (SpellEffects(i) == effect)
             return true;
     return false;
 }
@@ -135,9 +136,25 @@ inline bool IsDestinationOnlyEffect(SpellEntry const* spellInfo, SpellEffectInde
 {
     switch (spellInfo->Effect[effIdx])
     {
+        case SPELL_EFFECT_TRIGGER_SPELL:
+        case SPELL_EFFECT_DUMMY: // special - can be either
+        case SPELL_EFFECT_TRIGGER_MISSILE:
+        {
+            auto& targetA = SpellTargetInfoTable[spellInfo->EffectImplicitTargetA[effIdx]];
+            if (spellInfo->EffectImplicitTargetB[effIdx] == 0)
+                if (targetA.type == TARGET_TYPE_LOCATION)
+                    return true;
+
+            return false;
+        }
         case SPELL_EFFECT_PERSISTENT_AREA_AURA:
         case SPELL_EFFECT_TRANS_DOOR:
         case SPELL_EFFECT_SUMMON:
+        case SPELL_EFFECT_SUMMON_DEAD_PET:
+        case SPELL_EFFECT_SUMMON_OBJECT_SLOT1:
+        case SPELL_EFFECT_SUMMON_OBJECT_SLOT2:
+        case SPELL_EFFECT_SUMMON_OBJECT_SLOT3:
+        case SPELL_EFFECT_SUMMON_OBJECT_SLOT4:
             return true;
         default:
             return false;
@@ -340,20 +357,18 @@ inline bool IsSpellSetRun(SpellEntry const* spellInfo)
 
 inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
 {
-    //TODO: search correct case for classic
-    return true;
-
+    //TODO: search for potential correct case for Classic
     /*if (IsSpellHaveAura(spellInfo, SPELL_AURA_FLY))
-        return false;
+        return false; */
 
     switch (spellInfo->Id)
     {
-        case 39918:         // visual auras in Soulgrinder script
-        case 39920:
+        case 22856:         // Ice Lock (Guard Slip'kik ice trap in Dire Maul)
+        case 22735:         // Spirit of Runn Tum
             return false;
         default:
             return true;
-    }*/
+    }
 }
 
 bool IsExplicitPositiveTarget(uint32 targetA);
@@ -465,24 +480,40 @@ inline bool IsCasterSourceTarget(uint32 target)
 {
     switch (target)
     {
-        case TARGET_SELF:
-        case TARGET_PET:
-        case TARGET_ALL_PARTY_AROUND_CASTER:
-        case TARGET_IN_FRONT_OF_CASTER:
-        case TARGET_MASTER:
-        case TARGET_MINION:
-        case TARGET_ALL_PARTY:
-        case TARGET_ALL_PARTY_AROUND_CASTER_2:
-        case TARGET_SELF_FISHING:
-        case TARGET_TOTEM_EARTH:
-        case TARGET_TOTEM_WATER:
-        case TARGET_TOTEM_AIR:
-        case TARGET_TOTEM_FIRE:
-        case TARGET_AREAEFFECT_GO_AROUND_DEST:
+        case TARGET_UNIT_CASTER:
+        case TARGET_UNIT_CASTER_PET:
+        case TARGET_ENUM_UNITS_PARTY_WITHIN_CASTER_RANGE:
+        case TARGET_ENUM_UNITS_ENEMY_IN_CONE_24:
+        case TARGET_UNIT_CASTER_MASTER:
+        case TARGET_LOCATION_UNIT_MINION_POSITION:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_DEST_LOC:
+        case TARGET_LOCATION_CASTER_FISHING_SPOT:
+        case TARGET_LOCATION_CASTER_FRONT_RIGHT:
+        case TARGET_LOCATION_CASTER_BACK_RIGHT:
+        case TARGET_LOCATION_CASTER_BACK_LEFT:
+        case TARGET_LOCATION_CASTER_FRONT_LEFT:
+        case TARGET_ENUM_GAMEOBJECTS_SCRIPT_AOE_AT_DEST_LOC:
             return true;
         default:
             break;
     }
+    return false;
+}
+
+inline bool IsSpellWithScriptUnitTarget(SpellEntry const* spellInfo)
+{
+    for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
+        if (!spellInfo->Effect[i])
+            continue;
+        switch (spellInfo->EffectImplicitTargetA[i])
+        {
+            case TARGET_UNIT_SCRIPT_NEAR_CASTER:
+                return true;
+        }
+    }
+
     return false;
 }
 
@@ -507,16 +538,16 @@ inline bool IsSpellWithCasterSourceTargetsOnly(SpellEntry const* spellInfo)
     return true;
 }
 
-inline bool IsPointEffectTarget(Targets target)
+inline bool IsPointEffectTarget(SpellTarget target)
 {
     switch (target)
     {
-        case TARGET_INNKEEPER_COORDINATES:
-        case TARGET_TABLE_X_Y_Z_COORDINATES:
-        case TARGET_CASTER_COORDINATES:
-        case TARGET_SCRIPT_COORDINATES:
-        case TARGET_CURRENT_ENEMY_COORDINATES:
-        case TARGET_DUELVSPLAYER_COORDINATES:
+        case TARGET_LOCATION_CASTER_HOME_BIND:
+        case TARGET_LOCATION_DATABASE:
+        case TARGET_LOCATION_CASTER_SRC:
+        case TARGET_LOCATION_SCRIPT_NEAR_CASTER:
+        case TARGET_LOCATION_CASTER_TARGET_POSITION:
+        case TARGET_LOCATION_UNIT_POSITION:
             return true;
         default:
             break;
@@ -524,18 +555,18 @@ inline bool IsPointEffectTarget(Targets target)
     return false;
 }
 
-inline bool IsAreaEffectPossitiveTarget(Targets target)
+inline bool IsAreaEffectPossitiveTarget(SpellTarget target)
 {
     switch (target)
     {
-        case TARGET_ALL_PARTY_AROUND_CASTER:
-        case TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER:
-        case TARGET_ALL_FRIENDLY_UNITS_IN_AREA:
-        case TARGET_ALL_PARTY:
-        case TARGET_ALL_PARTY_AROUND_CASTER_2:
-        case TARGET_AREAEFFECT_PARTY:
-        case TARGET_ALL_RAID_AROUND_CASTER:
-        case TARGET_AREAEFFECT_PARTY_AND_CLASS:
+        case TARGET_ENUM_UNITS_PARTY_WITHIN_CASTER_RANGE:
+        case TARGET_ENUM_UNITS_FRIEND_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_FRIEND_AOE_AT_DEST_LOC:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_DEST_LOC:
+        case TARGET_UNIT_FRIEND_AND_PARTY:
+        case TARGET_ENUM_UNITS_RAID_WITHIN_CASTER_RANGE:
+        case TARGET_UNIT_RAID_AND_CLASS:
             return true;
         default:
             break;
@@ -543,25 +574,25 @@ inline bool IsAreaEffectPossitiveTarget(Targets target)
     return false;
 }
 
-inline bool IsAreaEffectTarget(Targets target)
+inline bool IsAreaEffectTarget(SpellTarget target)
 {
     switch (target)
     {
-        case TARGET_AREAEFFECT_INSTANT:
-        case TARGET_AREAEFFECT_CUSTOM:
-        case TARGET_ALL_ENEMY_IN_AREA:
-        case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
-        case TARGET_ALL_PARTY_AROUND_CASTER:
-        case TARGET_IN_FRONT_OF_CASTER:
-        case TARGET_ALL_ENEMY_IN_AREA_CHANNELED:
-        case TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER:
-        case TARGET_ALL_FRIENDLY_UNITS_IN_AREA:
-        case TARGET_ALL_PARTY:
-        case TARGET_ALL_PARTY_AROUND_CASTER_2:
-        case TARGET_AREAEFFECT_PARTY:
-        case TARGET_AREAEFFECT_GO_AROUND_DEST:
-        case TARGET_ALL_RAID_AROUND_CASTER:
-        case TARGET_AREAEFFECT_PARTY_AND_CLASS:
+        case TARGET_ENUM_UNITS_SCRIPT_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_SCRIPT_AOE_AT_DEST_LOC:
+        case TARGET_ENUM_UNITS_ENEMY_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_ENEMY_AOE_AT_DEST_LOC:
+        case TARGET_ENUM_UNITS_PARTY_WITHIN_CASTER_RANGE:
+        case TARGET_ENUM_UNITS_ENEMY_IN_CONE_24:
+        case TARGET_ENUM_UNITS_ENEMY_AOE_AT_DYNOBJ_LOC:
+        case TARGET_ENUM_UNITS_FRIEND_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_FRIEND_AOE_AT_DEST_LOC:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_DEST_LOC:
+        case TARGET_UNIT_FRIEND_AND_PARTY:
+        case TARGET_ENUM_GAMEOBJECTS_SCRIPT_AOE_AT_DEST_LOC:
+        case TARGET_ENUM_UNITS_RAID_WITHIN_CASTER_RANGE:
+        case TARGET_UNIT_RAID_AND_CLASS:
             return true;
         default:
             break;
@@ -571,11 +602,11 @@ inline bool IsAreaEffectTarget(Targets target)
 
 inline bool IsAreaOfEffectSpell(SpellEntry const* spellInfo)
 {
-    if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_0])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_0])))
+    if (IsAreaEffectTarget(SpellTarget(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_0])) || IsAreaEffectTarget(SpellTarget(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_0])))
         return true;
-    if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_1])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_1])))
+    if (IsAreaEffectTarget(SpellTarget(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_1])) || IsAreaEffectTarget(SpellTarget(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_1])))
         return true;
-    if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_2])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_2])))
+    if (IsAreaEffectTarget(SpellTarget(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_2])) || IsAreaEffectTarget(SpellTarget(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_2])))
         return true;
     return false;
 }
@@ -590,23 +621,21 @@ inline bool IsAreaAuraEffect(uint32 effect)
 
 inline bool HasAreaAuraEffect(SpellEntry const* spellInfo)
 {
-    for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-        if (IsAreaAuraEffect(spellInfo->Effect[i]))
+    for (unsigned int i : spellInfo->Effect)
+        if (IsAreaAuraEffect(i))
             return true;
     return false;
 }
 
 inline bool IsPersistentAuraEffect(uint32 effect)
 {
-    if (effect == SPELL_EFFECT_PERSISTENT_AREA_AURA)
-        return true;
-    return false;
+    return effect == SPELL_EFFECT_PERSISTENT_AREA_AURA;
 }
 
 inline bool HasPersistentAuraEffect(SpellEntry const* spellInfo)
 {
-    for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-        if (IsPersistentAuraEffect(spellInfo->Effect[i]))
+    for (unsigned int i : spellInfo->Effect)
+        if (IsPersistentAuraEffect(i))
             return true;
     return false;
 }
@@ -620,14 +649,14 @@ inline bool IsOnlySelfTargeting(SpellEntry const* spellInfo)
 
         switch (spellInfo->EffectImplicitTargetA[i])
         {
-            case TARGET_SELF:
+            case TARGET_UNIT_CASTER:
                 break;
             default:
                 return false;
         }
         switch (spellInfo->EffectImplicitTargetB[i])
         {
-            case TARGET_SELF:
+            case TARGET_UNIT_CASTER:
             case TARGET_NONE:
                 break;
             default:
@@ -637,111 +666,34 @@ inline bool IsOnlySelfTargeting(SpellEntry const* spellInfo)
     return true;
 }
 
-inline bool IsScriptTarget(uint32 target)
+inline bool IsUnitTargetTarget(uint32 target)
 {
     switch (target)
     {
-        case TARGET_SCRIPT:
-        case TARGET_SCRIPT_COORDINATES:
-        case TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT:
-        case TARGET_AREAEFFECT_INSTANT:
-        case TARGET_AREAEFFECT_CUSTOM:
-        case TARGET_AREAEFFECT_GO_AROUND_SOURCE:
-        case TARGET_AREAEFFECT_GO_AROUND_DEST:
-        case TARGET_NARROW_FRONTAL_CONE:
-            return true;
-        default:
-            break;
+        case TARGET_UNIT_ENEMY:
+        case TARGET_UNIT: return true;
+        default: return false;
     }
-    return false;
+}
+
+inline bool IsScriptTarget(uint32 target)
+{
+    return (target < MAX_SPELL_TARGETS ? (SpellTargetInfoTable[target].filter == TARGET_SCRIPT) : false);
 }
 
 inline bool IsNeutralTarget(uint32 target)
 {
-    // This is an exhaustive list for demonstrativeness and global search reasons.
-    // Also includes unknown targets, so we wont forget about them easily.
-    // TODO: We need to research the unknown targets and list them under their proper category in the future.
-    switch (target)
-    {
-        case TARGET_NONE:
-        case TARGET_RANDOM_UNIT_CHAIN_IN_AREA:
-        case TARGET_INNKEEPER_COORDINATES:
-        case TARGET_11:
-        case TARGET_TABLE_X_Y_Z_COORDINATES:
-        case TARGET_EFFECT_SELECT:
-        case TARGET_CASTER_COORDINATES:
-        case TARGET_GAMEOBJECT:
-        case TARGET_DUELVSPLAYER:
-        case TARGET_GAMEOBJECT_ITEM:
-        case TARGET_29:
-        case TARGET_TOTEM_EARTH:
-        case TARGET_TOTEM_WATER:
-        case TARGET_TOTEM_AIR:
-        case TARGET_TOTEM_FIRE:
-        case TARGET_DYNAMIC_OBJECT_FRONT:
-        case TARGET_DYNAMIC_OBJECT_BEHIND:
-        case TARGET_DYNAMIC_OBJECT_LEFT_SIDE:
-        case TARGET_DYNAMIC_OBJECT_RIGHT_SIDE:
-        case TARGET_DEST_CASTER_FRONT_LEAP:
-        case TARGET_58:
-        case TARGET_DUELVSPLAYER_COORDINATES:
-            return true;
-        default:
-            break;
-    }
-    return false;
+    return (target < MAX_SPELL_TARGETS ? (SpellTargetInfoTable[target].filter == TARGET_NEUTRAL) : false);
 }
 
 inline bool IsFriendlyTarget(uint32 target)
 {
-    // This is an exhaustive list for demonstrativeness and global search reasons.
-    switch (target)
-    {
-        case TARGET_SELF:
-        case TARGET_RANDOM_FRIEND_CHAIN_IN_AREA:
-        case TARGET_PET:
-        case TARGET_ALL_PARTY_AROUND_CASTER:
-        case TARGET_SINGLE_FRIEND:
-        case TARGET_MASTER:
-        case TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER:
-        case TARGET_ALL_FRIENDLY_UNITS_IN_AREA:
-        case TARGET_MINION:
-        case TARGET_ALL_PARTY:
-        case TARGET_ALL_PARTY_AROUND_CASTER_2:
-        case TARGET_SINGLE_PARTY:
-        case TARGET_AREAEFFECT_PARTY:
-        case TARGET_SELF_FISHING:
-        case TARGET_CHAIN_HEAL:
-        case TARGET_ALL_RAID_AROUND_CASTER:
-        case TARGET_SINGLE_FRIEND_2:
-        case TARGET_FRIENDLY_FRONTAL_CONE:
-        case TARGET_AREAEFFECT_PARTY_AND_CLASS:
-            return true;
-        default:
-            break;
-    }
-    return false;
+    return (target < MAX_SPELL_TARGETS ? (SpellTargetInfoTable[target].filter == TARGET_HELPFUL) : false);
 }
 
 inline bool IsHostileTarget(uint32 target)
 {
-    // This is an exhaustive list for demonstrativeness and global search reasons.
-    switch (target)
-    {
-        case TARGET_RANDOM_ENEMY_CHAIN_IN_AREA:
-        case TARGET_CHAIN_DAMAGE:
-        case TARGET_ALL_ENEMY_IN_AREA:
-        case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
-        case TARGET_IN_FRONT_OF_CASTER:
-        case TARGET_ALL_ENEMY_IN_AREA_CHANNELED:
-        case TARGET_ALL_HOSTILE_UNITS_AROUND_CASTER:
-        case TARGET_CURRENT_ENEMY_COORDINATES:
-        case TARGET_LARGE_FRONTAL_CONE:
-            return true;
-        default:
-            break;
-    }
-    return false;
+    return (target < MAX_SPELL_TARGETS ? (SpellTargetInfoTable[target].filter == TARGET_HARMFUL) : false);
 }
 
 inline bool IsEffectTargetScript(uint32 targetA, uint32 targetB)
@@ -766,17 +718,9 @@ inline bool IsEffectTargetNegative(uint32 targetA, uint32 targetB)
 
 inline bool IsNeutralEffectTargetPositive(uint32 etarget, const WorldObject* caster = nullptr, const WorldObject* target = nullptr)
 {
-    switch (etarget)
-    {
-        case TARGET_RANDOM_UNIT_CHAIN_IN_AREA:
-        case TARGET_11:
-        case TARGET_DUELVSPLAYER:
-        case TARGET_29:
-        case TARGET_58:
-            break;
-        default:
-            return true; // Some gameobjects or coords, who cares
-    }
+    if (etarget < MAX_SPELL_TARGETS && SpellTargetInfoTable[etarget].type != TARGET_TYPE_UNIT)
+        return true; // Some gameobjects or coords, who cares
+
     if (!target || (target->GetTypeId() != TYPEID_PLAYER && target->GetTypeId() != TYPEID_UNIT))
         return true;
 
@@ -821,16 +765,14 @@ inline bool IsPositiveEffectTargetMode(const SpellEntry* entry, SpellEffectIndex
 
     if ((!a && !b) || IsEffectTargetPositive(a, b) || IsEffectTargetScript(a, b))
         return true;
-    else if (IsEffectTargetNegative(a, b))
+    if (IsEffectTargetNegative(a, b))
     {
         // Workaround: Passive talents with negative target modes are getting removed by ice block and similar effects
         // TODO: Fix removal of passives in appropriate places and remove the check below afterwards
-        if (entry->HasAttribute(SPELL_ATTR_PASSIVE))
-            return true;
-        return false;
+        return entry->HasAttribute(SPELL_ATTR_PASSIVE);
     }
-    else if (IsEffectTargetNeutral(a, b))
-        return (IsPointEffectTarget(Targets(b ? b : a)) || IsNeutralEffectTargetPositive((b ? b : a), caster, target));
+    if (IsEffectTargetNeutral(a, b))
+        return (IsPointEffectTarget(SpellTarget(b ? b : a)) || IsNeutralEffectTargetPositive((b ? b : a), caster, target));
 
     // If we ever get to this point, we have unhandled target. Gotta say something about it.
     if (entry->Effect[effIndex])
@@ -852,10 +794,8 @@ inline bool IsPositiveEffect(const SpellEntry* spellproto, SpellEffectIndex effI
         case SPELL_EFFECT_CREATE_ITEM:
         case SPELL_EFFECT_SUMMON_CHANGE_ITEM:
             return true;
-            break;
         case SPELL_EFFECT_APPLY_AREA_AURA_ENEMY:    // Always hostile effects
             return false;
-            break;
         case SPELL_EFFECT_DUMMY:
             // some explicitly required dummy effect sets
             switch (spellproto->Id)
@@ -1051,9 +991,11 @@ inline uint32 GetAffectedTargets(SpellEntry const* spellInfo)
                 case 804:                                   // Explode Bug (AQ40, Emperor Vek'lor)
                 case 23138:                                 // Gate of Shazzrah (MC, Shazzrah)
                 case 23173:                                 // Brood Affliction (BWL, Chromaggus)
+                case 24019:                                 // Axe Flurry (ZG - Gurubashi Axe Thrower)
                 case 24150:                                 // Stinger Charge Primer (AQ20, Hive'Zara Stinger)
                 case 24781:                                 // Dream Fog (Emerald Dragons)
                 case 26080:                                 // Stinger Charge Primer (AQ40, Vekniss Stinger)
+                case 26524:                                 // Sand Trap (AQ20 - Kurinnaxx)
                 case 28560:                                 // Summon Blizzard (Naxx, Sapphiron)
                     return 1;
                 case 10258:                                 // Awaken Vault Warder (Uldaman)
@@ -1069,6 +1011,17 @@ inline uint32 GetAffectedTargets(SpellEntry const* spellInfo)
                     return 12;
                 case 25991:                                 // Poison Bolt Volley (AQ40, Pincess Huhuran)
                     return 15;
+                default:
+                    break;
+            }
+            break;
+        }
+        case SPELLFAMILY_MAGE:
+        {
+            switch (spellInfo->Id)
+            {
+                case 23603:                                 // Wild Polymorph (BWL, Nefarian)
+                    return 1;
                 default:
                     break;
             }
@@ -1114,17 +1067,27 @@ inline bool IsReflectableSpell(SpellEntry const* spellInfo)
 // Mostly required by spells that target a creature inside GO
 inline bool IsIgnoreLosSpell(SpellEntry const* spellInfo)
 {
-    //switch (spellInfo->Id)
-    //{
-    //    default:
-    //        break;
-    //}
+    switch (spellInfo->Id)
+    {
+        case 24742:                                 // Magic Wings
+        // case 42867:                              // both need LOS, likely TARGET_UNIT_CASTER should use LOS ignore from normal radius, not per-effect radius WIP
+            return true;
+        default:
+            break;
+    }
 
     return spellInfo->HasAttribute(SPELL_ATTR_EX2_IGNORE_LOS);
 }
 
 inline bool IsIgnoreLosSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex effIdx)
 {
+    // TODO: Move this to target logic
+    switch (spellInfo->EffectImplicitTargetA[effIdx])
+    {
+        case TARGET_UNIT_RAID_AND_CLASS: return true;
+        default: break;
+    }
+
     return spellInfo->EffectRadiusIndex[effIdx] == 13 || IsIgnoreLosSpell(spellInfo);
 }
 
@@ -1166,9 +1129,9 @@ inline uint32 GetAllSpellMechanicMask(SpellEntry const* spellInfo)
     uint32 mask = 0;
     if (spellInfo->Mechanic)
         mask |= 1 << (spellInfo->Mechanic - 1);
-    for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
-        if (spellInfo->EffectMechanic[i])
-            mask |= 1 << (spellInfo->EffectMechanic[i] - 1);
+    for (unsigned int i : spellInfo->EffectMechanic)
+        if (i)
+            mask |= 1 << (i - 1);
     return mask;
 }
 
@@ -1186,8 +1149,7 @@ inline uint32 GetDispellMask(DispelType dispel)
     // If dispell all
     if (dispel == DISPEL_ALL)
         return DISPEL_ALL_MASK;
-    else
-        return (1 << dispel);
+    return (1 << dispel);
 }
 
 inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
@@ -1198,6 +1160,37 @@ inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
     for (int i = 0; i < 3; i++)
         if (spellproto->EffectApplyAuraName[i] == auraType)
             return true;
+    return false;
+}
+
+inline bool IsPartyOrRaidTarget(uint32 target)
+{
+    switch (target)
+    {
+        case TARGET_UNIT_FRIEND_NEAR_CASTER:
+        case TARGET_ENUM_UNITS_PARTY_WITHIN_CASTER_RANGE:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_SRC_LOC:
+        case TARGET_ENUM_UNITS_PARTY_AOE_AT_DEST_LOC:
+        case TARGET_UNIT_PARTY:
+        case TARGET_UNIT_FRIEND_AND_PARTY:
+        case TARGET_ENUM_UNITS_RAID_WITHIN_CASTER_RANGE:
+        case TARGET_UNIT_RAID:
+        case TARGET_UNIT_RAID_NEAR_CASTER:
+        case TARGET_UNIT_RAID_AND_CLASS:
+            return true;
+        default:
+            return false;
+    }
+}
+
+inline bool IsGroupBuff(SpellEntry const* spellInfo)
+{
+    for (unsigned int i : spellInfo->EffectImplicitTargetA)
+    {
+        if (IsPartyOrRaidTarget(i))
+            return true;
+    }
+
     return false;
 }
 
@@ -1593,6 +1586,7 @@ inline bool IsSimilarExistingAuraStronger(const Unit* caster, uint32 spellid, co
 DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto, bool triggered);
 bool IsDiminishingReturnsGroupDurationLimited(DiminishingGroup group);
 DiminishingReturnsType GetDiminishingReturnsGroupType(DiminishingGroup group);
+bool IsCreatureDRSpell(SpellEntry const* spellInfo);
 
 // Spell affects related declarations (accessed using SpellMgr functions)
 typedef std::map<uint32, uint64> SpellAffectMap;
@@ -1675,7 +1669,8 @@ enum ProcFlagsEx
     PROC_EX_RESERVED3           = 0x0008000,
     PROC_EX_EX_TRIGGER_ALWAYS   = 0x0010000,                // If set trigger always ( no matter another flags) used for drop charges
     PROC_EX_EX_ONE_TIME_TRIGGER = 0x0020000,                // If set trigger always but only one time (not used)
-    PROC_EX_PERIODIC_POSITIVE   = 0x0040000,                 // For periodic heal
+    PROC_EX_PERIODIC_POSITIVE   = 0x0040000,                // For periodic heal
+    PROC_EX_MAGNET              = 0x0080000,                // For grounding totem hit
 
     // Flags for internal use - do not use these in db!
     PROC_EX_INTERNAL_HOT        = 0x2000000
@@ -1737,7 +1732,7 @@ struct SpellTargetEntry
     uint32 targetEntry;
     uint32 inverseEffectMask;
 
-    bool CanNotHitWithSpellEffect(SpellEffectIndex effect) const { return !!(inverseEffectMask & (1 << effect)); }
+    bool CanNotHitWithSpellEffect(SpellEffectIndex effect) const { return (inverseEffectMask & (1 << effect)) != 0; }
 };
 
 // coordinates for spells (accessed using SpellMgr functions)
@@ -1773,14 +1768,10 @@ class PetAura
             std::map<uint32, uint32>::const_iterator itr = auras.find(petEntry);
             if (itr != auras.end())
                 return itr->second;
-            else
-            {
-                std::map<uint32, uint32>::const_iterator itr2 = auras.find(0);
-                if (itr2 != auras.end())
-                    return itr2->second;
-                else
-                    return 0;
-            }
+            std::map<uint32, uint32>::const_iterator itr2 = auras.find(0);
+            if (itr2 != auras.end())
+                return itr2->second;
+            return 0;
         }
 
         void AddAura(uint32 petEntry, uint32 aura)
@@ -1928,8 +1919,7 @@ class SpellMgr
                 return SPELL_FLASK_ELIXIR;
             else if (mask & ELIXIR_WELL_FED)
                 return SPELL_WELL_FED;
-            else
-                return SPELL_NORMAL;
+            return SPELL_NORMAL;
         }
 
         SpellSpecific GetSpellFoodSpecific(const SpellEntry* entry) const
@@ -2003,6 +1993,113 @@ class SpellMgr
                     return SPELL_WELL_FED;
             }
             return SPELL_NORMAL;
+        }
+
+        // Reverse engineered from binary: do not alter
+        static inline bool IsSpellTargetHarmfulAtClient(uint32 target)
+        {
+            switch (target)
+            {
+                case TARGET_UNIT_ENEMY_NEAR_CASTER:
+                case TARGET_UNIT_ENEMY:
+                case TARGET_ENUM_UNITS_ENEMY_AOE_AT_SRC_LOC:
+                case TARGET_ENUM_UNITS_ENEMY_AOE_AT_DEST_LOC:
+                case TARGET_ENUM_UNITS_ENEMY_IN_CONE_24:
+                case TARGET_ENUM_UNITS_ENEMY_AOE_AT_DYNOBJ_LOC:
+                case TARGET_LOCATION_CASTER_TARGET_POSITION:
+                case TARGET_ENUM_UNITS_ENEMY_IN_CONE_54:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Reverse engineered from binary: do not alter
+        static inline bool IsSpellTargetHelpfulAtClient(uint32 target)
+        {
+            switch (target)
+            {
+                case TARGET_UNIT_CASTER:
+                case TARGET_UNIT_FRIEND_NEAR_CASTER:
+                case TARGET_UNIT_NEAR_CASTER:
+                case TARGET_UNIT_CASTER_PET:
+                case TARGET_ENUM_UNITS_PARTY_WITHIN_CASTER_RANGE:
+                case TARGET_UNIT_FRIEND:
+                case TARGET_UNIT_CASTER_MASTER:
+                case TARGET_ENUM_UNITS_FRIEND_AOE_AT_DYNOBJ_LOC:
+                case TARGET_ENUM_UNITS_FRIEND_AOE_AT_SRC_LOC:
+                case TARGET_ENUM_UNITS_FRIEND_AOE_AT_DEST_LOC:
+                case TARGET_ENUM_UNITS_PARTY_AOE_AT_SRC_LOC:
+                case TARGET_ENUM_UNITS_PARTY_AOE_AT_DEST_LOC:
+                case TARGET_UNIT_PARTY:
+                case TARGET_UNIT_FRIEND_CHAIN_HEAL:
+                case TARGET_ENUM_UNITS_RAID_WITHIN_CASTER_RANGE:
+                case TARGET_UNIT_RAID:
+                case TARGET_UNIT_RAID_NEAR_CASTER:
+                case TARGET_ENUM_UNITS_FRIEND_IN_CONE:
+                case TARGET_UNIT_RAID_AND_CLASS:
+                case TARGET_PLAYER_RAID_NYI:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Reverse engineered from binary: do not alter
+        static inline bool IsSpellEffectHarmfulAtClient(const SpellEntry &entry, SpellEffectIndex effIndex)
+        {
+            return (IsSpellTargetHarmfulAtClient(entry.EffectImplicitTargetA[effIndex]) || IsSpellTargetHarmfulAtClient(entry.EffectImplicitTargetB[effIndex]));
+        }
+
+        // Reverse engineered from binary: do not alter
+        static inline bool IsSpellEffectHelpfulAtClient(const SpellEntry &entry, SpellEffectIndex effIndex)
+        {
+            if (IsSpellTargetHelpfulAtClient(entry.EffectImplicitTargetA[effIndex]))
+            {
+                if (entry.EffectImplicitTargetA[effIndex] != TARGET_UNIT_CASTER || entry.EffectApplyAuraName[effIndex] != SPELL_AURA_DUMMY)
+                    return true;
+            }
+
+            if (IsSpellTargetHelpfulAtClient(entry.EffectImplicitTargetB[effIndex]))
+            {
+                if (entry.EffectImplicitTargetB[effIndex] != TARGET_UNIT_CASTER || entry.EffectApplyAuraName[effIndex] != SPELL_AURA_DUMMY)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Reverse engineered from binary: do not alter
+        enum SpellFaction
+        {
+            SPELL_NEUTRAL = 0,
+            SPELL_HELPFUL = 1,
+            SPELL_HARMFUL = 2,
+        };
+
+        // Reverse engineered from binary: do not alter
+        static inline SpellFaction GetSpellFactionAtClient(const SpellEntry &entry, SpellEffectIndexMask mask = EFFECT_MASK_ALL)
+        {
+            if (entry.Targets & TARGET_FLAG_UNIT_TARGET)
+                return SPELL_HELPFUL;
+
+            if (entry.Targets & TARGET_FLAG_OBJECT_UNK)
+                return SPELL_HARMFUL;
+
+            for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+            {
+                // Customization: skip junk, skip by mask
+                if (!entry.Effect[i] || !(mask & (1 << i)))
+                    continue;
+
+                if (IsSpellEffectHarmfulAtClient(entry, SpellEffectIndex(i)))
+                    return SPELL_HARMFUL;
+
+                if (IsSpellEffectHelpfulAtClient(entry, SpellEffectIndex(i)))
+                    return SPELL_HELPFUL;
+            }
+
+            return SPELL_NEUTRAL;
         }
 
         SpellThreatEntry const* GetSpellThreatEntry(uint32 spellid) const
@@ -2100,6 +2197,25 @@ class SpellMgr
             return 0;
         }
 
+        uint32 GetNextSpellInChain(uint32 spell_id) const
+        {
+            SpellChainMapNext const& nextMap = GetSpellChainNext();
+
+            for (SpellChainMapNext::const_iterator itr = nextMap.lower_bound(spell_id); itr != nextMap.upper_bound(spell_id); ++itr)
+            {
+                SpellChainNode const* node = GetSpellChainNode(itr->second);
+
+                // If next spell is a requirement for this one then skip it
+                if (node->req == spell_id)
+                    continue;
+
+                if (node->prev == spell_id)
+                    return itr->second;
+            }
+
+            return 0;
+        }
+
         SpellChainMapNext const& GetSpellChainNext() const { return mSpellChainsNext; }
 
         template<typename Worker>
@@ -2114,7 +2230,7 @@ class SpellMgr
         }
 
         // Note: not use rank for compare to spell ranks: spell chains isn't linear order
-        // Use IsHighRankOfSpell instead
+        // Use IsSpellHigherRankOfSpell instead
         uint8 GetSpellRank(uint32 spell_id) const
         {
             if (SpellChainNode const* node = GetSpellChainNode(spell_id))
@@ -2123,11 +2239,14 @@ class SpellMgr
             return 0;
         }
 
-        bool IsHighRankOfSpell(uint32 spell1, uint32 spell2) const
+        bool IsSpellHigherRankOfSpell(uint32 spellId1, uint32 spellId2) const
         {
-            SpellChainMap::const_iterator itr = mSpellChains.find(spell1);
+            if (spellId1 == spellId2)
+                return false;
 
-            uint32 rank2 = GetSpellRank(spell2);
+            SpellChainMap::const_iterator itr = mSpellChains.find(spellId1);
+
+            uint32 rank2 = GetSpellRank(spellId2);
 
             // not ordered correctly by rank value
             if (itr == mSpellChains.end() || !rank2 || itr->second.rank <= rank2)
@@ -2135,15 +2254,19 @@ class SpellMgr
 
             // check present in same rank chain
             for (; itr != mSpellChains.end(); itr = mSpellChains.find(itr->second.prev))
-                if (itr->second.prev == spell2)
+                if (itr->second.prev == spellId2)
                     return true;
 
             return false;
         }
 
-        bool IsRankSpellDueToSpell(SpellEntry const* spellInfo_1, uint32 spellId_2) const;
+        inline bool IsSpellAnotherRankOfSpell(uint32 spellId1, uint32 spellId2) const
+        {
+            return (spellId1 != spellId2 && GetFirstSpellInChain(spellId1) == GetFirstSpellInChain(spellId2));
+        }
+
         bool IsNoStackSpellDueToSpell(SpellEntry const* spellInfo_1, SpellEntry const* spellInfo_2) const;
-        bool IsSingleTargetSpell(SpellEntry const* entry)
+        bool IsSingleTargetSpell(SpellEntry const* entry) const
         {
             // Pre-TBC: SPELL_ATTR_EX5_SINGLE_TARGET_SPELL substitute code
             // Not AoE
@@ -2174,7 +2297,7 @@ class SpellMgr
             return false;
         }
 
-        bool IsSingleTargetSpells(SpellEntry const* entry1, SpellEntry const* entry2)
+        bool IsSingleTargetSpells(SpellEntry const* entry1, SpellEntry const* entry2) const
         {
             if (!IsSingleTargetSpell(entry1) || !IsSingleTargetSpell(entry2))
                 return false;
@@ -2198,7 +2321,7 @@ class SpellMgr
         // return true if spell1 can affect spell2
         bool IsSpellCanAffectSpell(SpellEntry const* spellInfo_1, SpellEntry const* spellInfo_2) const;
 
-        SpellEntry const* SelectAuraRankForLevel(SpellEntry const* spellInfo, uint32 Level) const;
+        SpellEntry const* SelectAuraRankForLevel(SpellEntry const* spellInfo, uint32 level) const;
 
         // Spell learning
         SpellLearnSkillNode const* GetSpellLearnSkill(uint32 spell_id) const
@@ -2206,8 +2329,7 @@ class SpellMgr
             SpellLearnSkillMap::const_iterator itr = mSpellLearnSkills.find(spell_id);
             if (itr != mSpellLearnSkills.end())
                 return &itr->second;
-            else
-                return nullptr;
+            return nullptr;
         }
 
         bool IsSpellLearnSpell(uint32 spell_id) const

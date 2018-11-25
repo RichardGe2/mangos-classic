@@ -167,22 +167,20 @@ struct ChrRacesEntry
     // 28       m_hairCustomization
 };
 
-/*struct CinematicCameraEntry
+struct CinematicCameraEntry
 {
-    uint32      id;                                         // 0        m_ID
-    char*       filename;                                   // 1        m_model
-    uint32      soundid;                                    // 2        m_soundID
-    float       start_x;                                    // 3        m_originX
-    float       start_y;                                    // 4        m_originY
-    float       start_z;                                    // 5        m_originZ
-    float       unk6;                                       // 6        m_originFacing
-};*/
+    uint32 ID;                                               // 0
+    char const* Model;                                       // 1    Model filename (translate .mdx to .m2)
+    uint32 SoundID;                                          // 2    Sound ID       (voiceover for cinematic)
+    DBCPosition3D Origin;                                    // 3-5  Position in map used for basis for M2 co-ordinates
+    float OriginFacing;                                      // 4    Orientation in map used for basis for M2 co-ordinates
+};
 
 struct CinematicSequencesEntry
 {
     uint32      Id;                                         // 0        m_ID
     // uint32      unk1;                                    // 1        m_soundID
-    // uint32      cinematicCamera;                         // 2        m_camera[8]
+    uint32      cinematicCamera;                            // 2        m_camera[8]
 };
 
 struct CreatureDisplayInfoEntry
@@ -344,11 +342,11 @@ struct FactionTemplateEntry
     {
         if (entry.faction)
         {
-            for (int i = 0; i < 4; ++i)
-                if (enemyFaction[i]  == entry.faction)
+            for (unsigned int i : enemyFaction)
+                if (i == entry.faction)
                     return false;
-            for (int i = 0; i < 4; ++i)
-                if (friendFaction[i] == entry.faction)
+            for (unsigned int i : friendFaction)
+                if (i == entry.faction)
                     return true;
         }
         return (friendGroupMask & entry.factionGroupMask) || (factionGroupMask & entry.friendGroupMask);
@@ -357,11 +355,11 @@ struct FactionTemplateEntry
     {
         if (entry.faction)
         {
-            for (int i = 0; i < 4; ++i)
-                if (enemyFaction[i]  == entry.faction)
+            for (unsigned int i : enemyFaction)
+                if (i == entry.faction)
                     return true;
-            for (int i = 0; i < 4; ++i)
-                if (friendFaction[i] == entry.faction)
+            for (unsigned int i : friendFaction)
+                if (i == entry.faction)
                     return false;
         }
         return (enemyGroupMask & entry.factionGroupMask) != 0;
@@ -369,8 +367,8 @@ struct FactionTemplateEntry
     bool IsHostileToPlayers() const { return (enemyGroupMask & FACTION_GROUP_MASK_PLAYER) != 0; }
     bool IsNeutralToAll() const
     {
-        for (int i = 0; i < 4; ++i)
-            if (enemyFaction[i] != 0)
+        for (unsigned int i : enemyFaction)
+            if (i != 0)
                 return false;
         return enemyGroupMask == 0 && friendGroupMask == 0;
     }
@@ -691,7 +689,10 @@ struct SpellEntry
         // uint32    MinFactionId;                          // 170 not used, and 0 in 2.4.2
         // uint32    MinReputation;                         // 171 not used, and 0 in 2.4.2
         // uint32    RequiredAuraVision;                    // 172 not used
-        uint32    IsServerSide;
+
+        // custom
+        uint32    IsServerSide;                             // 173
+        uint32    AttributesServerside;                     // 174
 
         // helpers
         int32 CalculateSimpleValue(SpellEffectIndex eff) const { return EffectBasePoints[eff] + int32(EffectBaseDice[eff]); }
@@ -716,11 +717,14 @@ struct SpellEntry
             return SpellFamily(SpellFamilyName) == family && IsFitToFamilyMask(mask);
         }
 
-        bool HasAttribute(SpellAttributes attribute) const { return !!(Attributes & attribute); }
-        bool HasAttribute(SpellAttributesEx attribute) const { return !!(AttributesEx & attribute); }
-        bool HasAttribute(SpellAttributesEx2 attribute) const { return !!(AttributesEx2 & attribute); }
-        bool HasAttribute(SpellAttributesEx3 attribute) const { return !!(AttributesEx3 & attribute); }
-        bool HasAttribute(SpellAttributesEx4 attribute) const { return !!(AttributesEx4 & attribute); }
+        inline bool HasAttribute(SpellAttributes attribute) const { return (Attributes & attribute) != 0; }
+        inline bool HasAttribute(SpellAttributesEx attribute) const { return (AttributesEx & attribute) != 0; }
+        inline bool HasAttribute(SpellAttributesEx2 attribute) const { return (AttributesEx2 & attribute) != 0; }
+        inline bool HasAttribute(SpellAttributesEx3 attribute) const { return (AttributesEx3 & attribute) != 0; }
+        inline bool HasAttribute(SpellAttributesEx4 attribute) const { return (AttributesEx4 & attribute) != 0; }
+
+        // custom
+        bool HasAttribute(SpellAttributesServerside attribute) const { return (AttributesServerside & attribute) != 0; }
 
     private:
         // prevent creating custom entries (copy data from original in fact)

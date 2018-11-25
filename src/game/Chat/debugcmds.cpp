@@ -31,6 +31,8 @@
 #include "Globals/ObjectMgr.h"
 #include "Entities/ObjectGuid.h"
 #include "Spells/SpellMgr.h"
+#include "AI/ScriptDevAI/ScriptDevAIMgr.h"
+#include "Cinematics/M2Stores.h"
 
 bool ChatHandler::HandleDebugSendSpellFailCommand(char* args)
 {
@@ -228,6 +230,23 @@ bool ChatHandler::HandleDebugPlayCinematicCommand(char* args)
         return false;
     }
 
+    // Dump camera locations
+    if (CinematicSequencesEntry const* cineSeq = sCinematicSequencesStore.LookupEntry(dwId))
+    {
+        std::unordered_map<uint32, FlyByCameraCollection>::const_iterator itr = sFlyByCameraStore.find(cineSeq->cinematicCamera);
+        if (itr != sFlyByCameraStore.end())
+        {
+            PSendSysMessage("Waypoints for sequence %u, camera %u", dwId, cineSeq->cinematicCamera);
+            uint32 count = 1;
+            for (FlyByCamera cam : itr->second)
+            {
+                PSendSysMessage("%02u - %7ums [%f, %f, %f] Facing %f (%f degrees)", count, cam.timeStamp, cam.locations.x, cam.locations.y, cam.locations.z, cam.locations.w, cam.locations.w * (180 / M_PI));
+                count++;
+            }
+            PSendSysMessage("%u waypoints dumped",uint32(itr->second.size()));
+        }
+    }
+
     m_session->GetPlayer()->SendCinematicStart(dwId);
     return true;
 }
@@ -284,6 +303,18 @@ bool ChatHandler::HandleDebugPlayMusicCommand(char* args)
     m_session->GetPlayer()->PlayMusic(dwMusicId, PlayPacketParameters(PLAY_TARGET, dynamic_cast<Player*>(getSelectedUnit())));
 
     PSendSysMessage(LANG_YOU_HEAR_SOUND, dwMusicId);
+    return true;
+}
+
+// Play pet dismiss sound
+bool ChatHandler::HandleDebugPetDismissSound(char* args)
+{
+    uint32 petDismissSound;
+    if (!ExtractUInt32(&args, petDismissSound))
+        return false;
+
+    m_session->GetPlayer()->SendPetDismiss(petDismissSound);
+    PSendSysMessage(LANG_YOU_HEAR_SOUND, petDismissSound);
     return true;
 }
 
@@ -431,9 +462,8 @@ bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
     if (list_queue)
     {
         std::vector<Item*>& updateQueue = player->GetItemUpdateQueue();
-        for (size_t i = 0; i < updateQueue.size(); ++i)
+        for (auto item : updateQueue)
         {
-            Item* item = updateQueue[i];
             if (!item) continue;
 
             Bag* container = item->GetContainer();
@@ -583,14 +613,14 @@ bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
                             PSendSysMessage("%s in bag %u at slot %u has a queuepos (%d) that points to %s in the queue (bag %u slot %u)",
                                             item2->GetGuidStr().c_str(), uint32(bag->GetSlot()), uint32(item2->GetSlot()), uint32(qp),
                                             updateQueue[qp]->GetGuidStr().c_str(), uint32(updateQueue[qp]->GetBagSlot()), uint32(updateQueue[qp]->GetSlot()));
-                            error = true; continue;
+                            error = true;
                         }
                     }
                     else if (item2->GetState() != ITEM_UNCHANGED)
                     {
                         PSendSysMessage("%s in bag %u at slot %u is not in queue but should be (state: %d)!",
                                         item2->GetGuidStr().c_str(), uint32(bag->GetSlot()), uint32(item2->GetSlot()), item2->GetState());
-                        error = true; continue;
+                        error = true;
                     }
                 }
             }
@@ -631,7 +661,7 @@ bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
                 PSendSysMessage("queue(" SIZEFMTD "): %s has incorrect (bag %u slot %u) values, the %s is there instead!",
                                 i, item->GetGuidStr().c_str(), uint32(item->GetBagSlot()), uint32(item->GetSlot()),
                                 test->GetGuidStr().c_str());
-                error = true; continue;
+                error = true;
             }
         }
         if (!error)
@@ -1155,9 +1185,36 @@ bool ChatHandler::HandleDebugWaypoint(char* args)
 
     uint32 pathId;
     if (!ExtractUInt32(&args, pathId) || pathId >= 256)
-        return false;
+    {
+        PSendSysMessage("Current target path ID: %d", target->GetMotionMaster()->GetPathId());
+        return true;
+    }
 
     target->GetMotionMaster()->MoveWaypoint(pathId, 2);
 
+    return true;
+}
+
+bool ChatHandler::HandleDebugSpellVisual(char* args)
+{
+    Unit* target = getSelectedUnit();
+    if (!target)
+        return false;
+
+    uint32 spellVisualID;
+    if (!ExtractUInt32(&args, spellVisualID))
+        return false;
+
+    target->PlaySpellVisual(spellVisualID);
+    return true;
+}
+
+bool ChatHandler::HandleDebugMoveflags(char* args)
+{
+    Unit* target = getSelectedUnit();
+    if (!target)
+        return false;
+
+    PSendSysMessage("Moveflags on target %u", target->m_movementInfo.GetMovementFlags());
     return true;
 }

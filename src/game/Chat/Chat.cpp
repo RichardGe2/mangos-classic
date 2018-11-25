@@ -201,6 +201,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "cinematic",      SEC_MODERATOR,      false, &ChatHandler::HandleDebugPlayCinematicCommand,       "", nullptr },
         { "sound",          SEC_MODERATOR,      false, &ChatHandler::HandleDebugPlaySoundCommand,           "", nullptr },
         { "music",          SEC_MODERATOR,      false, &ChatHandler::HandleDebugPlayMusicCommand,           "", nullptr },
+        { "petdismiss",     SEC_MODERATOR,      false, &ChatHandler::HandleDebugPetDismissSound,            "", nullptr },
         { nullptr,          0,                  false, nullptr,                                             "", nullptr }
     };
 
@@ -216,6 +217,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "qinvalidmsg",    SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugSendQuestInvalidMsgCommand, "", nullptr },
         { "sellerror",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugSendSellErrorCommand,       "", nullptr },
         { "spellfail",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugSendSpellFailCommand,       "", nullptr },
+        { "spellVisual",    SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugSpellVisual,                "", nullptr },
         { nullptr,          0,                  false, nullptr,                                             "", nullptr }
     };
 
@@ -247,6 +249,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "taxi",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugTaxiCommand,                "", nullptr },
         { "uws",            SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugUpdateWorldStateCommand,    "", nullptr },
         { "waypoint",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugWaypoint,                   "", nullptr },
+        { "moveflag",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugMoveflags,                  "", nullptr },
         { nullptr,          0,                  false, nullptr,                                             "", nullptr }
     };
 
@@ -292,6 +295,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "delete",         SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectDeleteCommand,    "", nullptr },
         { "move",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectMoveCommand,      "", nullptr },
         { "near",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectNearCommand,      "", nullptr },
+        { "nearspawned",    SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectNearSpawnedCommand, "", nullptr },
         { "target",         SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectTargetCommand,    "", nullptr },
         { "turn",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectTurnCommand,      "", nullptr },
         { "activate",       SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectActivateCommand,  "", nullptr }, // RICHARD : j'ai passé la commande en  SEC_PLAYER - tres pratique en instance, quand les portes se sont fermees.
@@ -447,6 +451,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "flag",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcFlagCommand,             "", nullptr },
         { "follow",         SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcFollowCommand,           "", nullptr },
         { "info",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcInfoCommand,             "", nullptr },
+        { "threat",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcThreatCommand,           "", nullptr },
         { "move",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcMoveCommand,             "", nullptr },
         { "playemote",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcPlayEmoteCommand,        "", nullptr },
         { "setmodel",       SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSetModelCommand,         "", nullptr },
@@ -460,6 +465,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "yell",           SEC_MODERATOR,      false, &ChatHandler::HandleNpcYellCommand,             "", nullptr },
         { "tame",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcTameCommand,             "", nullptr },
         { "setdeathstate",  SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSetDeathStateCommand,    "", nullptr },
+        { "showloot",       SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcShowLootCommand,         "", nullptr },
 
         //{ TODO: fix or remove this commands
         { "addweapon",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcAddWeaponCommand,        "", nullptr },
@@ -474,6 +480,12 @@ ChatCommand* ChatHandler::getCommandTable()
     {
         { "load",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandlePDumpLoadCommand,           "", nullptr },
         { "write",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandlePDumpWriteCommand,          "", nullptr },
+        { nullptr,          0,                  false, nullptr,                                        "", nullptr }
+    };
+
+    static ChatCommand petCommandTable[] =
+    {
+        { "levelloyalty",   SEC_GAMEMASTER,     true,  &ChatHandler::HandlePetLevelLoyaltyCommand,   "", nullptr },
         { nullptr,          0,                  false, nullptr,                                        "", nullptr }
     };
 
@@ -553,6 +565,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "locales_points_of_interest",  SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesPointsOfInterestCommand, "", nullptr },
         { "locales_quest",               SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesQuestCommand,            "", nullptr },
         { "locales_questgiver_greeting", SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadQuestgiverGreetingLocalesCommand, "", nullptr },
+        { "locales_trainer_greeting",    SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesTrainerGreetingCommand,  "", nullptr },
         { "locales_areatrigger_teleport", SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesAreaTriggerCommand,     "", nullptr },
         { "mail_loot_template",          SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLootTemplatesMailCommand,       "", nullptr },
         { "mangos_string",               SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadMangosStringCommand,            "", nullptr },
@@ -585,6 +598,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "spell_target_position",       SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadSpellTargetPositionCommand,     "", nullptr },
         { "spell_threats",               SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadSpellThreatsCommand,            "", nullptr },
         { "taxi_shortcuts",              SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadTaxiShortcuts,              "", nullptr },
+        { "trainer_greeting",            SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadTrainerGreetingCommand,         "", nullptr },
 
         { nullptr,                       0,                 false, nullptr,                                                  "", nullptr }
     };
@@ -734,6 +748,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "lookup",         SEC_MODERATOR,      true,  nullptr,                                           "", lookupCommandTable   },
         { "modify",         SEC_MODERATOR,      false, nullptr,                                           "", modifyCommandTable   },
         { "npc",            SEC_MODERATOR,      false, nullptr,                                           "", npcCommandTable      },
+        { "pet",            SEC_GAMEMASTER,     true,  nullptr,                                           "", petCommandTable      },
         { "pool",           SEC_GAMEMASTER,     true,  nullptr,                                           "", poolCommandTable     },
         { "pdump",          SEC_ADMINISTRATOR,  true,  nullptr,                                           "", pdumpCommandTable    },
         { "quest",          SEC_ADMINISTRATOR,  false, nullptr,                                           "", questCommandTable    },
@@ -986,9 +1001,9 @@ bool ChatHandler::hasStringAbbr(const char* name, const char* part) const
         {
             if (!*part)
                 return true;
-            else if (!*name)
+            if (!*name)
                 return false;
-            else if (tolower(*name) != tolower(*part))
+            if (tolower(*name) != tolower(*part))
                 return false;
             ++name; ++part;
         }
@@ -1149,7 +1164,7 @@ ChatCommand const* ChatHandler::FindCommand(char const* text)
  */
 ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*& text, ChatCommand*& command, ChatCommand** parentCommand /*= nullptr*/, std::string* cmdNamePtr /*= nullptr*/, bool allAvailable /*= false*/, bool exactlyName /*= false*/) const
 {
-    std::string cmd = "";
+    std::string cmd;
 
     // skip whitespaces
     while (*text != ' ' && *text != '\0')
@@ -3096,7 +3111,7 @@ bool ChatHandler::isValidChatMessage(const char* message) const
 
                     int32 propertyId = 0;
                     bool negativeNumber = false;
-                    char c;
+                    char c = '\0';
                     for (uint8 i = 0; i < randomPropertyPosition; ++i)
                     {
                         propertyId = 0;
@@ -3331,9 +3346,9 @@ bool ChatHandler::isValidChatMessage(const char* message) const
                             }
 
                             bool foundName = false;
-                            for (uint8 i = 0; i < ql->Title.size(); ++i)
+                            for (const auto& i : ql->Title)
                             {
-                                if (ql->Title[i] == buffer)
+                                if (i == buffer)
                                 {
                                     foundName = true;
                                     break;
@@ -3413,7 +3428,7 @@ Player* ChatHandler::getSelectedPlayer() const
     return sObjectMgr.GetPlayer(guid);
 }
 
-Unit* ChatHandler::getSelectedUnit() const
+Unit* ChatHandler::getSelectedUnit(bool self) const
 {
     if (!m_session)
         return nullptr;
@@ -3421,7 +3436,7 @@ Unit* ChatHandler::getSelectedUnit() const
     ObjectGuid guid = m_session->GetPlayer()->GetSelectionGuid();
 
     if (!guid)
-        return m_session->GetPlayer();
+        return self ? m_session->GetPlayer() : nullptr;
 
     // can be selected player at another map
     return ObjectAccessor::GetUnit(*m_session->GetPlayer(), guid);
@@ -3433,6 +3448,14 @@ Creature* ChatHandler::getSelectedCreature() const
         return nullptr;
 
     return m_session->GetPlayer()->GetMap()->GetAnyTypeCreature(m_session->GetPlayer()->GetSelectionGuid());
+}
+
+Pet* ChatHandler::getSelectedPet() const
+{
+    if (!m_session)
+        return nullptr;
+
+    return m_session->GetPlayer()->GetMap()->GetPet(m_session->GetPlayer()->GetSelectionGuid());
 }
 
 /**
@@ -4168,8 +4191,7 @@ GameTele const* ChatHandler::ExtractGameTeleFromLink(char** text)
     uint32 id;
     if (ExtractUInt32(&cId, id))
         return sObjectMgr.GetGameTele(id);
-    else
-        return sObjectMgr.GetGameTele(cId);
+    return sObjectMgr.GetGameTele(cId);
 }
 
 enum GuidLinkType
@@ -4221,8 +4243,7 @@ ObjectGuid ChatHandler::ExtractGuidFromLink(char** text)
 
             if (CreatureData const* data = sObjectMgr.GetCreatureData(lowguid))
                 return data->GetObjectGuid(lowguid);
-            else
-                return ObjectGuid();
+            return ObjectGuid();
         }
         case GUID_LINK_GAMEOBJECT:
         {
@@ -4232,8 +4253,7 @@ ObjectGuid ChatHandler::ExtractGuidFromLink(char** text)
 
             if (GameObjectData const* data = sObjectMgr.GetGOData(lowguid))
                 return ObjectGuid(HIGHGUID_GAMEOBJECT, data->id, lowguid);
-            else
-                return ObjectGuid();
+            return ObjectGuid();
         }
     }
 
@@ -4358,8 +4378,7 @@ bool ChatHandler::ExtractLocationFromLink(char** text, uint32& mapid, float& x, 
                 z = data->posZ;
                 return true;
             }
-            else
-                return false;
+            return false;
         }
         case LOCATION_LINK_GAMEOBJECT:
         {
@@ -4375,8 +4394,7 @@ bool ChatHandler::ExtractLocationFromLink(char** text, uint32& mapid, float& x, 
                 z = data->posZ;
                 return true;
             }
-            else
-                return false;
+            return false;
         }
         case LOCATION_LINK_CREATURE_ENTRY:
         {
@@ -4398,11 +4416,9 @@ bool ChatHandler::ExtractLocationFromLink(char** text, uint32& mapid, float& x, 
                     z = dataPair->second.posZ;
                     return true;
                 }
-                else
-                    return false;
-            }
-            else
                 return false;
+            }
+            return false;
         }
         case LOCATION_LINK_GAMEOBJECT_ENTRY:
         {
@@ -4424,11 +4440,9 @@ bool ChatHandler::ExtractLocationFromLink(char** text, uint32& mapid, float& x, 
                     z = dataPair->second.posZ;
                     return true;
                 }
-                else
-                    return false;
-            }
-            else
                 return false;
+            }
+            return false;
         }
         case LOCATION_LINK_AREATRIGGER:
         {
@@ -4796,7 +4810,7 @@ void ChatHandler::ShowNpcOrGoSpawnInformation(uint32 guid)
 template <typename T>
 std::string ChatHandler::PrepareStringNpcOrGoSpawnInformation(uint32 guid) const
 {
-    std::string str = "";
+    std::string str;
     if (uint16 pool_id = sPoolMgr.IsPartOfAPool<T>(guid))
     {
         uint16 top_pool_id = sPoolMgr.IsPartOfTopPool<T>(guid);

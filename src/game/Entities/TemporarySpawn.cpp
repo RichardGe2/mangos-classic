@@ -25,7 +25,7 @@ TemporarySpawn::TemporarySpawn(ObjectGuid summoner) :
 {
 }
 
-void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
+void TemporarySpawn::Update(const uint32 diff)
 {
     switch (m_type)
     {
@@ -34,13 +34,13 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
 
         case TEMPSPAWN_TIMED_DESPAWN:
         {
-            if (m_timer <= update_diff)
+            if (m_timer <= diff)
             {
                 UnSummon();
                 return;
             }
 
-            m_timer -= update_diff;
+            m_timer -= diff;
             break;
         }
 
@@ -50,13 +50,13 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
             {
                 if (!isInCombat())
                 {
-                    if (m_timer <= update_diff)
+                    if (m_timer <= diff)
                     {
                         UnSummon();
                         return;
                     }
 
-                    m_timer -= update_diff;
+                    m_timer -= diff;
                 }
                 else if (m_timer != m_lifetime)
                     m_timer = m_lifetime;
@@ -73,13 +73,13 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
         {
             if (IsCorpse())
             {
-                if (m_timer <= update_diff)
+                if (m_timer <= diff)
                 {
                     UnSummon();
                     return;
                 }
 
-                m_timer -= update_diff;
+                m_timer -= diff;
             }
             if (IsDespawned())
             {
@@ -122,13 +122,13 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
 
             if (!isInCombat())
             {
-                if (m_timer <= update_diff)
+                if (m_timer <= diff)
                 {
                     UnSummon();
                     return;
                 }
                 else
-                    m_timer -= update_diff;
+                    m_timer -= diff;
             }
             else if (m_timer != m_lifetime)
                 m_timer = m_lifetime;
@@ -146,13 +146,13 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
 
             if (!isInCombat() && isAlive() && !GetCharmerGuid())
             {
-                if (m_timer <= update_diff)
+                if (m_timer <= diff)
                 {
                     UnSummon();
                     return;
                 }
                 else
-                    m_timer -= update_diff;
+                    m_timer -= diff;
             }
             else if (m_timer != m_lifetime)
                 m_timer = m_lifetime;
@@ -167,12 +167,12 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
                 UnSummon();
                 return;
             }
-            if (m_timer <= update_diff)
+            if (m_timer <= diff)
             {
                 UnSummon();
                 return;
             }
-            m_timer -= update_diff;
+            m_timer -= diff;
             break;
         }
 
@@ -186,13 +186,13 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
             }
             if (!GetCharmerGuid())
             {
-                if (m_timer <= update_diff)
+                if (m_timer <= diff)
                 {
                     UnSummon();
                     return;
                 }
             }
-            m_timer -= update_diff;
+            m_timer -= diff;
             break;
         }
 
@@ -224,7 +224,7 @@ void TemporarySpawn::Update(uint32 update_diff,  uint32 diff)
             break;
     }
 
-    Creature::Update(update_diff, diff);
+    Creature::Update(diff);
 }
 
 void TemporarySpawn::SetSummonProperties(TempSpawnType type, uint32 lifetime)
@@ -248,7 +248,7 @@ void TemporarySpawn::Summon(TempSpawnType type, uint32 lifetime)
 
 void TemporarySpawn::UnSummon()
 {
-    CombatStop();
+    UnsummonCleanup();
 
     if (m_linkedToOwnerAura & TEMPSPAWN_LINKED_AURA_REMOVE_OWNER)
         RemoveAuraFromOwner();

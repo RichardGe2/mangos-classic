@@ -364,6 +364,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
     if (!lootItem)
     {
         _player->SendEquipError(EQUIP_ERR_ITEM_NOT_FOUND, nullptr, nullptr);
+        loot->Release(_player);
         return;
     }
 
@@ -371,6 +372,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
     if (lootItem->isBlocked || lootItem->GetSlotTypeForSharedLoot(_player, loot) == MAX_LOOT_SLOT_TYPE)
     {
         sLog.outError("HandleAutostoreLootItemOpcode> %s have no right to loot itemId(%u)", _player->GetGuidStr().c_str(), lootItem->itemId);
+        loot->Release(_player);
         return;
     }
 
@@ -490,7 +492,7 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (!_player->IsInSameRaidWith(target) || !_player->IsInMap(target))
+    if (!_player->IsInGroup(target) || !_player->IsInMap(target))
     {
         _player->SendLootError(lootguid, LOOT_ERROR_MASTER_OTHER);
         sLog.outError("WorldSession::HandleLootMasterGiveOpcode> Player %s tried to give an item to ineligible player %s !", _player->GetGuidStr().c_str(), target->GetGuidStr().c_str());
@@ -512,12 +514,12 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (!lootItem->AllowedForPlayer(target, pLoot->GetLootTarget()))
+    if (!lootItem->IsAllowed(target, pLoot))
     {
         _player->SendEquipError(EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM, nullptr, nullptr);
         return;
     }
-    
+
     InventoryResult result = pLoot->SendItem(target, lootItem);
     if (result != EQUIP_ERR_OK)
     {
@@ -527,7 +529,6 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
             _player->SendLootError(lootguid, LOOT_ERROR_MASTER_INV_FULL);
         else
             _player->SendLootError(lootguid, LOOT_ERROR_MASTER_OTHER);
-        return;
     }
 }
 

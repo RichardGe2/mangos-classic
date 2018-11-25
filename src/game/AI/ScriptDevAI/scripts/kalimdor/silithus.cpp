@@ -23,7 +23,7 @@ EndScriptData
 
 */
 
-#include "AI/ScriptDevAI/PreCompiledHeader.h"/* ContentData
+#include "AI/ScriptDevAI/include/precompiled.h"/* ContentData
 npc_anachronos_the_ancient
 EndContentData */
 
@@ -446,8 +446,8 @@ struct npc_anachronos_the_ancientAI : public ScriptedAI, private DialogueHelper
 
     void DoSummonDragons()
     {
-        for (uint8 i = 0; i < MAX_DRAGONS; ++i)
-            m_creature->SummonCreature(aEternalBoardNPCs[i].m_uiEntry, aEternalBoardNPCs[i].m_fX, aEternalBoardNPCs[i].m_fY, aEternalBoardNPCs[i].m_fZ, aEternalBoardNPCs[i].m_fO, TEMPSPAWN_CORPSE_DESPAWN, 0);
+        for (auto& aEternalBoardNPC : aEternalBoardNPCs)
+            m_creature->SummonCreature(aEternalBoardNPC.m_uiEntry, aEternalBoardNPC.m_fX, aEternalBoardNPC.m_fY, aEternalBoardNPC.m_fZ, aEternalBoardNPC.m_fO, TEMPSPAWN_CORPSE_DESPAWN, 0);
 
         // Also summon the 3 anubisath conquerors
         float fX, fY, fZ;
@@ -613,7 +613,7 @@ struct npc_anachronos_the_ancientAI : public ScriptedAI, private DialogueHelper
                     case 2:
                         // Complete quest and despawn gate
                         if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
-                            pPlayer->GroupEventHappens(QUEST_A_PAWN_ON_THE_ETERNAL_BOARD, m_creature);
+                            pPlayer->RewardPlayerAndGroupAtEventExplored(QUEST_A_PAWN_ON_THE_ETERNAL_BOARD, m_creature);
                         m_creature->SetStandState(UNIT_STAND_STATE_STAND);
                         m_uiEventTimer = 4000;
                         break;
@@ -640,7 +640,7 @@ struct npc_anachronos_the_ancientAI : public ScriptedAI, private DialogueHelper
     }
 };
 
-CreatureAI* GetAI_npc_anachronos_the_ancient(Creature* pCreature)
+UnitAI* GetAI_npc_anachronos_the_ancient(Creature* pCreature)
 {
     return new npc_anachronos_the_ancientAI(pCreature);
 }
@@ -814,9 +814,9 @@ struct npc_solenorAI : public ScriptedAI
             {
                 ThreatList const& tList = m_creature->getThreatManager().getThreatList();
 
-                for (ThreatList::const_iterator itr = tList.begin(); itr != tList.end(); ++itr)
+                for (auto itr : tList)
                 {
-                    if (Unit* pUnit = m_creature->GetMap()->GetUnit((*itr)->getUnitGuid()))
+                    if (Unit* pUnit = m_creature->GetMap()->GetUnit(itr->getUnitGuid()))
                     {
                         if (pUnit->isAlive())
                         {
@@ -912,7 +912,7 @@ struct npc_solenorAI : public ScriptedAI
         {
             if (Unit* pUnit = m_creature->getVictim())
             {
-                if (m_creature->GetDistance2d(pUnit) > 5.0f)
+                if (m_creature->GetDistance(pUnit, false) > 5.0f)
                 {
                     if (DoCastSpellIfCan(pUnit, SPELL_DREADFUL_FRIGHT) == CAST_OK)
                         m_uiDreadfulFright_Timer = urand(15000, 20000);
@@ -942,16 +942,14 @@ bool GossipSelect_npc_solenor(Player* pPlayer, Creature* pCreature, uint32 uiSen
     return true;
 }
 
-CreatureAI* GetAI_npc_solenor(Creature* pCreature)
+UnitAI* GetAI_npc_solenor(Creature* pCreature)
 {
     return new npc_solenorAI(pCreature);
 }
 
 void AddSC_silithus()
 {
-    Script* pNewScript;
-
-    pNewScript = new Script;
+    Script* pNewScript = new Script;
     pNewScript->Name = "npc_anachronos_the_ancient";
     pNewScript->GetAI = &GetAI_npc_anachronos_the_ancient;
     pNewScript->RegisterSelf();

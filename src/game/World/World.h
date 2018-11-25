@@ -33,6 +33,7 @@
 #include <deque>
 #include <mutex>
 #include <functional>
+#include <utility>
 #include <vector>
 
 class Object;
@@ -124,7 +125,6 @@ enum eConfigUInt32Values
     CONFIG_UINT32_GM_LEVEL_IN_WHO_LIST,
     CONFIG_UINT32_START_GM_LEVEL,
     CONFIG_UINT32_GM_INVISIBLE_AURA,
-    CONFIG_UINT32_GROUP_VISIBILITY,
     CONFIG_UINT32_MAIL_DELIVERY_DELAY,
     CONFIG_UINT32_MASS_MAILER_SEND_PER_TICK,
     CONFIG_UINT32_UPTIME_UPDATE,
@@ -175,6 +175,9 @@ enum eConfigUInt32Values
     CONFIG_UINT32_GUID_RESERVE_SIZE_GAMEOBJECT,
     CONFIG_UINT32_CREATURE_RESPAWN_AGGRO_DELAY,
     CONFIG_UINT32_MAX_WHOLIST_RETURNS,
+    CONFIG_UINT32_FOGOFWAR_STEALTH,
+    CONFIG_UINT32_FOGOFWAR_HEALTH,
+    CONFIG_UINT32_FOGOFWAR_STATS,
     CONFIG_UINT32_VALUE_COUNT
 };
 
@@ -280,6 +283,7 @@ enum eConfigBoolValues
     CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND,
     CONFIG_BOOL_INSTANCE_IGNORE_LEVEL,
     CONFIG_BOOL_INSTANCE_IGNORE_RAID,
+    CONFIG_BOOL_INSTANCE_STRICT_COMBAT_LOCKDOWN,
     CONFIG_BOOL_CAST_UNSTUCK,
     CONFIG_BOOL_GM_LOG_TRADE,
     CONFIG_BOOL_GM_LOWER_SECURITY,
@@ -295,6 +299,7 @@ enum eConfigBoolValues
     CONFIG_BOOL_CHAT_STRICT_LINK_CHECKING_KICK,
     CONFIG_BOOL_ADDON_CHANNEL,
     CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW,
+    CONFIG_BOOL_CORPSE_ALLOW_ALL_ITEMS_SHOW_IN_MASTER_LOOT,
     CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVP,
     CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVE,
     CONFIG_BOOL_DEATH_BONES_WORLD,
@@ -381,7 +386,7 @@ struct CliCommandHolder
     CommandFinished m_commandFinished;
 
     CliCommandHolder(uint32 accountId, AccountTypes cliAccessLevel, const char* command, Print print, CommandFinished commandFinished)
-        : m_cliAccountId(accountId), m_cliAccessLevel(cliAccessLevel), m_command(strlen(command) + 1), m_print(print), m_commandFinished(commandFinished)
+        : m_cliAccountId(accountId), m_cliAccessLevel(cliAccessLevel), m_command(strlen(command) + 1), m_print(std::move(print)), m_commandFinished(std::move(commandFinished))
     {
         memcpy(&m_command[0], command, m_command.size() - 1);
     }
@@ -420,7 +425,7 @@ class World
         // player Queue
         typedef std::list<WorldSession*> Queue;
         void AddQueuedSession(WorldSession*);
-        bool RemoveQueuedSession(WorldSession* session);
+        bool RemoveQueuedSession(WorldSession* sess);
         int32 GetQueuedSessionPos(WorldSession*);
 
         /// \todo Actions on m_allowMovement still to be implemented
@@ -543,16 +548,20 @@ class World
         void UpdateResultQueue();
         void InitResultQueue();
 
-        void UpdateRealmCharCount(uint32 accid);
+        void UpdateRealmCharCount(uint32 accountId);
 
-        LocaleConstant GetAvailableDbcLocale(LocaleConstant locale) const { if (m_availableDbcLocaleMask & (1 << locale)) return locale; else return m_defaultDbcLocale; }
+        LocaleConstant GetAvailableDbcLocale(LocaleConstant locale) const
+        {
+            if (m_availableDbcLocaleMask & (1 << locale)) return locale;
+            return m_defaultDbcLocale;
+        }
 
         // used World DB version
         void LoadDBVersion();
         char const* GetDBVersion() const { return m_DBVersion.c_str(); }
         char const* GetCreatureEventAIVersion() const { return m_CreatureEventAIVersion.c_str(); }
 
-        std::vector<std::string> GetSpamRecords() { return m_spamRecords; }
+        std::vector<std::string> GetSpamRecords() const { return m_spamRecords; }
 
         /**
         * \brief: force all client to request player data

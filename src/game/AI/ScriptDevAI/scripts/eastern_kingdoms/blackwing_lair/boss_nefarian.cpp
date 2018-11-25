@@ -23,7 +23,7 @@ EndScriptData
 
 */
 
-#include "AI/ScriptDevAI/PreCompiledHeader.h"
+#include "AI/ScriptDevAI/include/precompiled.h"
 #include "blackwing_lair.h"
 #include "Entities/TemporarySpawn.h"
 
@@ -283,16 +283,14 @@ struct boss_nefarianAI : public ScriptedAI
     }
 };
 
-CreatureAI* GetAI_boss_nefarian(Creature* pCreature)
+UnitAI* GetAI_boss_nefarian(Creature* pCreature)
 {
     return new boss_nefarianAI(pCreature);
 }
 
 void AddSC_boss_nefarian()
 {
-    Script* pNewScript;
-
-    pNewScript = new Script;
+    Script* pNewScript = new Script;
     pNewScript->Name = "boss_nefarian";
     pNewScript->GetAI = &GetAI_boss_nefarian;
     pNewScript->RegisterSelf();
