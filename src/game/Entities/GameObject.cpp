@@ -1090,6 +1090,30 @@ void GameObject::UseDoorOrButton(uint32 time_to_restore, bool alternative /* = f
     if (!time_to_restore)
         time_to_restore = GetGOInfo()->GetAutoCloseTime();
 
+
+
+	// RICHARD : debug info sur les gameobject qui s'ouvrent et se ferment
+	// permet d'avoir rapidement le GUID, pour que Bouillot ouvre les portes qui se sont fermé dans une instance.
+	// utiliser la commande :  .gobject activate <GUID>
+	/////////////////////////////////////////////////
+	{
+		const char* namme = this->GetName();
+		uint32_t GUIDlow = this->GetGUIDLow();
+		GameObjectInfo const* goInfo = GetGOInfo();
+		const char* namme2 = goInfo->name;
+		goInfo->id;
+
+		if ( GUIDlow == 250109 ) // Porte de la cour des Gordok
+		{
+			int aa=0;
+		}
+
+		sLog.outBasic("RICHAR: GameObject::UseDoorOrButton -%s- GUID=%d - gameobject_template.entry=%d - se reset dans : %d sec" , namme2 , GUIDlow , goInfo->id, time_to_restore);
+	}
+
+
+
+
     SwitchDoorOrButton(true, alternative);
     SetLootState(GO_ACTIVATED);
 

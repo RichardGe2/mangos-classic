@@ -294,7 +294,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "near",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectNearCommand,      "", nullptr },
         { "target",         SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectTargetCommand,    "", nullptr },
         { "turn",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectTurnCommand,      "", nullptr },
-        { "activate",       SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectActivateCommand,  "", nullptr },
+        { "activate",       SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectActivateCommand,  "", nullptr }, // RICHARD : j'ai passé la commande en  SEC_PLAYER - tres pratique en instance, quand les portes se sont fermees.
         { nullptr,          0,                  false, nullptr,                                        "", nullptr }
     };
 
@@ -725,9 +725,9 @@ ChatCommand* ChatHandler::getCommandTable()
         { "gm",             SEC_PLAYER,         true,  nullptr,                                           "", gmCommandTable       },
         { "honor",          SEC_GAMEMASTER,     false, nullptr,                                           "", honorCommandTable    },
         { "go",             SEC_MODERATOR,      false, nullptr,                                           "", goCommandTable       },
-        { "gobject",        SEC_GAMEMASTER,     false, nullptr,                                           "", gobjectCommandTable  },
+        { "gobject",        SEC_PLAYER,     false, nullptr,                                           "", gobjectCommandTable  },  // RICHARD changer droits
         { "guild",          SEC_GAMEMASTER,     true,  nullptr,                                           "", guildCommandTable    },
-        { "instance",       SEC_PLAYER,  true,  nullptr,                                           "", instanceCommandTable },  // richard changer droits
+        { "instance",       SEC_PLAYER,  true,  nullptr,                                           "", instanceCommandTable },  // RICHARD changer droits
         { "learn",          SEC_MODERATOR,      false, nullptr,                                           "", learnCommandTable    },
         { "link",           SEC_ADMINISTRATOR,  false, nullptr,                                           "", linkCommandTable     },
         { "list",           SEC_ADMINISTRATOR,  true,  nullptr,                                           "", listCommandTable     },

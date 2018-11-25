@@ -1385,11 +1385,18 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	//  pour eviter qu'un 60 paragon 30  farme des petit level 60 elite de Scholomance, et loot plein de youhaicoin.
 	//  ce nombre sera donc utilisé uniquement pour les mob lvl 60
 	//
+	// ANCIEN system :
 	// 0 : exterieur
 	// 1 : donjon low level
 	// 2 : premier donjon HL
 	// ...etc...
-
+	//
+	//nouveau system :
+	//représente grosso modo le niveau de paragon qu'il faut etre pour etre du meme niveau que le mob.
+	//essayer d'estimer au mieux.
+	// 0.0 ou 1.0 correspond a la meme chose  -  puisque   paragon 1 :  + 00 %           coeff : x 1
+	//
+	//
 
 
 
@@ -1706,17 +1713,17 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	*/
 
 	
-	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  1.0f;     donjonLevel_out = 2.0f;  }  
-	else if ( cPosRicha == "Stratholme" )			{ outNumber =  1.066f;     donjonLevel_out = 3.0f;  }    
-	else if ( cPosRicha == "Scholomance" )			{ outNumber =  1.133f;    donjonLevel_out = 4.0f;  }    
-	else if ( cPosRicha == "Blackrock Spire" )		{ outNumber =  1.200f;      donjonLevel_out = 5.0f;  } // je le mets a la limite de difficulté entre 5 et 10 joueurs.  comme ca c'est easy pour moi
-	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  1.0f;      donjonLevel_out = 6.0f;  }	
-	else if ( cPosRicha == "Molten Core" )			{ outNumber =  0.5f;      donjonLevel_out = 7.0f;  }	
-	else if ( cPosRicha == "Onyxias Lair" )			{ outNumber =  0.625f;    donjonLevel_out = 8.0f;  }	
-	else if ( cPosRicha == "Blackwing Lair" )		{ outNumber =  0.75f;     donjonLevel_out = 9.0f;  }	
-	else if ( cPosRicha == "Ruins of Ahnqiraj" )	{ outNumber =  1.25f;     donjonLevel_out = 10.0f; }	
-	else if ( cPosRicha == "Temple of Ahnqiraj" )	{ outNumber =  0.875f;    donjonLevel_out = 11.0f; }	
-	else if ( cPosRicha == "Naxxramas" )			{ outNumber =  1.0f;      donjonLevel_out = 12.0f; }	
+	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  1.0f;     donjonLevel_out = 5.0f;  }  
+	else if ( cPosRicha == "Stratholme" )			{ outNumber =  1.066f;     donjonLevel_out = 999.0f;  }    
+	else if ( cPosRicha == "Scholomance" )			{ outNumber =  1.133f;    donjonLevel_out = 999.0f;  }    
+	else if ( cPosRicha == "Blackrock Spire" )		{ outNumber =  1.200f;      donjonLevel_out = 999.0f;  } // je le mets a la limite de difficulté entre 5 et 10 joueurs.  comme ca c'est easy pour moi
+	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  1.0f;      donjonLevel_out = 999.0f;  }	
+	else if ( cPosRicha == "Molten Core" )			{ outNumber =  0.5f;      donjonLevel_out = 999.0f;  }	
+	else if ( cPosRicha == "Onyxias Lair" )			{ outNumber =  0.625f;    donjonLevel_out = 999.0f;  }	
+	else if ( cPosRicha == "Blackwing Lair" )		{ outNumber =  0.75f;     donjonLevel_out = 999.0f;  }	
+	else if ( cPosRicha == "Ruins of Ahnqiraj" )	{ outNumber =  1.25f;     donjonLevel_out = 999.0f; }	
+	else if ( cPosRicha == "Temple of Ahnqiraj" )	{ outNumber =  0.875f;    donjonLevel_out = 999.0f; }	
+	else if ( cPosRicha == "Naxxramas" )			{ outNumber =  1.0f;      donjonLevel_out = 999.0f; }	
 
 
 	else if ( cPosRicha == "??POSRICH??" )

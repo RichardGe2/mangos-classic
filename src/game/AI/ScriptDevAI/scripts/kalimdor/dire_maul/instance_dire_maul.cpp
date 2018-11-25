@@ -455,6 +455,16 @@ bool instance_dire_maul::CheckConditionCriteriaMeet(Player const* pPlayer, uint3
             uint8 uiTributeRunAliveBosses = (GetData(TYPE_MOLDAR) != DONE ? 1 : 0) + (GetData(TYPE_FENGUS) != DONE ? 1 : 0) + (GetData(TYPE_SLIPKIK) != DONE ? 1 : 0)
                                             + (GetData(TYPE_KROMCRUSH) != DONE ? 1 : 0);
 
+
+			//info pour du debug
+			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - %d boss alive" , uiTributeRunAliveBosses );
+			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_MOLDAR DONE = %d" , GetData(TYPE_MOLDAR) == DONE ? 1 : 0 );
+			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_FENGUS DONE = %d" , GetData(TYPE_FENGUS) == DONE ? 1 : 0 );
+			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_SLIPKIK DONE = %d" , GetData(TYPE_SLIPKIK) == DONE ? 1 : 0 );
+			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_KROMCRUSH DONE = %d" , GetData(TYPE_KROMCRUSH) == DONE ? 1 : 0 );
+
+
+
             return uiInstanceConditionId == uiTributeRunAliveBosses;
         }
     }

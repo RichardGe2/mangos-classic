@@ -1506,20 +1506,10 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			float  coeffFacilite = 1.0f;
 
 
-			if ( difficultyDonjon < 2 ) // si le mob est en exterieur ou dans un donjon Low Level, alors un joueur paragon ne peux PAS looter de youhaicoin
+			// si un joueur paragon 10 s'attaque a un mob fait pour paragon 5, alors on je dirai qu'on divise par 2 la probabilite de youhaicoin ?
+			if ( playerParagon > (int)difficultyDonjon )
 			{
-				coeffFacilite = 0.0f;
-			}
-			else
-			{
-				//
-				//
-				// TODO AMELIORER CA
-				//
-				//
-
-
-				coeffFacilite = 1.0f;
+				coeffFacilite =  1.0f  /  ((float)playerParagon / (float)difficultyDonjon);
 			}
 
 
