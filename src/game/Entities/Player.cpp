@@ -1634,6 +1634,8 @@ void Player::richa_exportTo_ristat_()
 			{
 				if ( questStatus.m_status != QUEST_STATUS_COMPLETE )
 				{
+					// j ai deja reussi a reproduire ce warning, sans faire expres, 
+					// avec le grandjuge, en gros en faisant un  .quest remove
 					BASIC_LOG("RICHAR: WARNING 53643 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					int errror = 0;
 				}
@@ -2893,6 +2895,67 @@ void Player::richa_exportTo_ristat_()
 		
 
 	}
+
+
+
+
+	{
+		sprintf(outt, "\r\n#GUILD =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		ObjectGuid playerguid = GetGUID();
+
+		uint32 guildId = GetGuildIdFromDB(playerguid);
+		sprintf(outt, "guildid,%d\r\n", guildId);
+		fwrite(outt, 1, strlen(outt), fout);
+
+		if ( guildId != 0 )
+		{
+			if (Guild* guild = sGuildMgr.GetGuildById(guildId))
+			{
+				sprintf(outt, "guildname,%s\r\n", guild->GetName().c_str());
+				fwrite(outt, 1, strlen(outt), fout);
+
+				int32 rankInGuild = guild->GetRank(playerguid);
+				sprintf(outt, "rankInGuild,%d\r\n", rankInGuild);
+				fwrite(outt, 1, strlen(outt), fout);
+
+				uint32 guildBorderColor = guild->GetBorderColor();
+				sprintf(outt, "guildBorderColor,%d\r\n", guildBorderColor);
+				fwrite(outt, 1, strlen(outt), fout);
+
+				uint32 guildEmblemStyle = guild->GetEmblemStyle();
+				sprintf(outt, "guildEmblemStyle,%d\r\n", guildEmblemStyle);
+				fwrite(outt, 1, strlen(outt), fout);
+
+				uint32 guildEmblemColor = guild->GetEmblemColor();
+				sprintf(outt, "guildEmblemColor,%d\r\n", guildEmblemColor);
+				fwrite(outt, 1, strlen(outt), fout);
+
+				uint32 guildBorderStyle = guild->GetBorderStyle();
+				sprintf(outt, "guildBorderStyle,%d\r\n", guildBorderStyle);
+				fwrite(outt, 1, strlen(outt), fout);
+
+				uint32 guildBackgroundColor = guild->GetBackgroundColor();
+				sprintf(outt, "guildBackgroundColor,%d\r\n", guildBackgroundColor);
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+			else
+			{
+				sprintf(outt, "GUILD_ERROR\r\n"); // on devrait pas etre la
+				fwrite(outt, 1, strlen(outt), fout);
+			}
+		}
+		else
+		{
+			sprintf(outt, "NO_GUILD\r\n");
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+	}
+
+
+
 
 	sprintf(outt, "\r\n#END_OF_FILE =================================\r\n");
 	fwrite(outt, 1, strlen(outt), fout);
