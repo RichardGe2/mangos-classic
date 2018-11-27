@@ -475,7 +475,8 @@ bool instance_dire_maul::CheckConditionCriteriaMeet(Player const* pPlayer, uint3
 			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_FENGUS DONE = %d" , GetData(TYPE_FENGUS) == DONE ? 1 : 0 );
 			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_SLIPKIK DONE = %d" , GetData(TYPE_SLIPKIK) == DONE ? 1 : 0 );
 			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_KROMCRUSH DONE = %d" , GetData(TYPE_KROMCRUSH) == DONE ? 1 : 0 );
-
+			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_CHORUSH DONE = %d" , GetData(TYPE_CHORUSH) == DONE ? 1 : 0 );
+			sLog.outBasic("RICHAR: DireMaul - CheckConditionCriteriaMeet - TYPE_STOMPER_KREEG DONE = %d" , GetData(TYPE_STOMPER_KREEG) == DONE ? 1 : 0 );
 
 
             return uiInstanceConditionId == uiTributeRunAliveBosses;

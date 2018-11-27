@@ -9,7 +9,7 @@ if errorlevel 1 call cmake --help
 goto end
 
 :without
-cmake ..
+cmake .. -DBUILD_EXTRACTORS=ON
 
 :end
 cd ..
