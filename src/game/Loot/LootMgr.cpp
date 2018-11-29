@@ -2541,8 +2541,11 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
 					float newMax = (float)creatureInfo->MaxLootGold;
 
 					// 1) deja, on multiplie par la difficulté du perso :
-					newMin *= creature->Richar_difficuly_health;
-					newMax *= creature->Richar_difficuly_health;
+					if ( creature->Richar_difficuly_health > 0.0f )
+					{
+						newMin *= creature->Richar_difficuly_health;
+						newMax *= creature->Richar_difficuly_health;
+					}
 
 					// 2) et en plus de ca, on va rajouter une sécurite, car les gros boss de raid lootent de base
 					//plusieurs centaines de PO.
