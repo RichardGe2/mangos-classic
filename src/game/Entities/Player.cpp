@@ -334,6 +334,10 @@ Player::Player(WorldSession* session): Unit(), m_taxiTracker(*this), m_mover(thi
 {
 	//m_richar_paragon = 0;
 	//m_richar_paragonProgressFromFile = 0;
+	m_richa_scoreElderCourse = 0;
+
+
+
 
     m_transport = nullptr;
 
@@ -727,6 +731,7 @@ void Player::richa_exportTo_richaracter_(
 			const std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
 			const std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
 			const std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+			const std::vector<RICHA_ITEM_LOOT_QUEST>& richa_ListItemQuestLoot,
 			const char* characterName
 			)
 {
@@ -844,6 +849,24 @@ void Player::richa_exportTo_richaracter_(
 
 	
 
+	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+
+	sprintf(outt, "#LIST_ITEM_LOOT_QUEST\r\n");
+	fwrite(outt, 1, strlen(outt), fcustom);
+	for(int i=0; i<richa_ListItemQuestLoot.size(); i++)
+	{
+		sprintf(outt, "%d,%d,%f,%d,%d\r\n", 
+			richa_ListItemQuestLoot[i].active , 
+			richa_ListItemQuestLoot[i].itemid , 
+			richa_ListItemQuestLoot[i].currentScore,
+			richa_ListItemQuestLoot[i].nbFoisQueteDone ,
+			richa_ListItemQuestLoot[i].LoopQuest
+		);
+		fwrite(outt, 1, strlen(outt), fcustom);
+	}
+
+
 
 	sprintf(outt, "\r\n/////////////////////////////////////////////////////////////////\r\n");
 	fwrite(outt, 1, strlen(outt), fcustom);
@@ -865,6 +888,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 	std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
 	std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
 	std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+	std::vector<RICHA_ITEM_LOOT_QUEST>& richa_ListItemQuestLoot,
 	std::string& namePerso
 	)
 {
@@ -901,6 +925,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		richa_pageDiscovered.clear();
 		richa_lunerFestivalElderFound.clear();
 		richa_ListeMaison.clear();
+		richa_ListItemQuestLoot.clear();
 		namePerso = "";
 		
 		return;
@@ -1076,6 +1101,11 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 			currentSectionName = line;
 			currentSectionLine = 0;
 		}
+		else if ( line == "#LIST_ITEM_LOOT_QUEST" )
+		{
+			currentSectionName = line;
+			currentSectionLine = 0;
+		}
 
 
 
@@ -1106,6 +1136,22 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 				break;
 			}
 			richa_ListeMaison.push_back(RICHA_MAISON_TAVERN(mapid,areaid));
+			currentSectionLine++;
+		}
+
+		else if ( currentSectionName == "#LIST_ITEM_LOOT_QUEST" )
+		{
+			int i0=0;
+			int i1=0;
+			float f0=0.0f;
+			int i3=0;
+			int i4=0;
+			if ( sscanf(line.c_str(),"%d,%d,%f,%d,%d",&i0,&i1,&f0,&i3,&i4) != 5 )
+			{
+				error = true;errorCode = 15; 
+				break;
+			}
+			richa_ListItemQuestLoot.push_back(RICHA_ITEM_LOOT_QUEST(i0,i1,f0,i3,i4));
 			currentSectionLine++;
 		}
 
@@ -1160,6 +1206,7 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		richa_pageDiscovered.clear();
 		richa_lunerFestivalElderFound.clear();
 		richa_ListeMaison.clear();
+		richa_ListItemQuestLoot.clear();
 		namePerso = "";
 
 
@@ -1354,6 +1401,7 @@ void Player::richard_importVariables_START(uint64 guid__)
 		m_richa_pageDiscovered,
 		m_richa_lunerFestivalElderFound,
 		m_richa_ListeMaison,
+		m_richa_itemLootQuests,
 		persoNameImport
 		);
 
@@ -2758,6 +2806,35 @@ void Player::richa_exportTo_ristat_()
 			AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(m_richa_ListeMaison[i].areaid);
 
 			sprintf(outt, "%d,%d,%s\r\n", m_richa_ListeMaison[i].mapid , m_richa_ListeMaison[i].areaid ,  areaEntry ? areaEntry->area_name[richa_language] : "unknown");
+			fwrite(outt, 1, strlen(outt), fout);
+		}
+
+		sprintf(outt, "\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+
+
+
+	}
+
+	{
+
+
+		sprintf(outt, "\r\n#LIST_ITEM_LOOT_QUEST =================================\r\n");
+		fwrite(outt, 1, strlen(outt), fout);
+
+		sprintf(outt, "Counter,%d\r\n", m_richa_itemLootQuests.size());
+		fwrite(outt, 1, strlen(outt), fout);
+
+		for(int i=0; i<m_richa_itemLootQuests.size(); i++)
+		{
+			sprintf(outt, "%d,%d,%f,%d,%d\r\n",
+				m_richa_itemLootQuests[i].active , 
+				m_richa_itemLootQuests[i].itemid ,  
+				m_richa_itemLootQuests[i].currentScore,  
+				m_richa_itemLootQuests[i].nbFoisQueteDone,
+				m_richa_itemLootQuests[i].LoopQuest
+				);
 			fwrite(outt, 1, strlen(outt), fout);
 		}
 
@@ -5053,7 +5130,7 @@ void Player::GiveXP(uint32 xp, Creature* victim)
 
 						m_richar_paragon++;
 
-						char messageOut[256];
+						char messageOut[4096];
 						sprintf(messageOut, "Paragon %d !", m_richar_paragon);
 						Say(messageOut, LANG_UNIVERSAL);
 					}
@@ -15353,7 +15430,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	//
 	//
 	//
-	// Cette longue liste est en 2 exemplaires : un dans __RICHARD_ALL.txt et un dans Player.cpp
+	// Cette longue liste est en 3 exemplaires : un dans __RICHARD_ALL.txt et un dans Player.cpp de CLASSIC, un dans Player de WOTLK
 	// donc IMPORTANT de maintenanir LA MEME liste des 2 cotés
 	// toutefois attention a pas la copier coller betement - les 2 listes ne sont pas communes pour les comment-out
 	// en effet, celle de __RICHARD_ALL.txt va comment-out les quete qu'on ne doit pas reset regulierement
@@ -15571,8 +15648,9 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	//||questID==8843  //PAS DE BONUS YOUHAICOIN
 	//||questID==8845  //PAS DE BONUS YOUHAICOIN
 	//
-	// Ci Dessous - les quetes de la foire de sombre lune ( 4 et 5 )
+	// Ci Dessous - les quetes de la foire de sombre lune (Drakmoon Faire / Foire de Sombrelune) ( 4 et 5 )
 	//
+	||questID==7905 // mec qui circule dans Iron Forge pour nous dire que la Foire est prete - raporte 5 tickets si on y va.
 	||questID==7929
 	||questID==7926
 	||questID==7939
@@ -15600,6 +15678,10 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	{
 		rewardGreyAndGreenAsYellow_event = true;
 	}
+
+	// id dans la base de donnée
+	const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
+	const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
 
 	
 	if (
@@ -15733,9 +15815,6 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 			nbCoinToReceiveReally, nbCoinToReceiveMax
 			);
 
-		// id dans la base de donnée
-		const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
-		const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
 
 
 		
@@ -15921,7 +16000,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 					{
 						ItemPosCountVec dest;
 						int nbCoinToReceiveReally = 1;
-						int newItemreceived = 30000;
+						const int newItemreceived = coinItemID1;
 						if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
 						{
 							Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
@@ -16066,117 +16145,179 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 		int yea = now->tm_year + 1900;
 
 
+		
+
 		//on verifie qu'il existe pas deja
-		bool trouvee = false;
+		bool trouveePourCetteQueteEtCetteAnnee = false;
+		unsigned int anneeLaPlusHaute = 0; // année la plus recente ou ce personnage a rendu la quete auprès de cet Elder
 		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
 		{
 			if ( m_richa_lunerFestivalElderFound[i].year == yea && 
 				m_richa_lunerFestivalElderFound[i].questId == questID )
 			{
-				trouvee = true;
-				break;
+				trouveePourCetteQueteEtCetteAnnee = true;
+				//break;
 			}
+
+			if (   m_richa_lunerFestivalElderFound[i].questId == questID 
+				&& m_richa_lunerFestivalElderFound[i].year > anneeLaPlusHaute
+				)
+			{
+				anneeLaPlusHaute = m_richa_lunerFestivalElderFound[i].year;
+			}
+
 		}
 
-		if ( !trouvee )
+		if ( !trouveePourCetteQueteEtCetteAnnee )
 		{
 			m_richa_lunerFestivalElderFound.push_back(RICHA_LUNARFESTIVAL_ELDERFOUND(yea,questID));
 		}
 		else
 		{
-			char messageOut[256];
+			char messageOut[4096];
 			sprintf(messageOut, "ERREUR 5321 - existe deja cette annee ???");
 			Say(messageOut, LANG_UNIVERSAL);
 		}
 
-		// 2ieme etape, on ecrit un feedback au joueur pour savoir si d'autre perso a lui on deja fait cette quete d'autre années
-		//
+
+		if ( anneeLaPlusHaute == 0 )
+		{
+		
+			int nbPointGagne = 2;
+
+			m_richa_scoreElderCourse += nbPointGagne;
+
+			char messageOut[4096];
+			sprintf(messageOut, "Je n'ai jamais rencontre cet Ancien. Je gagne %d point. Mon score passe a %d",
+				nbPointGagne,
+				m_richa_scoreElderCourse
+				);
+			Say(messageOut, LANG_UNIVERSAL);
+		}
+		else
+		{
+			int nbPointGagne = 1;
+
+			// nombre d'années depuis que je l'ai pas vu
+			// nombre entre 1  et  N
+			int nbAnneDepuisDerniereVisite = (yea - anneeLaPlusHaute);
+
+
+			m_richa_scoreElderCourse += nbPointGagne;
+
+			char messageOut[4096];
+			sprintf(messageOut, "la derniere fois c'etait en %d. Je gagne %d point. Mon score passe a %d",
+				anneeLaPlusHaute,
+				nbPointGagne,
+				m_richa_scoreElderCourse
+				);
+			Say(messageOut, LANG_UNIVERSAL);
+
+		}
+
+		//etant donné que   m_richa_scoreElderCourse  n'est pas sauvegardé,  si jamais un joueur deco sans faire expres
+		//c'est pas mal d'ecrire regulierement son score dans la console du server, pour le garder qqpart
+		char messageOut[4096];
+		sprintf(messageOut, "RICHA ELDER -------- le score Elder de %s passe a %d", GetName(), m_richa_scoreElderCourse);
+		BASIC_LOG(messageOut);
+
 
 		
-		std::vector<int>  associatedPlayerGUID;
 
-		// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
-		if ( this->GetGUID() == 4 )// boulette
+		// 2ieme etape, on ecrit un feedback au joueur pour savoir si d'autre perso a lui on deja fait cette quete d'autre années
+		//              c'est juste un feedback pour donner une info - cette etape ne modifie rien
+		//
 		{
-			associatedPlayerGUID.push_back(27); // Bouzigouloum
-		}
-		if ( this->GetGUID() == 27 )//  Bouzigouloum 
-		{
-			associatedPlayerGUID.push_back(4); // boulette
-		}
-		if ( this->GetGUID() == 5 )// Bouillot
-		{
-			associatedPlayerGUID.push_back(28); // Adibou
-		}
-		if ( this->GetGUID() == 28 )// Adibou 
-		{
-			associatedPlayerGUID.push_back(5); //  Bouillot
-		}
+		
+			std::vector<int>  associatedPlayerGUID;
 
-		//juste pour le debug je vais lier grandjuge et grandtroll
-		if ( this->GetGUID() == 19 )// grandjuge
-		{
-			associatedPlayerGUID.push_back(29); // grandtroll
-		}
-		if ( this->GetGUID() == 29 )// grandtroll 
-		{
-			associatedPlayerGUID.push_back(19); //  grandjuge
-		}
-
-
-		std::map<int,int> queteConnuEnTout; // sans prendre en compte l annee  -  je n'utilise pas le right
-		std::map<int,int> queteConnuCetteAnnee; // cette l annee   -  je n'utilise pas le right
-
-		// on rempli deja avec le perso courant
-		for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
-		{
-			queteConnuEnTout[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
-
-			if ( m_richa_lunerFestivalElderFound[i].year == yea )
+			// #LISTE_ACCOUNT_HERE   -  ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
+			if ( this->GetGUID() == 4 )// boulette
 			{
-				queteConnuCetteAnnee[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
+				associatedPlayerGUID.push_back(27); // Bouzigouloum
 			}
-		}
-
-		// ensuite on rempli avec son / ses perso associé au meme joueur
-		for(int i=0; i<associatedPlayerGUID.size(); i++)
-		{
-			std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
-			std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
-			std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
-			std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
-			std::string persoNameImport;
-			Player::richa_importFrom_richaracter_(
-				associatedPlayerGUID[i],
-				richa_NpcKilled,
-				richa_pageDiscovered,
-				richa_lunerFestivalElderFound,
-				richa_maisontavern,
-				persoNameImport
-				);
-
-
-			for(int i=0; i<richa_lunerFestivalElderFound.size(); i++)
+			if ( this->GetGUID() == 27 )//  Bouzigouloum 
 			{
-				queteConnuEnTout[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
+				associatedPlayerGUID.push_back(4); // boulette
+			}
+			if ( this->GetGUID() == 5 )// Bouillot
+			{
+				associatedPlayerGUID.push_back(28); // Adibou
+			}
+			if ( this->GetGUID() == 28 )// Adibou 
+			{
+				associatedPlayerGUID.push_back(5); //  Bouillot
+			}
 
-				if ( richa_lunerFestivalElderFound[i].year == yea )
+			//juste pour le debug je vais lier grandjuge et grandtroll
+			if ( this->GetGUID() == 19 )// grandjuge
+			{
+				associatedPlayerGUID.push_back(29); // grandtroll
+			}
+			if ( this->GetGUID() == 29 )// grandtroll 
+			{
+				associatedPlayerGUID.push_back(19); //  grandjuge
+			}
+
+
+			std::map<int,int> queteConnuEnTout; // sans prendre en compte l annee  -  je n'utilise pas le right
+			std::map<int,int> queteConnuCetteAnnee; // cette l annee   -  je n'utilise pas le right
+
+			// on rempli deja avec le perso courant
+			for(int i=0; i<m_richa_lunerFestivalElderFound.size(); i++)
+			{
+				queteConnuEnTout[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
+
+				if ( m_richa_lunerFestivalElderFound[i].year == yea )
 				{
-					queteConnuCetteAnnee[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
+					queteConnuCetteAnnee[ m_richa_lunerFestivalElderFound[i].questId  ]  =  0;
 				}
 			}
 
-		}//pour chaque perso associé
+			// ensuite on rempli avec son / ses perso associé au meme joueur
+			for(int i=0; i<associatedPlayerGUID.size(); i++)
+			{
+				std::vector<Player::RICHA_NPC_KILLED_STAT> richa_NpcKilled;
+				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
+				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
+				std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+				std::vector<Player::RICHA_ITEM_LOOT_QUEST> richa_lootquest;
+				std::string persoNameImport;
+				Player::richa_importFrom_richaracter_(
+					associatedPlayerGUID[i],
+					richa_NpcKilled,
+					richa_pageDiscovered,
+					richa_lunerFestivalElderFound,
+					richa_maisontavern,
+					richa_lootquest,
+					persoNameImport
+					);
 
-		char messageOut[256];
-		sprintf(messageOut, "Cette annee : %d/50 / En tout %d/50", queteConnuCetteAnnee.size(), queteConnuEnTout.size()  );
-		Say(messageOut, LANG_UNIVERSAL);
 
+				for(int i=0; i<richa_lunerFestivalElderFound.size(); i++)
+				{
+					queteConnuEnTout[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
 
+					if ( richa_lunerFestivalElderFound[i].year == yea )
+					{
+						queteConnuCetteAnnee[ richa_lunerFestivalElderFound[i].questId  ]  =  0;
+					}
+				}
+
+			}//pour chaque perso associé
+
+			char messageOut[4096];
+			sprintf(messageOut, "Cette annee : %d/50 / En tout %d/50", queteConnuCetteAnnee.size(), queteConnuEnTout.size()  );
+			
+			//pour l'instant je mets en commentaire ce feedback pour pas qu'il rentre en conflit avec le Say() dit précédement par le Joueur.
+			//Say(messageOut, LANG_UNIVERSAL);
+
+		
+		}
 
 
 	}
-	}
+	} // END : add coin in quest reward
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -19326,6 +19467,7 @@ void Player::SaveToDB()
 		m_richa_pageDiscovered,
 		m_richa_lunerFestivalElderFound,
 		m_richa_ListeMaison,
+		m_richa_itemLootQuests,
 		GetName()
 		);
 

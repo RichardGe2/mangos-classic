@@ -5258,7 +5258,7 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
 				Pet* old_critter = player->GetMiniPet();
 				if (!old_critter )
 				{
-					char messageOut[256];
+					char messageOut[4096];
 					sprintf(messageOut, "Youhaimon GO !");
 					player->Say(messageOut, LANG_UNIVERSAL);
 				}
@@ -5269,7 +5269,7 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
 			else
 			{
 			
-				char messageOut[256];
+				char messageOut[4096];
 				sprintf(messageOut, "Pas de youhaimon");
 				player->Say(messageOut, LANG_UNIVERSAL);
 

@@ -1430,6 +1430,7 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 				std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 				std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
 				std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+				std::vector<Player::RICHA_ITEM_LOOT_QUEST> richa_lootquest;
 				std::string persoNameImport;
 				Player::richa_importFrom_richaracter_(
 					mainPlayerGUID[jj],
@@ -1437,6 +1438,7 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 					richa_pageDiscovered,
 					richa_lunerFestivalElderFound,
 					richa_maisontavern,
+					richa_lootquest,
 					persoNameImport
 					);
 

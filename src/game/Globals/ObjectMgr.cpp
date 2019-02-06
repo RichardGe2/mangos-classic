@@ -7477,11 +7477,11 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
 
 			/////////////////////////////////////////////////////////
 			//RICHARD DEBUG PLAYER MEET CONDITION
-			bool result = player->GetQuestRewardStatus(m_value1);
-			BASIC_LOG("RICHAR : PlayerCondition::Meets - condition_entry=%d - type=CONDITION_QUESTREWARDED - m_value1=%d - result=%d",
-				m_entry,
-				m_value1,
-				result);
+			//bool result = player->GetQuestRewardStatus(m_value1);
+			//BASIC_LOG("RICHAR : PlayerCondition::Meets - condition_entry=%d - type=CONDITION_QUESTREWARDED - m_value1=%d - result=%d",
+			//	m_entry,
+			//	m_value1,
+			//	result);
 			
 
 			/////////////////////////////////////////////////////////
@@ -7500,12 +7500,12 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
 
 			/////////////////////////////////////////////////////////
 			//RICHARD DEBUG PLAYER MEET CONDITION
-			bool result = player->IsCurrentQuest(m_value1, m_value2);
-			BASIC_LOG("RICHAR : PlayerCondition::Meets - condition_entry=%d - type=CONDITION_QUESTTAKEN - m_value1=%d - m_value2=%d -result=%d",
-				m_entry,
-				m_value1,
-				m_value2,
-				result);
+			//bool result = player->IsCurrentQuest(m_value1, m_value2);
+			//BASIC_LOG("RICHAR : PlayerCondition::Meets - condition_entry=%d - type=CONDITION_QUESTTAKEN - m_value1=%d - m_value2=%d -result=%d",
+			//	m_entry,
+			//	m_value1,
+			//	m_value2,
+			//	result);
 			
 
 			/////////////////////////////////////////////////////////

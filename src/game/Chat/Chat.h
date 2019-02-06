@@ -579,6 +579,7 @@ class ChatHandler
         bool HandleDieCommand(char* args);
 		bool Richar_noMoreInComat(char* args);
 		bool Richar_help(char* args);
+		bool Richar_need(char* args);
 		bool Richar_tellMobStats(char* args);
 		bool Richar_listeventquest(char* args);
         bool HandleDamageCommand(char* args);

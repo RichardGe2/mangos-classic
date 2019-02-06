@@ -305,8 +305,8 @@ class Loot
         ~Loot();
 
         // Inserts the item into the loot (called by LootTemplate processors)
-        void AddItem(LootStoreItem const& item);
-        void AddItem(uint32 itemid, uint32 count, uint32 randomSuffix, int32 randomPropertyId);             // used in item.cpp to explicitly load a saved item
+        void virtual AddItem(LootStoreItem const& item);
+        void virtual AddItem(uint32 itemid, uint32 count, uint32 randomSuffix, int32 randomPropertyId);             // used in item.cpp to explicitly load a saved item
         bool AutoStore(Player* player, bool broadcast = false, uint32 bag = NULL_BAG, uint32 slot = NULL_SLOT);
         bool CanLoot(Player const* player);
         void ShowContentTo(Player* plr);

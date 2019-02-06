@@ -102,9 +102,9 @@ there is no difference here (except that default text is chosen with `gameobject
 
 #define S_LEARN_WEAPON          9789
 #define S_LEARN_ARMOR           9790
-#define S_LEARN_HAMMER          39099
-#define S_LEARN_AXE             39098
-#define S_LEARN_SWORD           39097
+#define S_LEARN_HAMMER          17044 //
+#define S_LEARN_AXE             17043 // RICHARD : je fix les bonnes valeurs ( issues/1834 )
+#define S_LEARN_SWORD           17042 //
 
 #define S_UNLEARN_WEAPON        36436
 #define S_UNLEARN_ARMOR         36435
@@ -333,20 +333,48 @@ bool GossipHello_npc_prof_blacksmith(Player* pPlayer, Creature* pCreature)
     {
         switch (eCreature)
         {
+
+
+
+			//
+			// RICHARD, pour les sous metier de forgeron, on permet au joueur d'avoir les 3 sous-spec
+			//          donc je comment-out les 3 lignes avec   if (!HasWeaponSub(pPlayer))
+			//          et je remplace par   if (!pPlayer->HasSpell(S_XXXXX))
+			//
+			//
+
+
+
             case 11191:                                     // Lilith the Lithe
-                if (!HasWeaponSub(pPlayer))
+              
+															
+					///////   if (!HasWeaponSub(pPlayer))
+					if (!pPlayer->HasSpell(S_HAMMER))
+
+
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_LEARN_HAMMER,       GOSSIP_SENDER_LEARN,    GOSSIP_ACTION_INFO_DEF + 5);
                 if (pPlayer->HasSpell(S_HAMMER))
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_UNLEARN_HAMMER,     GOSSIP_SENDER_UNLEARN,  GOSSIP_ACTION_INFO_DEF + 8);
                 break;
             case 11192:                                     // Kilram
-                if (!HasWeaponSub(pPlayer))
+               
+															
+				///////     if (!HasWeaponSub(pPlayer))
+				if (!pPlayer->HasSpell(S_AXE))
+
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_LEARN_AXE,          GOSSIP_SENDER_LEARN,    GOSSIP_ACTION_INFO_DEF + 6);
                 if (pPlayer->HasSpell(S_AXE))
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_UNLEARN_AXE,        GOSSIP_SENDER_UNLEARN,  GOSSIP_ACTION_INFO_DEF + 9);
                 break;
             case 11193:                                     // Seril Scourgebane
-                if (!HasWeaponSub(pPlayer))
+
+
+
+                 ///////    if (!HasWeaponSub(pPlayer))
+				if (!pPlayer->HasSpell(S_SWORD))
+
+
+
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_LEARN_SWORD,        GOSSIP_SENDER_LEARN,    GOSSIP_ACTION_INFO_DEF + 7);
                 if (pPlayer->HasSpell(S_SWORD))
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_UNLEARN_SWORD,      GOSSIP_SENDER_UNLEARN,  GOSSIP_ACTION_INFO_DEF + 10);

@@ -385,6 +385,25 @@ void GameObject::Update(const uint32 diff)
                                     }
                                     case 2: // all
                                     {
+
+
+										/*
+										// RICHARD DEBUG ASUP - correction très rapide de la machine PX-238
+										// Je mets en commentaire : car devrait etre corrigé maintenant ( issues/1811 )
+										if ( strcmp( goInfo->name , "Fabulovolt PX-238 Hiver TRAP" ) == 0 )
+										{
+											Player* player = nullptr;
+											MaNGOS::AnyPlayerInObjectRangeCheck check(this, radius);
+											MaNGOS::PlayerSearcher<MaNGOS::AnyPlayerInObjectRangeCheck> searcher(player, check);
+											Cell::VisitWorldObjects(this, searcher, radius);
+											target = player;
+											break;
+										}
+										*/
+
+
+
+
                                         MaNGOS::AnyUnitInObjectRangeCheck u_check(this, radius);
                                         MaNGOS::UnitSearcher<MaNGOS::AnyUnitInObjectRangeCheck> checker(target, u_check);
                                         Cell::VisitAllObjects(this, checker, radius);
@@ -399,6 +418,26 @@ void GameObject::Update(const uint32 diff)
                                     }
                                 }
                             }
+
+
+							/*
+							// RICHARD DEBUG ASUP - correction très rapide de la machine PX-238
+							// Je mets en commentaire : car devrait etre corrigé maintenant ( issues/1811 )
+							if ( target && strcmp( goInfo->name , "Fabulovolt PX-238 Hiver TRAP" ) == 0 )
+							{
+								if ( !target->IsPlayer() )
+								{
+									int aa=0;
+								}
+
+								if ( target && target->IsPlayer() )
+								{
+									Use(target);
+								}
+								target = nullptr;
+							}
+							*/
+
 
                             if (target && (!goInfo->trapCustom.triggerOn || !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE))) // do not trigger on hostile traps if not selectable
                                 Use(target);

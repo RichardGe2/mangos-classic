@@ -1498,6 +1498,7 @@ bool DungeonMap::Add(Player* player)
 			// j'ai noté la procédure a faire la premiere fois qu'on commence l'instance - voir vers la fin de ____richard_ALL.txt
 			//
 			bool permanennt = false;
+			/*
 			const char* nameplayer = player->GetName();
 
 			//normallement il devrait pas trop y avoir besoin de faire des check avec les noms.
@@ -1521,6 +1522,17 @@ bool DungeonMap::Add(Player* player)
 				permanennt = true;
 				player->Say("Sauvegarde permanante ACTIVE", LANG_UNIVERSAL);
 			}
+			*/
+
+			//EN FAIT JE VAIS METTRE PERMANENT POUR TOUT LE MONDE - comme ca n'importe qui peut faire tranquillement son propre donjon
+			//j'ai fait qq tests , ca m'a l'air de bien marcher.
+			//si qqun rentre seul, il fait sa propre instance.
+			//si chaque joueurs a sa propre instance et veulent se mettre ensembre, un des joueur a juste a faire  .instance unbind all   pour effacer sa sauvegarde.
+			permanennt = true;
+			player->Say("Sauvegarde permanante ACTIVE", LANG_UNIVERSAL);
+
+
+
 
 			// set up a solo bind or continue using it
 			if (!playerBind)

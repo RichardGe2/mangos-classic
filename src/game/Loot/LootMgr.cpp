@@ -385,7 +385,7 @@ bool LootItem::Richard_lootCommunPourObjDeQuest(unsigned int itemID)
 
 	if ( nbNbNeg > 0 && nbNbPos == 0 )
 	{
-		BASIC_LOG("RICHAR: on force le loot commun pour item = '%d'", itemID );
+		//BASIC_LOG("RICHAR: on force le loot commun pour item = '%d'", itemID );
 		return true;
 	}
 
@@ -1009,6 +1009,393 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 	const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
 
 
+	// on liste tous les joueurs le la team
+	std::vector<Player*> playerList;
+	if ( 
+	lootOwner &&
+	lootOwner->GetGroup() && 
+	lootOwner->GetGroup()->GetMembersCount() > 1 )
+	{
+		//si une team
+		Group* gr = lootOwner->GetGroup();
+		Group::MemberSlotList const& memberList = gr->GetMemberSlots();
+        for (const auto& memberItr : memberList)
+		{
+			Player* looter = ObjectAccessor::FindPlayer(memberItr.guid);
+            playerList.push_back(looter);
+		}
+	}
+	else
+	{
+		//si pas d'equipe
+		if ( lootOwner )
+		{
+			playerList.push_back(lootOwner);
+		}
+	}
+
+
+
+	//Gestion de la quete d'objet
+	{
+
+		//il y a 2 mode de gameplay possible : 
+		//
+		// mode_itemCanLoot=false ( mode plus mechant )
+		// si l'item a 10% de chance de tomber, alors on est sur que les 9 premier kill ne looteront pas, et le 10ieme donnera l'item
+		//
+		// mode_itemCanLoot=true  ( mode plus gentil )
+		// si l'item a 10% de chance de tomber, alors les 9 premier kill on 10% de chance de looter l'item. 
+		// s'il tombe pendant ces 9 kill, la quete est reset
+		// s'il tombe pas, on a la garantie de l'avoir au 10ieme
+		const bool mode_itemCanLoot = true;
+
+		//on liste tous les item qui sont en cours de quete
+		struct ITEM_NEED
+		{
+			ITEM_NEED()
+			{
+				statisqueDropOfThisItemOnCurrentNPC = 0.0f;
+				nbFound = 0;
+				itemDropOnThisLoot = false;
+			}
+
+			std::vector<Player*> playerNeedThisItem;//liste des joueurs qui on une quete active de cet item
+			std::vector<int> playerNeedThisItem_indexQuest;  // meme taille /  meme ordre  que  playerNeedThisItem - juste pour accelerer -   correspond pour chaque Player de playerNeedThisItem à l'index la la quete dans la propre liste du joueur
+			float statisqueDropOfThisItemOnCurrentNPC; // entre 0.0 et 1.0
+			unsigned int nbFound; // combien de fois cet item est tombé sur les 'nbTry' creations de loot 
+			bool itemDropOnThisLoot; // true si l'item est tombé sur la cadavre reel du mob
+		};
+
+		//first is an item ID  -  second is a ITEM_NEED
+		std::map<uint32_t,ITEM_NEED> listItemThatPlayersNeed;
+
+		for(int iPLayer=0; iPLayer<playerList.size(); iPLayer++)
+		{
+			const std::vector<Player::RICHA_ITEM_LOOT_QUEST>& lit = playerList[iPLayer]->m_richa_itemLootQuests;
+			for(int iQuest=0; iQuest<lit.size(); iQuest++)
+			{
+				if ( lit[iQuest].active )
+				{
+					if ( listItemThatPlayersNeed.find(lit[iQuest].itemid) != listItemThatPlayersNeed.end() )
+					{
+						//si un des joueur est deja sur cet item
+						listItemThatPlayersNeed[lit[iQuest].itemid].playerNeedThisItem.push_back(playerList[iPLayer]);
+						listItemThatPlayersNeed[lit[iQuest].itemid].playerNeedThisItem_indexQuest.push_back(iQuest);
+					}
+					else
+					{
+						//si personne n'est sur cet item
+						listItemThatPlayersNeed[lit[iQuest].itemid].playerNeedThisItem.push_back(playerList[iPLayer]);
+						listItemThatPlayersNeed[lit[iQuest].itemid].playerNeedThisItem_indexQuest.push_back(iQuest);
+						listItemThatPlayersNeed[lit[iQuest].itemid].statisqueDropOfThisItemOnCurrentNPC = 0.0f;
+						listItemThatPlayersNeed[lit[iQuest].itemid].nbFound = 0;
+						listItemThatPlayersNeed[lit[iQuest].itemid].itemDropOnThisLoot = false;
+					}
+				}
+			}
+		}
+
+
+		//deja il suffit qu'un joueur soit sur un item , pour qu'on le retire du loot du mob, s'il etait dans la loot liste. ( si on est en mode mechant )
+		for(auto& iItemNeed : listItemThatPlayersNeed)
+		{
+
+			for(int i=0; i<m_lootItems.size(); i++)
+			{
+				if ( m_lootItems[i] && m_lootItems[i]->itemId == iItemNeed.first )
+				{
+					iItemNeed.second.itemDropOnThisLoot = true;
+
+					if ( !mode_itemCanLoot ) // si mode mechant : on retire l'item
+					{
+						LootItem* ii = m_lootItems[i];
+						m_lootItems.erase(m_lootItems.begin()+i);
+						delete ii;
+
+						BASIC_LOG("RICHAR - ITEM QUEST - l objet etait loote mais on le retire.");
+					}
+					else
+					{
+						int a=0;
+					}
+				}
+			}
+		}
+
+		// 5000 c'etait trop, on pouvait attendre jusqu'a 1 secondes de pause. (en DEBUG)
+		// 1000 quand on sait on voit la pause, mais ca me semble assez subtil
+		// je vais mettre 500 pour vraiment que ce soit fluide
+		const int nbTry = 500;
+
+		//unsigned int nbFound = 0;
+
+		for(int iTry=0; iTry<nbTry; iTry++)
+		{
+
+			
+			//on cree une version simplifié de Loot, pour accelerer le process des 'nbTry' fabrications de loot
+			class Loot_RICHA : public Loot
+			{
+			public:
+				void AddItem(LootStoreItem const& item) override
+				{
+					// NOTE : je ne prends pas en compte le count pour l'instant.
+
+					listItem.push_back(item.itemid);
+					//item.mincountOrRef
+				}
+
+				void AddItem(uint32 itemid, uint32 count, uint32 randomSuffix, int32 randomPropertyId) override
+				{
+					listItem.push_back(itemid);
+				}
+
+				std::vector<uint32_t> listItem;
+			};
+
+			Loot_RICHA newLoot ;
+			tab->Process(newLoot, lootOwner, store, store.IsRatesAllowed());
+
+			for(auto& iItemNeed : listItemThatPlayersNeed)
+			{
+				for(int i=0; i<newLoot.listItem.size();i++)
+				{
+					if ( newLoot.listItem[i] == iItemNeed.first )
+					{
+						iItemNeed.second.nbFound++;
+					}
+				}
+			}
+
+		}
+
+
+		struct LIST_QUEST_TO_REMOVE
+		{
+			Player* player;
+			
+			// ca paraitrai bcp plus imple de sauvegarder l'index dans m_richa_itemLootQuests plutot que l'item ID
+			// mais je ne le fait pas, car si un meme joueur a plusieur quete a delete dans sa liste, alors il faut gerer le fait que les indices changent a chaque delete.
+			int itemID_in____m_richa_itemLootQuests;  
+			//int index_in___m_richa_itemLootQuests;
+
+			LIST_QUEST_TO_REMOVE()
+			{
+				player=nullptr;
+				itemID_in____m_richa_itemLootQuests = -1;
+			}
+		};
+		std::vector<LIST_QUEST_TO_REMOVE> listQuestToRemove;
+
+		for(auto& iItemNeed : listItemThatPlayersNeed)
+		{
+
+			bool itemEnLootCommun = false;
+			ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(  iItemNeed.first  );
+			if ( itemProto )
+			{
+				itemEnLootCommun = (itemProto->Flags & ITEM_FLAG_MULTI_DROP) != 0;
+			}
+			itemEnLootCommun = LootItem::Richard_lootCommunPourObjDeQuest(iItemNeed.first) ? true : itemEnLootCommun;
+
+			std::string gagantDebug = "";
+
+			//si on est en mode gentil et que l'objet est tombé, alors on reset la quete de tout ceux qui etaient sur cette item
+			if ( mode_itemCanLoot && iItemNeed.second.itemDropOnThisLoot )
+			{
+				//for each player on this item quest
+				for(int iPLayer=0; iPLayer<iItemNeed.second.playerNeedThisItem.size(); iPLayer++)
+				{
+					Player* playy = iItemNeed.second.playerNeedThisItem[iPLayer];
+					Player::RICHA_ITEM_LOOT_QUEST& quest = playy->m_richa_itemLootQuests[ iItemNeed.second.playerNeedThisItem_indexQuest[iPLayer] ];
+
+
+					//
+					//on cloture la quete :
+					//
+
+					if ( quest.LoopQuest )
+					{
+						quest.currentScore = 0.0f;
+
+						// quest.nbFoisQueteDone ++; <-- on va dire qu'on on incrémente pas si la quete est pas reelement faite.. ca change pas grand chose.
+					}
+					else
+					{
+						//even if the quest will be removed, more secure to finish it as if it's a loop
+						quest.currentScore = 0.0f;
+						quest.active = false;
+
+						LIST_QUEST_TO_REMOVE questRem;
+						questRem.player = playy;
+						questRem.itemID_in____m_richa_itemLootQuests = iItemNeed.first;
+						listQuestToRemove.push_back(questRem);
+					}
+
+				
+					std::string itemName = "objet inconnu";
+					if ( itemProto )
+					{
+						itemName = std::string(itemProto->Name1);
+					}
+
+					//char messageJoueur[4096];
+					//sprintf(messageJoueur,"quete termin\xc3\xa9\e - %s est pour moi.",itemName.c_str());
+					//playy->Say(messageJoueur, LANG_UNIVERSAL);
+				
+					//gagantDebug = "Gagnant=";
+					//gagantDebug += std::string(winner->GetName());
+
+
+
+
+				}
+
+				gagantDebug += "l'objet est tombe naturellement ";
+				gagantDebug += "on reset donc la quete de ";
+				gagantDebug += std::to_string( iItemNeed.second.playerNeedThisItem.size() );
+				gagantDebug += "joueurs.";
+
+			}
+			else
+			{
+
+				iItemNeed.second.statisqueDropOfThisItemOnCurrentNPC = (float)iItemNeed.second.nbFound / (float)nbTry;
+
+				//pour chaque item, on ne choisi que 1 seul joueur a incrémenter le score
+				//sauf si objet en loot commun, dans ce cas on donne les points toujours au meme joueur.
+				//voir diapo dans H: ou je parle plus préciséments des regle de ces quetes.
+
+				
+				//si item en loot commun, et plusieurs joueurs sont sur la quete, alors on donne toujours au meme joueur
+				//ceci va garantir que si un item a 10% de chance de tomber, alors il tombera pour tout le monde au bout de 10 kill
+				uint32 indexPlayerChosen = 0;
+				if ( itemEnLootCommun && iItemNeed.second.playerNeedThisItem.size() > 1 )
+				{
+					// on va dire par exemple qu'on donne toujours au joueur avec le plus petit GUID
+					uint32 lowerGUID = 0xFFffFFff;
+					int playerIndexChoosen = -1;
+					for(int i=0; i<iItemNeed.second.playerNeedThisItem.size(); i++)
+					{
+						uint32 guidd = iItemNeed.second.playerNeedThisItem[i]->GetGUIDLow();
+						if ( guidd < lowerGUID )
+						{
+							playerIndexChoosen = i;
+							lowerGUID = guidd;
+						}
+					}
+					indexPlayerChosen = playerIndexChoosen;
+				}
+				else
+				{
+					indexPlayerChosen = uint32(urand(      0      ,  iItemNeed.second.playerNeedThisItem.size()-1 )  );
+				}
+
+				Player* winner = iItemNeed.second.playerNeedThisItem[indexPlayerChosen];
+				Player::RICHA_ITEM_LOOT_QUEST& quest = winner->m_richa_itemLootQuests[ iItemNeed.second.playerNeedThisItem_indexQuest[indexPlayerChosen] ];
+				quest.currentScore += iItemNeed.second.statisqueDropOfThisItemOnCurrentNPC;
+				if ( quest.currentScore >= 1.0 ) // si le joueur termine sa quete
+				{
+
+					if ( quest.LoopQuest )
+					{
+						quest.currentScore -= 1.0f; // on reinit ( en accordant au joueur l'eventuel delta qu'il avait au dessus de 1.0
+						if ( quest.currentScore >= 1.0f )
+						{
+							//je pense pas que ce cas devrait arriver, mais on sait jamais.
+							//on s'il est toujours au dessus de 1, malgrès mon reset, autant faire un vrai reset a 0
+							quest.currentScore = 0.0f;
+						}
+
+						quest.nbFoisQueteDone ++;
+					}
+					else
+					{
+						//even if the quest will be removed, more secure to finish it as if it's a loop
+						quest.nbFoisQueteDone ++;
+						quest.currentScore = 0.0f;
+						quest.active = false;
+
+						LIST_QUEST_TO_REMOVE questRem;
+						questRem.player = winner;
+						//questRem.index_in___m_richa_itemLootQuests = iItemNeed.second.playerNeedThisItem_indexQuest[indexPlayerChosen];
+						questRem.itemID_in____m_richa_itemLootQuests = iItemNeed.first;
+						listQuestToRemove.push_back(questRem);
+					}
+
+				
+
+					std::string itemName = "objet inconnu";
+					//ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(  iItemNeed.first  );
+					if ( itemProto )
+					{
+						itemName = std::string(itemProto->Name1);
+					}
+
+					char messageJoueur[4096];
+					sprintf(messageJoueur,"quete termin\xc3\xa9\e - %s est pour moi.",itemName.c_str());
+
+					winner->Say(messageJoueur, LANG_UNIVERSAL);
+				
+					//d'un coté c'est mieux de le donner direct au joueur
+					//de l'autre c'est bcp plus simple de le mettre dans le loot, ca evite d'avoir a gerer les inventaire pleins
+					//ca permet aussi de gerer les item en loot commun
+					AddItem(iItemNeed.first, 1, 0,0);
+
+					gagantDebug = "Gagnant=";
+					gagantDebug += std::string(winner->GetName());
+				}
+
+			}
+
+			BASIC_LOG("RICHAR - ITEM QUEST : probability item=%d  :  %f/100  %s", 
+				iItemNeed.first ,
+				iItemNeed.second.statisqueDropOfThisItemOnCurrentNPC * 100.0f , 
+				gagantDebug.c_str());
+		}
+
+
+
+
+		// a la toute fin de cette etape, on retire les eventuelles quete d'item qui doivent etre retiré
+		// ( c'est mieux de ne rien deplacer/retirer les elements de  m_richa_itemLootQuests     avant de fin de l'etape de gestion des quete d'item )
+		for(int i=0; i<listQuestToRemove.size(); i++)
+		{
+			Player* player__ = listQuestToRemove[i].player;
+
+			//search the itemID
+			int index = -1;
+			for(int j=0; j<player__->m_richa_itemLootQuests.size(); j++)
+			{
+				if ( player__->m_richa_itemLootQuests[j].itemid == listQuestToRemove[i].itemID_in____m_richa_itemLootQuests )
+				{
+					index = j;
+					break;
+				}
+			}
+
+			if ( index == -1 )
+			{
+				// ERREUR
+				player__->Say("ERROR MQH2 !!!!!!", LANG_UNIVERSAL);
+			}
+			else
+			{
+
+				player__->m_richa_itemLootQuests.erase(   player__->m_richa_itemLootQuests.begin() + index    );
+			}
+		}
+
+
+	} // FIN de - Gestion de la quete d'objet
+
+
+
+
+
+
+
 	/*
 	bool lootOrigin_creature = false;
 	bool lootOrigin_gameobj = false;
@@ -1419,6 +1806,43 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 		int aaaa=0;
 	}
+	else if ( lootOrigin ==  3 ) // clikc droit sur item qui loot un truc ( genre cadeau de noel )
+	{
+
+		const unsigned int itemID = loot_id; // ID de l'item qui donne le loot
+
+
+		//  "Cadeau a emballage multicolore" -  "gaily wrapped present"
+		// je vais effacer le loot coté database, et on va gerer ici.
+		//car j'arrive pas a mettre les pourcentage que je veux dans la database
+		if ( 21310 == itemID ) 
+		{
+			//on va dire 50% de chance de rien avoir.
+			//puis une chance egale d'avoir 1 des 4 item a collectionner.
+			uint32 onAUnCadeau = urand(0,1)  ;
+			BASIC_LOG("RICHAR: CADEAU NOEL - onAUnCadeau = %d  ",onAUnCadeau);
+			if ( onAUnCadeau == 1 )
+			{
+				uint32 cadeauId = urand(0,3)  ;
+				BASIC_LOG("RICHAR: CADEAU NOEL - cadeauId = %d  ",cadeauId);
+				if ( cadeauId == 0 )
+					AddItem(21301,1,0,0);
+				if ( cadeauId == 1 )
+					AddItem(21305,1,0,0);
+				if ( cadeauId == 2 )
+					AddItem(21308,1,0,0);
+				if ( cadeauId == 3 )
+					AddItem(21309,1,0,0);
+				
+			}
+			
+			
+			
+
+		}
+
+		int aa=0;
+	}
 	else
 	{
 		int dfdfd=0;
@@ -1461,7 +1885,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 		float difficultyDonjon = 0.0;
 
-		Creature::GetRichardModForMap(  creatureLooting->m_richar_lieuOrigin , creatureLooting->GetName(),  creatureLooting->GetOwner() , &difficultyDonjon  );
+		Creature::GetRichardModForMap(  creatureLooting->m_richar_lieuOrigin , creatureLooting->GetName(),  creatureLooting->GetOwner() , &difficultyDonjon, NULL  );
 
 		int playerParagon = lootOwner->GetParagonLevelFromItem();
 		int playerlevel = lootOwner->getLevel();
@@ -1494,17 +1918,20 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 		else if (cadavreElite &&     cadavreLevel >= playerlevel - 7 && cadavreLevel <= playerlevel - 3) // creature  elite verte
 		{
 			strcpy(typeMobChar, "elite-verte");
-			scoreToReach = 10.0f;
+			//scoreToReach = 10.0f;
+			scoreToReach = 6.0f;  // <-- changement fait le 9 dec 2018 - voir plus bas pour details
 		}
 		else if (cadavreElite &&   cadavreLevel >= playerlevel - 2 && cadavreLevel <= playerlevel + 2) // creature  elite jaune
 		{
 			strcpy(typeMobChar, "elite-jaune");
-			scoreToReach = 15.0f;
+			//scoreToReach = 15.0f;
+			scoreToReach = 11.0f;  // <-- changement fait le 9 dec 2018 - voir plus bas pour details
 		}
 		else if (cadavreElite &&     cadavreLevel >= playerlevel + 3) // creature  elite orange ou plus
 		{
 			strcpy(typeMobChar, "elite-orange");
-			scoreToReach = 20.0f;
+			//scoreToReach = 20.0f;
+			scoreToReach = 16.0f;  // <-- changement fait le 9 dec 2018 - voir plus bas pour details
 		}
 		else
 		{
@@ -1512,6 +1939,14 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			scoreToReach = 0.0f;
 		}
 
+		// a propos du changement du 9 dec 2018 :
+		// je prefere ne plus trop differencier les elites des normaux.
+		// Deja, les elites random d'exterieur, on les kill rarement, donc ca change rien aux stats.
+		// Concernant les elites de donjon, on va en tuer en masse, et on va equilibrer ces derniers pour qu'ils correspondent a une difficulté 2 joueurs.
+		// et donc pas trop different d'un mob non elite. donc je vois pas pourquoi ils devraient looter plus qu'un mob normal.
+		// je pense aussi surtout au perso 60 qui vont passer leur temps dans les donjons a tuer que de l'elite.
+		// ca fausse donc les stats. quand j'ai fait ca a la base, c'etait dans l'idée qu'un elite est rare, et compliqué a tuer.
+		// je vais quand meme laisser un petit +1% pour augmenter legerement le loot en donjon, mais il doit rester relativement rare
 
 
 		//on va ajuster le score to reach en fonction du paragon
@@ -1534,7 +1969,15 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			// si un joueur paragon 10 s'attaque a un mob fait pour paragon 5, alors on je dirai qu'on divise par 2 la probabilite de youhaicoin ?
 			if ( playerParagon > (int)difficultyDonjon )
 			{
-				coeffFacilite =  1.0f  /  ((float)playerParagon / (float)difficultyDonjon);
+				if ( difficultyDonjon > 0.001f )
+				{
+					coeffFacilite =  1.0f  /  ((float)playerParagon / (float)difficultyDonjon);
+				}
+				else
+				{
+					// si le mob a une difficulté 0 ( mob d'exterieur ) alors on donne forcément un coeff de 0
+					coeffFacilite = 0.0f;
+				}
 			}
 
 
@@ -2537,8 +2980,17 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
 				// GenerateMoneyLoot(creatureInfo->MinLootGold, creatureInfo->MaxLootGold);
 				// nouveau :
 				{
+					float difficultyDonjon = 0.0;
+					int nbPlayerThatShouldKillThisCreature = 1; // nombre original de joueurs équilibré par Blizzard
+					Creature::GetRichardModForMap(  creature->m_richar_lieuOrigin , creature->GetName(),  creature->GetOwner() , &difficultyDonjon, &nbPlayerThatShouldKillThisCreature  );
+
+
 					float newMin = (float)creatureInfo->MinLootGold;
 					float newMax = (float)creatureInfo->MaxLootGold;
+
+					/*
+
+					// ANCIENNE METHODE :
 
 					// 1) deja, on multiplie par la difficulté du perso :
 					if ( creature->Richar_difficuly_health > 0.0f )
@@ -2559,6 +3011,34 @@ Loot::Loot(Player* player, Creature* creature, LootType type) :
 						newMin = limitt;
 					}
 					
+					
+					*/
+
+
+					//nouvelle methode :
+					//pourquoi ne pas simplement diviser par le nombre de joueurs qui doivent tuer le mob.
+					//et remultiplier par 2, car dans la majorité des cas, on est 2 joueurs.
+					//par exemple, tous les mob de Naxramass, auront un taux de loot de  /20
+					//
+					//Je trouve ca mieux, plutot que comme je faisais avant : multiplier par le niveau de difficulté et mettre une limite de 50PA.
+					//surtout que depuis qq temps, le niveau de difficulté, peut etre plus grand que 1.0. Il n'a plus aucun lien avec le nombre de joueurs prévu par le donjon.
+					//La au moins avec ma nouvelle methode, on va avoir les PO a la meme vitesse que le Wow de Blizzard original.
+					//
+					if ( nbPlayerThatShouldKillThisCreature <= 0 )
+					{
+						//ceci ne devrait jamais arriver, mais on sait jamais ....
+						BASIC_LOG("RICHAR: ERROR ERRROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
+						nbPlayerThatShouldKillThisCreature = 1;
+					}
+
+					float coeffReduce = 2.0f / (float)nbPlayerThatShouldKillThisCreature;
+					if ( coeffReduce > 1.0f ) // le coeff ne doit que faire reduire les PO
+						coeffReduce = 1.0;
+
+					newMin *= coeffReduce;
+					newMax *= coeffReduce;
+
+
 					uint32 newMin_int = (uint32)newMin;
 					uint32 newMax_int = (uint32)newMax;
 

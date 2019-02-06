@@ -2509,6 +2509,16 @@ class Player : public Unit
 		};
 		std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND> m_richa_lunerFestivalElderFound;
 
+		// lorsqu'on fait la course a celui que trouve le + de Elder.
+		// ce score je ne vais pas le sauvegarder
+		// il se met a 0 quand le perso se connecte.
+		// quand on fait la course, le premier qui atteind le score qu'on decide a gagné.
+		//
+		// dans l'idée : plus c'est un Elder qu'on a pas ve depuis longtemps, plus ca rapporte de points.
+		//               chaque année on peut affiner autour de cette regle
+		//
+		int m_richa_scoreElderCourse; 
+
 		struct RICHA_MAISON_TAVERN
 		{
 			RICHA_MAISON_TAVERN(uint32 a , uint32 b)
@@ -2521,12 +2531,42 @@ class Player : public Unit
 			uint32 areaid;
 		};
 
+		struct RICHA_ITEM_LOOT_QUEST
+		{
+			RICHA_ITEM_LOOT_QUEST(bool active_, uint32_t itemid_, float currentScore_, int nbFoisQueteDone_, bool LoopQuest_)
+			{
+				active = active_;
+				itemid = itemid_;
+				currentScore = currentScore_;
+				nbFoisQueteDone = nbFoisQueteDone_;
+				LoopQuest = LoopQuest_;
+
+			}
+
+			RICHA_ITEM_LOOT_QUEST()
+			{
+				itemid = 0;
+				currentScore = 0.0f;
+				active = false;
+				nbFoisQueteDone = 0;
+				LoopQuest = false;
+			}
+
+			bool active;
+			uint32_t itemid;
+			float currentScore; // quand il arrive a >= 1.0, on gagne l'objet et il repasse a 0.0 
+			int nbFoisQueteDone; // nombre de fois que la quete a été terminée
+			bool LoopQuest; // true is quand la quete est finie alors elle reprends automatiquement a 0
+			
+		};
+
 		static void richa_importFrom_richaracter_(
 			uint64 guid__,
 			std::vector<RICHA_NPC_KILLED_STAT>& richa_NpcKilled,
 			std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
 			std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
 			std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+			std::vector<RICHA_ITEM_LOOT_QUEST>& richa_ListItemQuestLoot,
 			std::string& namePerso);
 
 		static void richa_exportTo_richaracter_(
@@ -2535,6 +2575,7 @@ class Player : public Unit
 			const std::vector<RICHA_PAGE_DISCO_STAT>& richa_pageDiscovered,
 			const std::vector<RICHA_LUNARFESTIVAL_ELDERFOUND>& richa_lunerFestivalElderFound,
 			const std::vector<RICHA_MAISON_TAVERN>& richa_ListeMaison,
+			const std::vector<RICHA_ITEM_LOOT_QUEST>& richa_ListItemQuestLoot,
 			const char* name);
 
 		//va exporter dans   _ri_stat_Grandjuge_2017_04_21.txt
@@ -2546,6 +2587,10 @@ class Player : public Unit
 		int GetParagonLevelFromItem();
 
 		std::vector<RICHA_MAISON_TAVERN> m_richa_ListeMaison;
+
+		// je vais me debrouille pour qu'il soit rangés pour que en premier position on a les actifs.
+		//plus on est proche de [0], plus il est "prioritaire", c'est a dire moins suspetible d'etre automatiquement passé en   active=false
+		std::vector<RICHA_ITEM_LOOT_QUEST> m_richa_itemLootQuests;
 
 		///////////////////////////////////////////////////////////////////////////////////
 

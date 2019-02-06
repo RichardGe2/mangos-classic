@@ -803,7 +803,7 @@ ChatCommand* ChatHandler::getCommandTable()
 		{ "notincombat",  SEC_PLAYER,  false, &ChatHandler::Richar_noMoreInComat,                 "", nullptr },
 		// RICHARD : commande pour lister toutes mes commandes custom
 		{ "richardhelp",  SEC_PLAYER,  false, &ChatHandler::Richar_help,                 "", nullptr },
-
+		{ "need",  SEC_PLAYER,  false, &ChatHandler::Richar_need,                 "", nullptr },
 
 		
 		{ "revive",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReviveCommand,              "", nullptr },
@@ -1736,6 +1736,12 @@ void ChatHandler::ExecuteCommand_richard_A(const char* text)
 {
 	
 	
+
+	//
+	//
+	// TODO : utiliser : Richa_NiceLinkToIitemID plutot,  pour unifier
+	//
+	//
 
 	if ( text == 0 )
 	{

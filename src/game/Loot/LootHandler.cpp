@@ -76,6 +76,7 @@ bool WorldSession::RichaHandleLootRandom(Loot* loot, int lootTypeItemOrGold )
 	// 2   gameobj
 	// 3   item - marche pas
 	// 4  skinning
+	// 5  pickpocket ( peut etre ouverture d'un item aussi , bug ?)
 	int lootOrigin = 0;
 	if ( lootOrigin_creature && !lootOrigin_gameobj && !lootOrigin_item )
 	{
@@ -111,9 +112,24 @@ bool WorldSession::RichaHandleLootRandom(Loot* loot, int lootTypeItemOrGold )
 	}
 	else
 	{
-		sLog.outBasic("RICHAR: LOOT - type ??? (object loot?)" );
-		lootOrigin = 0;
-		int aa=0;
+		if ( lootType == LOOT_PICKPOCKETING )
+		{
+			lootOrigin = 5;
+		}
+		else
+		{
+
+			bool isItem = false;
+			bool isDynamicObject = false;
+			if ( loot && loot->GetLootTarget() && loot->GetLootTarget()->GetObjectGuid() )
+			{
+				isItem			= loot->GetLootTarget()->GetObjectGuid().IsItem();
+				isDynamicObject = loot->GetLootTarget()->GetObjectGuid().IsDynamicObject();
+			}
+			sLog.outBasic("RICHAR: LOOT - type ??? (object loot?)  -  isItem=%d  isDynamicObject=%d " , isItem , isDynamicObject );
+			lootOrigin = 0;
+			int aa=0;
+		}
 	}
 
 	uint32 difference = WorldTimer::getMSTime()  - loot->m_richard_timeCreated;

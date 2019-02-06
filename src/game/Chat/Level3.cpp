@@ -3875,6 +3875,460 @@ bool ChatHandler::Richar_listeventquest(char* /*args*/)
 
 }
 
+//convert example :
+// "|cff9d9d9d|Hitem:3965:0:0:0|h[Gants en cuir Ã©pais]|h|r"  -->  3965 
+// return -1 if fail.
+unsigned long Richa_NiceLinkToIitemID(const char* str)
+{
+	std::string input = std::string(str);
+
+	if (   
+		input.size() > 24
+		&& input[0] == '|'
+		&&  input[1] == 'c'
+		&&  input[10] == '|'
+		&&  input[11] == 'H'
+		&&  input[12] == 'i'
+		&&  input[13] == 't'
+		&&  input[14] == 'e'
+		&&  input[15] == 'm'
+		&&  input[16] == ':'
+		)
+	{
+		std::string id = "";
+		for(int i=17; ; i++)
+		{
+			if ( i >= input.size() )
+			{
+				return -1;
+			}
+
+			if ( input[i] < '0' || input[i] > '9'  )
+				break;
+
+			id += input[i];
+		}
+
+		 unsigned long idFinal = std::strtoul(id.c_str(),NULL,10);
+
+		 return idFinal;
+	}
+	return -1;
+}
+
+
+//convert example :
+// 3965 -->  "|cff9d9d9d|Hitem:3965:0:0:0|h[Gants en cuir Ã©pais]|h|r"
+std::string Richa_itemIdToNiceLink(unsigned long itemID)
+{
+	std::string itemName = "objet inconnu";
+	std::string qualityStr = "9d9d9d";
+	ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(  itemID  );
+	if ( itemProto )
+	{
+		itemName = std::string(itemProto->Name1);
+
+		
+		//0xff9d9d9d,        // GREY
+		//0xffffffff,        // WHITE
+		//0xff1eff00,        // GREEN
+		//0xff0070dd,        // BLUE
+		//0xffa335ee,        // PURPLE
+		//0xffff8000,        // ORANGE
+		//0xffe6cc80         // LIGHT YELLOW
+		
+
+		if ( itemProto->Quality == 0 )
+		{
+			qualityStr = "9d9d9d";
+		}
+		else if ( itemProto->Quality == 1 )
+		{
+			qualityStr = "ffffff";
+		}
+		else if ( itemProto->Quality == 2 )
+		{
+			qualityStr = "1eff00";
+		}
+		else if ( itemProto->Quality == 3 )
+		{
+			qualityStr = "0070dd";
+		}
+		else if ( itemProto->Quality == 4 )
+		{
+			qualityStr = "a335ee";
+		}
+		else if ( itemProto->Quality == 5 )
+		{
+			qualityStr = "ff8000";
+		}
+		else if ( itemProto->Quality == 6 )
+		{
+			qualityStr = "e6cc80";
+		}
+	}
+	else
+	{
+		char itemNameUnkonwn[4096];
+		sprintf(itemNameUnkonwn,"objet inconnu id=%d" , itemID );
+		itemName = std::string(itemNameUnkonwn);
+	}
+
+
+	//std::string out;
+
+	char outStr[4096];
+	sprintf(outStr,"|cff%s|Hitem:%d:0:0:0|h[%s]|h|r", qualityStr.c_str() , itemID , itemName.c_str() );
+
+	return std::string(outStr);
+}
+
+//  arg  est un string contenant tous les arguments a la suite
+bool ChatHandler::Richar_need(char* arg)
+{
+	if ( m_session )
+	{
+		Player* player = m_session->GetPlayer();
+		if ( player && arg )
+		{
+
+			if ( arg[0] == '\0' )
+			{
+				char messageee[2048];
+				sprintf(messageee, "----------------------------------- Quetes Actives :\n"   );
+				PSendSysMessage(messageee);
+
+				bool inActif = true;
+
+				// si pas d'argument on affiche juste la liste
+				for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
+				{
+
+					if ( inActif && !player->m_richa_itemLootQuests[i].active )
+					{
+						char messageee[2048];
+						sprintf(messageee, "----------------------------------- Quetes Inactives :\n"   );
+						PSendSysMessage(messageee);
+
+						inActif = false;
+					}
+
+					if ( !inActif && player->m_richa_itemLootQuests[i].active )
+					{
+						for(int i=0; i<5; i++)
+						{
+							char messageee[2048];
+							sprintf(messageee, "ERREUR GRAVE EN PARLER A RICHARD 003\n"   );
+							PSendSysMessage(messageee);
+						}
+					}
+
+					
+
+					std::string itemNameLink = Richa_itemIdToNiceLink( player->m_richa_itemLootQuests[i].itemid );
+
+					std::string boucle = "";
+					if ( player->m_richa_itemLootQuests[i].LoopQuest )
+					{
+						boucle = "  (boucle)";
+					}
+
+					char messageee[2048];
+					if (    player->m_richa_itemLootQuests[i].currentScore*100.0f >= 0.001f 
+						&&  player->m_richa_itemLootQuests[i].currentScore*100.0f <= 0.999f
+						)
+					{
+						// for small value ( between 0 and 1 ) display the digits after comma
+						sprintf(messageee, "%s %.2f/100 %s\n" ,  itemNameLink.c_str() ,  player->m_richa_itemLootQuests[i].currentScore*100.0f, boucle.c_str() );
+					}
+					else
+					{
+						sprintf(messageee, "%s %.0f/100 %s\n" ,  itemNameLink.c_str(),  player->m_richa_itemLootQuests[i].currentScore*100.0f, boucle.c_str() );
+					}
+					PSendSysMessage(messageee);
+				}
+
+				// marquer la fin de la liste
+				sprintf(messageee, "-------------------------------------------------------\n"   );
+				PSendSysMessage(messageee);
+			}
+			else
+			{
+				char* argumentPointer = arg;
+
+				bool modeDelete = false;
+				bool modeBoucle = false;
+				
+				if ( strcmp( arg , "help") == 0 || strcmp( arg , "aide") == 0 )
+				{
+					char messageee[2048];
+					sprintf(messageee, "La commande Need permet de gerer les quetes d'objets pour les Youhainis." );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need --> avoir la liste des quetes." );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need help --> avoir de l'aide sur la commande" );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need 4888 --> rajouter l'objet 4888 dans les quetes" );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need [Mucus de clampant] --> equivalent a:  .need 4888" );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need boucle [Mucus de clampant] --> faire quete en boucle" );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need delete 4888 --> retirer l'objet 4888 des quetes" );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need delete [Mucus de clampant] --> equivalent a:  .need delete 4888" );
+					PSendSysMessage(messageee);
+
+					return true;
+				}
+				else if ( strncmp( arg , "delete ", strlen("delete ") ) == 0 ) // si la chaine commence par:  delete
+				{
+					argumentPointer += strlen("delete ");
+					modeDelete = true;
+					int a=0;
+				}
+				else if ( strncmp( arg , "remove ", strlen("remove ") ) == 0 ) // si la chaine commence par:  remove
+				{
+					argumentPointer += strlen("remove ");
+					modeDelete = true;
+					int a=0;
+				}
+				else if ( strncmp( arg , "boucle ", strlen("boucle ") ) == 0 ) 
+				{
+					argumentPointer += strlen("boucle ");
+					modeBoucle = true;
+					int a=0;
+				}
+				else if ( strncmp( arg , "loop ", strlen("loop ") ) == 0 ) 
+				{
+					argumentPointer += strlen("loop ");
+					modeBoucle = true;
+					int a=0;
+				}
+
+
+				uint32 itemID = 0;
+
+
+				unsigned long itemFromLink = Richa_NiceLinkToIitemID(argumentPointer);
+				if ( itemFromLink != -1 )
+				{
+					itemID = itemFromLink;
+				}
+				else
+				{
+					if (!ExtractUInt32(&argumentPointer, itemID))
+						return false;
+				}
+
+				
+
+
+				std::string itemName = "objet inconnu";
+				ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(  itemID  );
+				if ( itemProto )
+				{
+					itemName = std::string(itemProto->Name1);
+				}
+
+				// id dans la base de donnée
+				const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
+				const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
+
+
+				// lister ici la liste des objets interdits a etre fait en quete
+				if ( !modeDelete )
+				{
+					if (  
+						   itemID == 21301
+						|| itemID == 21309
+						|| itemID == 21305 // <-- les 4 items de noel à collectionner
+						|| itemID == 21308
+
+						|| itemID >= 100000 //  les youhaimon epiques ou non epiques
+
+						|| itemID == coinItemID1
+						|| itemID == coinItemID2
+						)
+					{
+						char messageee[2048];
+						sprintf(messageee, "Erreur: la quete pour %s est interdite.", itemName.c_str()  );
+						PSendSysMessage(messageee);
+						return true;
+					}
+				}
+
+
+
+				if ( !modeDelete )
+				{
+
+					//verifier qu'il existe pas deja
+					bool already = false;
+					for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
+					{
+						if ( player->m_richa_itemLootQuests[i].itemid == itemID )
+						{
+							already = true;
+
+						
+							{
+								char messageee[2048];
+								sprintf(messageee, "La quete pour %s existe deja (%.0f/100).", itemName.c_str()  , player->m_richa_itemLootQuests[i].currentScore*100.0f );
+								PSendSysMessage(messageee);
+							}
+						
+
+							if ( i!=0 ) // dès qu'un joueur fait  need   alors on passe toujours l'item en premiere position ( + "prioritaire" que les autres )
+							{
+								Player::RICHA_ITEM_LOOT_QUEST save = player->m_richa_itemLootQuests[i];
+
+								//on change eventuellement le mode 
+								save.LoopQuest = modeBoucle;
+
+								//on le passe en actif
+								save.active = true;
+
+								player->m_richa_itemLootQuests.erase(  player->m_richa_itemLootQuests.begin()   +  i  );
+								player->m_richa_itemLootQuests.insert( player->m_richa_itemLootQuests.begin() + 0, save );
+
+							}
+							else
+							{
+								player->m_richa_itemLootQuests[i].active = true;
+							}
+
+
+							break;
+						}
+					}
+
+					if ( !already )
+					{
+						Player::RICHA_ITEM_LOOT_QUEST newQuest;
+						newQuest.active = true;
+						newQuest.currentScore = 0.0f;
+						newQuest.itemid = itemID;
+						newQuest.nbFoisQueteDone = 0;
+						newQuest.LoopQuest = modeBoucle;
+
+						player->m_richa_itemLootQuests.insert( player->m_richa_itemLootQuests.begin() + 0,newQuest);
+
+						char messageee[2048];
+						sprintf(messageee, "Nouvelle quete pour: %s" , itemName.c_str() );
+						PSendSysMessage(messageee);
+
+					}
+
+				}
+				else
+				{
+					//// MODE DELETE
+
+					//verifier qu'il existe 
+					bool found = false;
+					for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
+					{
+						if ( player->m_richa_itemLootQuests[i].itemid == itemID )
+						{
+							found = true;
+
+							player->m_richa_itemLootQuests.erase(  player->m_richa_itemLootQuests.begin() + i );
+
+							char messageee[2048];
+							sprintf(messageee, "quete retir\xc3\xa9\e pour: %s" , itemName.c_str() );
+							PSendSysMessage(messageee);
+
+							break;
+						}
+					}
+
+					if ( !found )
+					{
+						char messageee[2048];
+						sprintf(messageee, "Erreur: la quete de cet objet n'existe pas."  );
+						PSendSysMessage(messageee);
+					}
+
+				}
+
+				// a partir de la on repasse en revue la liste :
+
+				// a la fin, on verifie qu'il n'y a pas plus d'actif que permis par la regle.
+				const int maxActif = 3;
+
+				if ( !modeDelete )
+				{
+					// comme on vient potentiellement de rajouter une quete en debut de liste, alors ca peut etre normal que le
+					//  (maxActif) etait actif, et doivent passer inactif.
+					if (  player->m_richa_itemLootQuests.size() >= maxActif+1   &&    player->m_richa_itemLootQuests[maxActif].active )
+					{
+						player->m_richa_itemLootQuests[maxActif].active = false;
+					}
+				}
+				else
+				{
+					//comme on vient potentiellement d'enlever une quete alors c'est possible qu'une place soit libre dans les quetes active
+
+					if (  player->m_richa_itemLootQuests.size() >= maxActif   &&    !player->m_richa_itemLootQuests[maxActif-1].active )
+					{
+						player->m_richa_itemLootQuests[maxActif-1].active = true;
+					}
+
+
+				}
+
+
+				bool inActif = true;
+				for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
+				{
+					if ( player->m_richa_itemLootQuests[i].active && i >= maxActif )
+					{
+						for(int i=0; i<5; i++)
+						{
+							char messageee[2048];
+							sprintf(messageee, "ERREUR GRAVE EN PARLER A RICHARD 002\n"   );
+							PSendSysMessage(messageee);
+						}
+					}
+
+
+					if ( inActif && !player->m_richa_itemLootQuests[i].active )
+					{
+						inActif = false;
+					}
+					else if ( !inActif && player->m_richa_itemLootQuests[i].active )
+					{
+						// LA C'EST UNE ERREUR CAR TOUS LES ACTIF DOIVENT ETRE AU DEBUT DE LISTE
+
+						for(int i=0; i<5; i++)
+						{
+							char messageee[2048];
+							sprintf(messageee, "ERREUR GRAVE EN PARLER A RICHARD 001\n"   );
+							PSendSysMessage(messageee);
+						}
+
+
+					}
+				}
+
+
+			}
+
+			
+
+		}
+	}
+	return true;
+}
+
 
 bool ChatHandler::Richar_help(char* arg)
 {
@@ -3911,6 +4365,9 @@ bool ChatHandler::Richar_help(char* arg)
 			PSendSysMessage(messageee);
 
 			sprintf(messageee, "namegospeicialricha :  sort d'invocation demoniste [CHEAT]"  );
+			PSendSysMessage(messageee);
+
+			sprintf(messageee, "need help : details sur la commande NEED."  );
 			PSendSysMessage(messageee);
 
 			
@@ -4118,6 +4575,7 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 						std::vector<Player::RICHA_PAGE_DISCO_STAT> richa_pageDiscovered;
 						std::vector<Player::RICHA_LUNARFESTIVAL_ELDERFOUND> richa_lunerFestivalElderFound;
 						std::vector<Player::RICHA_MAISON_TAVERN> richa_maisontavern;
+						std::vector<Player::RICHA_ITEM_LOOT_QUEST> richa_lootquest;
 						std::string persoNameImport;
 						Player::richa_importFrom_richaracter_(
 							mainPlayerGUID[jj],
@@ -4125,6 +4583,7 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 							richa_pageDiscovered,
 							richa_lunerFestivalElderFound,
 							richa_maisontavern,
+							richa_lootquest,
 							persoNameImport
 							);
 
