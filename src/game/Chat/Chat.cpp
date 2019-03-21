@@ -1876,6 +1876,12 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 	PSendSysMessage(messageOUt);
 	
 
+	if ( itemProtoype->ItemSet != 0 )
+	{
+		sprintf(messageOUt,"Id de Set = %d",  itemProtoype->ItemSet);
+		PSendSysMessage(messageOUt);
+	}
+
 
 	int goldAmount = itemProtoype->SellPrice;
 	int nbpo = goldAmount / 10000;
@@ -2012,18 +2018,29 @@ void ChatHandler::ExecuteCommand_richard_2(int numberID)
 			return;
 		}
 
-		// si jamais un perso secondaire veut apprendre le metier d'un autre joueur ...
+		// en fait je pense que c'est mieux d'utiliser la liste ci dessous plutot que la liste ci dessus
 		// c'est mieux de faire ca dans tous les cas ,  c'est a dire associer un metier a notre premier perso :
+		// lister ici LE perso PRINCIPAL qui est responsable du metier.
 		if ( false ) {  }
-		if ( itemProtoype->RequiredSkill == SKILL_COOKING )
+		if (   itemProtoype->RequiredSkill == SKILL_COOKING
+			|| itemProtoype->RequiredSkill == SKILL_ALCHEMY
+			|| itemProtoype->RequiredSkill == SKILL_HERBALISM
+			|| itemProtoype->RequiredSkill == SKILL_LEATHERWORKING
+			|| itemProtoype->RequiredSkill == SKILL_TAILORING
+			|| itemProtoype->RequiredSkill == SKILL_FIRST_AID
+			)
 		{
 			nameToSearch = "Boulette";
 		}
-		if ( itemProtoype->RequiredSkill == SKILL_ENGINEERING )
+		if (    itemProtoype->RequiredSkill == SKILL_ENGINEERING
+			||  itemProtoype->RequiredSkill == SKILL_BLACKSMITHING
+			||  itemProtoype->RequiredSkill == SKILL_FISHING
+			||  itemProtoype->RequiredSkill == SKILL_ENCHANTING
+			||  itemProtoype->RequiredSkill == SKILL_MINING
+			)
 		{
 			nameToSearch = "Bouillot";
 		}
-		// todo : remplir les autres metiers si besoin...
 		else
 		{
 			//sprintf(messageOUt,"INFO : pas de perso primaire associe a ce type de plan");

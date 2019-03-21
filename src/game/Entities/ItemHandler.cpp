@@ -307,7 +307,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
 		bool textRichaLevel = false;
 		if ( pProto->ItemLevel > 1 )
 		{
-			newdescription += std::string("Item level: ") + std::to_string(pProto->ItemLevel) + std::string("\n");
+			newdescription += std::string("Niveau de l'objet: ") + std::to_string(pProto->ItemLevel) + std::string("\n");
 			textRichaLevel = true;
 			
 		}
@@ -318,7 +318,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
 
 		if ( goldAmount == 0 )
 		{
-			newdescription += std::string("No sell price");
+			newdescription += std::string("Pas de prix");
 		}
 		else
 		{
@@ -326,7 +326,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
 			int nbpa = (goldAmount - nbpo*10000) / 100;
 			int nbpc = (goldAmount - nbpo*10000 - nbpa*100) ;
 
-			newdescription += std::string("Sell per item : ") 
+			newdescription += std::string("Prix par objet: ") 
 				+ std::to_string(nbpo) + "  "
 				+ std::to_string(nbpa) + "  "
 				+ std::to_string(nbpc) 

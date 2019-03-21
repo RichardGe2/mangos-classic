@@ -7516,6 +7516,53 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
 		}
         case CONDITION_AD_COMMISSION_AURA:
         {
+
+			/////////////////////////////////////////////////////////
+			//RICHARD DEBUG PLAYER MEET CONDITION
+			{
+				bool valueFromOriginalCode = false;
+				uint32_t  spellFound = 0;
+				Unit::SpellAuraHolderMap const& auras = player->GetSpellAuraHolderMap();
+				for (const auto& aura : auras)
+				{
+					if ((aura.second->GetSpellProto()->HasAttribute(SPELL_ATTR_CASTABLE_WHILE_MOUNTED) || aura.second->GetSpellProto()->HasAttribute(SPELL_ATTR_ABILITY)) && aura.second->GetSpellProto()->SpellVisual == 3580)
+					{
+						valueFromOriginalCode = true;
+						spellFound = aura.first;
+						break;
+					}
+				}
+
+				bool valueFromMyCode = false;
+				//Unit::SpellAuraHolderMap const& auras = player->GetSpellAuraHolderMap();
+				for (const auto& aura : auras)
+				{
+					// 17670,23930,24198,29112,29113
+					if ( aura.first == 17670 ||
+						aura.first == 23930||
+						aura.first == 24198||
+						aura.first == 29112||
+						aura.first == 29113)
+					{
+						valueFromMyCode = true;
+						break;
+					}
+				}
+
+
+				if ( valueFromMyCode != valueFromOriginalCode )
+				{
+					BASIC_LOG("RICHAR : -------------------- ARGENT DAWN DEBUG %d != %d (%d)" , valueFromOriginalCode , valueFromMyCode,spellFound);
+				}
+
+			}
+
+			/////////////////////////////////////////////////////////
+
+
+
+
+
             Unit::SpellAuraHolderMap const& auras = player->GetSpellAuraHolderMap();
             for (const auto& aura : auras)
                 if ((aura.second->GetSpellProto()->HasAttribute(SPELL_ATTR_CASTABLE_WHILE_MOUNTED) || aura.second->GetSpellProto()->HasAttribute(SPELL_ATTR_ABILITY)) && aura.second->GetSpellProto()->SpellVisual == 3580)

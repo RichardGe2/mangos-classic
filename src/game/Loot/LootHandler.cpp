@@ -261,7 +261,14 @@ bool WorldSession::RichaHandleLootRandom(Loot* loot, int lootTypeItemOrGold )
 							sprintf(messageOut, "vous gagnez le loot 'objet' (score=%d)",ent1.second.scoreDice);
 							if ( !g_wantLoot[loot->m_richard_timeCreated].okWinDoneOnThisLoot )// ca sert a rien de messager pour looter un okwin
 							{
-								ChatHandler(ent1.first).PSendSysMessage(messageOut);
+								if ( nbPLayInGroup == 1  )
+								{
+									//si on est tout seul dans le group, ca sert a rien d'annoncer au joueur qu'il a gagné le loot
+								}
+								else
+								{
+									ChatHandler(ent1.first).PSendSysMessage(messageOut);
+								}
 							}
 						}
 						else
@@ -301,7 +308,16 @@ bool WorldSession::RichaHandleLootRandom(Loot* loot, int lootTypeItemOrGold )
 							sprintf(messageOut, "vous gagnez les PO %d-%d-%d (score=%d)", nbpo, nbpa, nbpc,ent1.second.scoreDice);
 							if ( !g_wantLoot[loot->m_richard_timeCreated].okWinDoneOnThisLoot )// ca sert a rien de messager pour looter un okwin
 							{
-								ChatHandler(ent1.first).PSendSysMessage(messageOut);
+								if ( nbPLayInGroup == 1 && lootOrigin == 1 )
+								{
+									// dans le cas spécial d'un cadavre et qu'on est tout seul danbs le groupe, le jeu va deja dire : 
+									//"Vous ramassez 6 Argent, 16 Cuivre"
+									//donc ca sert a rien de dire en doublon ma phrase.
+								}
+								else
+								{
+									ChatHandler(ent1.first).PSendSysMessage(messageOut);
+								}
 							}
 						}
 						else

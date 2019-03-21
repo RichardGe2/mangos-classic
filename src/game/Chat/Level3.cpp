@@ -4030,7 +4030,7 @@ bool ChatHandler::Richar_need(char* arg)
 					std::string boucle = "";
 					if ( player->m_richa_itemLootQuests[i].LoopQuest )
 					{
-						boucle = "  (boucle)";
+						boucle = " (mode boucle)";
 					}
 
 					char messageee[2048];
@@ -4080,14 +4080,22 @@ bool ChatHandler::Richar_need(char* arg)
 					sprintf(messageee, ".need boucle [Mucus de clampant] --> faire quete en boucle" );
 					PSendSysMessage(messageee);
 
-					sprintf(messageee, ".need delete 4888 --> retirer l'objet 4888 des quetes" );
+					sprintf(messageee, ".need stop 4888 --> retirer l'objet 4888 des quetes" );
 					PSendSysMessage(messageee);
 
-					sprintf(messageee, ".need delete [Mucus de clampant] --> equivalent a:  .need delete 4888" );
+					sprintf(messageee, ".need stop [Mucus de clampant] --> equivalent a:  .need stop 4888" );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need #189 --> need tout le set 189" );
+					PSendSysMessage(messageee);
+
+					sprintf(messageee, ".need stop #189 --> retirer tout le set 189" );
 					PSendSysMessage(messageee);
 
 					return true;
 				}
+
+				// delete  remove  stop  ... tout ca revient au meme
 				else if ( strncmp( arg , "delete ", strlen("delete ") ) == 0 ) // si la chaine commence par:  delete
 				{
 					argumentPointer += strlen("delete ");
@@ -4097,6 +4105,12 @@ bool ChatHandler::Richar_need(char* arg)
 				else if ( strncmp( arg , "remove ", strlen("remove ") ) == 0 ) // si la chaine commence par:  remove
 				{
 					argumentPointer += strlen("remove ");
+					modeDelete = true;
+					int a=0;
+				}
+				else if ( strncmp( arg , "stop ", strlen("stop ") ) == 0 ) // si la chaine commence par:  stop
+				{
+					argumentPointer += strlen("stop ");
 					modeDelete = true;
 					int a=0;
 				}
@@ -4114,211 +4128,299 @@ bool ChatHandler::Richar_need(char* arg)
 				}
 
 
-				uint32 itemID = 0;
+				//uint32 itemID = 0;
+				std::vector<uint32> itemIDs; // dans le cas d'un need de set, il peut y avoir plusieurs objets
 
 
 				unsigned long itemFromLink = Richa_NiceLinkToIitemID(argumentPointer);
 				if ( itemFromLink != -1 )
 				{
-					itemID = itemFromLink;
+					itemIDs.push_back( itemFromLink );
+				}
+				else if ( argumentPointer[0] == '#' )
+				{
+					//si on parle d'un set
+					argumentPointer += 1;
+
+					uint32 setID = 0;
+					if (!ExtractUInt32(&argumentPointer, setID))
+						return false;
+
+					if ( setID <= 0 ) // important de controler ca, sinon avec un .need #0  on prends pratiquement tous les items du jeu je pense
+					{
+						char messageee[2048];
+						sprintf(messageee, "Erreur: ID de set INCORRECT."  );
+						PSendSysMessage(messageee);
+						return false;
+					}
+					
+					for (uint32 id = 0; id < sItemStorage.GetMaxEntry(); ++id)
+					{
+						ItemPrototype const* pProto = sItemStorage.LookupEntry<ItemPrototype>(id);
+						if (!pProto)
+							continue;
+
+						if (pProto->ItemSet == setID)
+						{
+							itemIDs.push_back(pProto->ItemId);
+							int a=0;
+						}
+					}
+
+					if ( itemIDs.size() == 0 )
+					{
+						char messageee[2048];
+						sprintf(messageee, "Erreur: le Set n'existe pas ?"  );
+						PSendSysMessage(messageee);
+					}
+
+					int a=0;
+
 				}
 				else
 				{
+					uint32 itemID = 0;
 					if (!ExtractUInt32(&argumentPointer, itemID))
 						return false;
+
+					itemIDs.push_back( itemID );
 				}
 
 				
 
-
-				std::string itemName = "objet inconnu";
-				ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(  itemID  );
-				if ( itemProto )
+				for(int iii=0; iii<itemIDs.size(); iii++) // pour chaque item du set a ajouter / retirer du need
 				{
-					itemName = std::string(itemProto->Name1);
-				}
-
-				// id dans la base de donnée
-				const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
-				const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
+					uint32 itemID = itemIDs[iii];
+				
 
 
-				// lister ici la liste des objets interdits a etre fait en quete
-				if ( !modeDelete )
-				{
-					if (  
-						   itemID == 21301
-						|| itemID == 21309
-						|| itemID == 21305 // <-- les 4 items de noel à collectionner
-						|| itemID == 21308
-
-						|| itemID >= 100000 //  les youhaimon epiques ou non epiques
-
-						|| itemID == coinItemID1
-						|| itemID == coinItemID2
-						)
+					std::string itemName = "objet inconnu";
+					ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(  itemID  );
+					if ( itemProto )
 					{
-						char messageee[2048];
-						sprintf(messageee, "Erreur: la quete pour %s est interdite.", itemName.c_str()  );
-						PSendSysMessage(messageee);
-						return true;
+						itemName = std::string(itemProto->Name1);
 					}
-				}
+
+					// id dans la base de donnée
+					const uint32 coinItemID1 = 70010; // YouhaiCoin Paragon
+					const uint32 coinItemID2 = 70007; // YouhaiCoin Cadeau
 
 
-
-				if ( !modeDelete )
-				{
-
-					//verifier qu'il existe pas deja
-					bool already = false;
-					for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
+					// lister ici la liste des objets interdits a etre fait en quete
+					if ( !modeDelete )
 					{
-						if ( player->m_richa_itemLootQuests[i].itemid == itemID )
+						if (  
+							   itemID == 21301
+							|| itemID == 21309
+							|| itemID == 21305 // <-- les 4 items de noel à collectionner
+							|| itemID == 21308
+
+							|| itemID >= 100000 //  les youhaimon epiques ou non epiques
+
+							|| itemID == coinItemID1
+							|| itemID == coinItemID2
+							)
 						{
-							already = true;
+							char messageee[2048];
+							sprintf(messageee, "Erreur: la quete pour %s est interdite.", itemName.c_str()  );
+							PSendSysMessage(messageee);
+							return true;
+						}
+					}
+
+
+
+					if ( !modeDelete )
+					{
+
+						//verifier qu'il existe pas deja
+						bool already = false;
+						for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
+						{
+							if ( player->m_richa_itemLootQuests[i].itemid == itemID )
+							{
+								already = true;
 
 						
-							{
 								char messageee[2048];
 								sprintf(messageee, "La quete pour %s existe deja (%.0f/100).", itemName.c_str()  , player->m_richa_itemLootQuests[i].currentScore*100.0f );
-								PSendSysMessage(messageee);
-							}
+								
 						
+								char messageee2[2048];
+								messageee2[0] = 0;
 
-							if ( i!=0 ) // dès qu'un joueur fait  need   alors on passe toujours l'item en premiere position ( + "prioritaire" que les autres )
-							{
-								Player::RICHA_ITEM_LOOT_QUEST save = player->m_richa_itemLootQuests[i];
+								if ( i!=0 ) // dès qu'un joueur fait  need   alors on passe toujours l'item en premiere position ( + "prioritaire" que les autres )
+								{
+									Player::RICHA_ITEM_LOOT_QUEST save = player->m_richa_itemLootQuests[i];
 
-								//on change eventuellement le mode 
-								save.LoopQuest = modeBoucle;
+									//on change eventuellement le mode 
+									if ( save.LoopQuest != modeBoucle )
+									{
+										save.LoopQuest = modeBoucle;
 
-								//on le passe en actif
-								save.active = true;
+										if ( modeBoucle )
+										{
+											sprintf(messageee2, " (mode boucle ative)" );
+										}
+										else
+										{
+											sprintf(messageee2, " (mode boucle desactive)" );
+										}
+									}
 
-								player->m_richa_itemLootQuests.erase(  player->m_richa_itemLootQuests.begin()   +  i  );
-								player->m_richa_itemLootQuests.insert( player->m_richa_itemLootQuests.begin() + 0, save );
+									//on le passe en actif
+									save.active = true;
 
+									player->m_richa_itemLootQuests.erase(  player->m_richa_itemLootQuests.begin()   +  i  );
+									player->m_richa_itemLootQuests.insert( player->m_richa_itemLootQuests.begin() + 0, save );
+
+								}
+								else
+								{
+									//on change eventuellement le mode 
+									if ( player->m_richa_itemLootQuests[i].LoopQuest != modeBoucle )
+									{
+										player->m_richa_itemLootQuests[i].LoopQuest = modeBoucle;
+
+										if ( modeBoucle )
+										{
+											sprintf(messageee2, " (mode boucle ativ\xc3\xa9\)" );
+										}
+										else
+										{
+											sprintf(messageee2, " (mode boucle desactiv\xc3\xa9\)" );
+										}
+									}
+
+									//on le passe en actif
+									player->m_richa_itemLootQuests[i].active = true;
+								}
+
+								char messageee3[2048];
+								sprintf(messageee3, "%s%s", messageee, messageee2 );
+								PSendSysMessage(messageee3);
+
+								break;
 							}
-							else
+						}
+
+						if ( !already )
+						{
+							Player::RICHA_ITEM_LOOT_QUEST newQuest;
+							newQuest.active = true;
+							newQuest.currentScore = 0.0f;
+							newQuest.itemid = itemID;
+							newQuest.nbFoisQueteDone = 0;
+							newQuest.LoopQuest = modeBoucle;
+
+							player->m_richa_itemLootQuests.insert( player->m_richa_itemLootQuests.begin() + 0,newQuest);
+
+							char messageee[2048];
+							sprintf(messageee, "Nouvelle quete pour: %s" , itemName.c_str() );
+							PSendSysMessage(messageee);
+
+						}
+
+					}
+					else
+					{
+						//// MODE DELETE
+
+						//verifier qu'il existe 
+						bool found = false;
+						for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
+						{
+							if ( player->m_richa_itemLootQuests[i].itemid == itemID )
 							{
-								player->m_richa_itemLootQuests[i].active = true;
+								found = true;
+
+								player->m_richa_itemLootQuests.erase(  player->m_richa_itemLootQuests.begin() + i );
+
+								char messageee[2048];
+								sprintf(messageee, "quete retir\xc3\xa9\e pour: %s" , itemName.c_str() );
+								PSendSysMessage(messageee);
+
+								break;
 							}
+						}
+
+						if ( !found )
+						{
+							char messageee[2048];
+							sprintf(messageee, "Erreur: la quete de cet objet n'existe pas."  );
+							PSendSysMessage(messageee);
+						}
+
+					}
 
 
-							break;
+				
+
+
+					// a partir de la on repasse en revue la liste :
+
+					// a la fin, on verifie qu'il n'y a pas plus d'actif que permis par la regle.
+					// je l'avais mis a 3 avant
+					// en fait je pense qu'on va need pas mal de chose, genre tous les objets d'un set.
+					// ... donc je le passe a une grande valeur, mais les joueur on pas trop le droit d'en abuser ( need 'tous' les item du jeu )
+					const int maxActif = 1000;
+
+					if ( !modeDelete )
+					{
+						// comme on vient potentiellement de rajouter une quete en debut de liste, alors ca peut etre normal que le
+						//  (maxActif) etait actif, et doivent passer inactif.
+						if (  player->m_richa_itemLootQuests.size() >= maxActif+1   &&    player->m_richa_itemLootQuests[maxActif].active )
+						{
+							player->m_richa_itemLootQuests[maxActif].active = false;
 						}
 					}
-
-					if ( !already )
+					else
 					{
-						Player::RICHA_ITEM_LOOT_QUEST newQuest;
-						newQuest.active = true;
-						newQuest.currentScore = 0.0f;
-						newQuest.itemid = itemID;
-						newQuest.nbFoisQueteDone = 0;
-						newQuest.LoopQuest = modeBoucle;
+						//comme on vient potentiellement d'enlever une quete alors c'est possible qu'une place soit libre dans les quetes active
 
-						player->m_richa_itemLootQuests.insert( player->m_richa_itemLootQuests.begin() + 0,newQuest);
+						if (  player->m_richa_itemLootQuests.size() >= maxActif   &&    !player->m_richa_itemLootQuests[maxActif-1].active )
+						{
+							player->m_richa_itemLootQuests[maxActif-1].active = true;
+						}
 
-						char messageee[2048];
-						sprintf(messageee, "Nouvelle quete pour: %s" , itemName.c_str() );
-						PSendSysMessage(messageee);
 
 					}
 
-				}
-				else
-				{
-					//// MODE DELETE
 
-					//verifier qu'il existe 
-					bool found = false;
+					bool inActif = true;
 					for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
 					{
-						if ( player->m_richa_itemLootQuests[i].itemid == itemID )
+						if ( player->m_richa_itemLootQuests[i].active && i >= maxActif )
 						{
-							found = true;
-
-							player->m_richa_itemLootQuests.erase(  player->m_richa_itemLootQuests.begin() + i );
-
-							char messageee[2048];
-							sprintf(messageee, "quete retir\xc3\xa9\e pour: %s" , itemName.c_str() );
-							PSendSysMessage(messageee);
-
-							break;
-						}
-					}
-
-					if ( !found )
-					{
-						char messageee[2048];
-						sprintf(messageee, "Erreur: la quete de cet objet n'existe pas."  );
-						PSendSysMessage(messageee);
-					}
-
-				}
-
-				// a partir de la on repasse en revue la liste :
-
-				// a la fin, on verifie qu'il n'y a pas plus d'actif que permis par la regle.
-				const int maxActif = 3;
-
-				if ( !modeDelete )
-				{
-					// comme on vient potentiellement de rajouter une quete en debut de liste, alors ca peut etre normal que le
-					//  (maxActif) etait actif, et doivent passer inactif.
-					if (  player->m_richa_itemLootQuests.size() >= maxActif+1   &&    player->m_richa_itemLootQuests[maxActif].active )
-					{
-						player->m_richa_itemLootQuests[maxActif].active = false;
-					}
-				}
-				else
-				{
-					//comme on vient potentiellement d'enlever une quete alors c'est possible qu'une place soit libre dans les quetes active
-
-					if (  player->m_richa_itemLootQuests.size() >= maxActif   &&    !player->m_richa_itemLootQuests[maxActif-1].active )
-					{
-						player->m_richa_itemLootQuests[maxActif-1].active = true;
-					}
-
-
-				}
-
-
-				bool inActif = true;
-				for(int i=0; i<player->m_richa_itemLootQuests.size(); i++)
-				{
-					if ( player->m_richa_itemLootQuests[i].active && i >= maxActif )
-					{
-						for(int i=0; i<5; i++)
-						{
-							char messageee[2048];
-							sprintf(messageee, "ERREUR GRAVE EN PARLER A RICHARD 002\n"   );
-							PSendSysMessage(messageee);
-						}
-					}
-
-
-					if ( inActif && !player->m_richa_itemLootQuests[i].active )
-					{
-						inActif = false;
-					}
-					else if ( !inActif && player->m_richa_itemLootQuests[i].active )
-					{
-						// LA C'EST UNE ERREUR CAR TOUS LES ACTIF DOIVENT ETRE AU DEBUT DE LISTE
-
-						for(int i=0; i<5; i++)
-						{
-							char messageee[2048];
-							sprintf(messageee, "ERREUR GRAVE EN PARLER A RICHARD 001\n"   );
-							PSendSysMessage(messageee);
+							for(int i=0; i<5; i++)
+							{
+								char messageee[2048];
+								sprintf(messageee, "ERREUR GRAVE EN PARLER A RICHARD 002\n"   );
+								PSendSysMessage(messageee);
+							}
 						}
 
 
-					}
-				}
+						if ( inActif && !player->m_richa_itemLootQuests[i].active )
+						{
+							inActif = false;
+						}
+						else if ( !inActif && player->m_richa_itemLootQuests[i].active )
+						{
+							// LA C'EST UNE ERREUR CAR TOUS LES ACTIF DOIVENT ETRE AU DEBUT DE LISTE
 
+							for(int i=0; i<5; i++)
+							{
+								char messageee[2048];
+								sprintf(messageee, "ERREUR GRAVE EN PARLER A RICHARD 001\n"   );
+								PSendSysMessage(messageee);
+							}
+
+
+						}
+					}
+
+				}// pour chaque item du set a ajouter / retirer du need
 
 			}
 
@@ -4546,6 +4648,10 @@ bool ChatHandler::Richar_tellMobStats(char* /*args*/)
 				PSendSysMessage(messageee);
 
 				sprintf(messageee, "Richar_difficuly_health = %f", cast_creature->Richar_difficuly_health );
+				BASIC_LOG(messageee);
+				PSendSysMessage(messageee);
+
+				sprintf(messageee, "Richar_difficuly_degat = %f", cast_creature->Richar_difficuly_degat );
 				BASIC_LOG(messageee);
 				PSendSysMessage(messageee);
 

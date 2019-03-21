@@ -106,6 +106,22 @@ void instance_scholomance::OnObjectCreate(GameObject* pGo)
 
 void instance_scholomance::DoRespawnEntranceRoom(Player* pSummoner)
 {
+
+
+
+
+	///////
+	// RICHARD : scholomance : ne pas respawn de mob
+	// ce script fait respawn des mobs dans l'etage inférieur de la premiere salle quand on rentre dans l'instance.
+	// je vois pas l'interet, en plus quand je coupe le serveur, la variable   m_bIsRoomReset  est pas sauvegardée et il faut tout retuer a chaque fois
+	// donc c'est relou, je retire
+	return;
+
+
+
+
+
+
     // safety check to avoid the room being reset for each OnPlayerEnter() call if Rattlegore is dead
     if (m_bIsRoomReset)
         return;

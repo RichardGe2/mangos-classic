@@ -1442,6 +1442,11 @@ void Pet::InitStatsForLevel(uint32 petlevel)
 
 	Richar_difficuly_health = _GetHealthMod(m_richar_lieuOrigin,GetName(),GetOwner()            ,cInfo->Rank);
 
+
+	Richar_difficuly_degat = _GetDamageMod(m_richar_lieuOrigin,GetName(),GetOwner(),      cInfo->Rank);
+
+
+
     health *= Richar_difficuly_health;
 
     // A pet cannot not have health
