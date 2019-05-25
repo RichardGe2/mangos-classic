@@ -145,11 +145,11 @@ class ChatHandler
 
         bool SetDataForCommandInTable(ChatCommand* commandTable, const char* text, uint32 security, std::string const& help);
         void ExecuteCommand(const char* text);
-		void ExecuteCommand_richard_A(const char* text);
-		void ExecuteCommand_richard_B(const char* text);
-		void ExecuteCommand_richard_C(const char* text);
-		void ExecuteCommand_richard_D(const char* text);
-		void ExecuteCommand_richard_2(int numberID);
+		bool ExecuteCommand_richard_A(const char* text);
+		bool ExecuteCommand_richard_B(const char* text);
+		bool ExecuteCommand_richard_C(const char* text);
+		bool ExecuteCommand_richard_D(const char* text);
+		bool ExecuteCommand_richard_2(int numberID);
         void LogCommand(char const* fullcmd) const;
 
         bool ShowHelpForCommand(ChatCommand* table, const char* cmd);
@@ -580,6 +580,11 @@ class ChatHandler
 		bool Richar_noMoreInComat(char* args);
 		bool Richar_help(char* args);
 		bool Richar_need(char* args);
+		
+		//convert example :
+		// 3965 -->  "|cff9d9d9d|Hitem:3965:0:0:0|h[Gants en cuir épais]|h|r"
+		std::string Richa_itemIdToNiceLink(unsigned long itemID);
+
 		bool Richar_tellMobStats(char* args);
 		bool Richar_listeventquest(char* args);
         bool HandleDamageCommand(char* args);

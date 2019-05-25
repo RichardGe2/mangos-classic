@@ -1010,6 +1010,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 
 	// on liste tous les joueurs le la team
+	bool bugEtrangeDetecte = false;
 	std::vector<Player*> playerList;
 	if ( 
 	lootOwner &&
@@ -1022,7 +1023,17 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
         for (const auto& memberItr : memberList)
 		{
 			Player* looter = ObjectAccessor::FindPlayer(memberItr.guid);
-            playerList.push_back(looter);
+			if ( looter )
+			{
+				playerList.push_back(looter);
+			}
+			else
+			{
+				//ce bug arrive tres rarement mais il peut arriver !
+				//je sais pas trop comlment le provoquer, c'est peut etre une histoire de deco reco
+				BASIC_LOG("RICHAR - BUGGGGGGGGGGGGGGGGGGGGGGGGGGG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				bugEtrangeDetecte = true;
+			}
 		}
 	}
 	else
@@ -1031,6 +1042,16 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 		if ( lootOwner )
 		{
 			playerList.push_back(lootOwner);
+		}
+	}
+
+	if ( bugEtrangeDetecte )
+	{
+		if ( playerList.size() > 0 )
+		{
+			char messageJoueur[4096];
+			sprintf(messageJoueur,"BUG POINTEUR NULL RICHARD DETECTE !!!!!!!!!!!!!!!!!!!!!!!!");
+			playerList[0]->Say(messageJoueur, LANG_UNIVERSAL);
 		}
 	}
 
@@ -1868,6 +1889,75 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 
 		}
 
+		// pour les coffre item, on va donner une petite récompense en PO, on va dire qu'on va s'aligner sur les coffre gameobject, mais en divisant par 2 - car faut que ca reste moins fifou
+		// et on ne mets pas de youhaicoin ( contrairement au coffre gameobject )
+		if (   itemID == 4637 // Coffret d'acier
+			|| itemID == 4638 // Coffret d'acier renforcé
+			|| itemID == 5759 // Coffret de thorium
+			|| itemID == 4634 // Coffret en fer
+			|| itemID == 5758 // Coffret en mithril
+			|| itemID == 5760 // Coffret en éternium
+			|| itemID == 4633 // Coffret lourd en bronze
+			|| itemID == 4632 // Coffret orné en bronze
+			|| itemID == 4636 // Solide coffret en fer
+			)
+		{
+			
+			int playerlevel = lootOwner->getLevel();
+					
+			//lootOwner->Say("Coffre gagn\xc3\xa9 !", LANG_UNIVERSAL);
+
+
+			uint32  goldBase = 0;
+
+			if ( playerlevel >= 1 && playerlevel < 10 )
+			{
+				goldBase = 1 * 100 / 2;
+			}
+			else if ( playerlevel >= 10 && playerlevel < 20 )
+			{
+				goldBase = 10 * 100 / 2;
+			}
+			else if ( playerlevel >= 20 && playerlevel < 30 )
+			{
+				goldBase = 50 * 100 / 2;
+			}
+			else if ( playerlevel >= 30 && playerlevel < 40 )
+			{
+				goldBase = 1 * 100 * 100 / 2;
+			}
+			else if ( playerlevel >= 40 && playerlevel < 50 )
+			{
+				goldBase = 2 * 100 * 100 / 2;
+			}
+			else if ( playerlevel >= 50 && playerlevel < 60 )
+			{
+				goldBase = 4 * 100 * 100 / 2;
+			}
+			else if ( playerlevel >= 60 )
+			{
+				goldBase = 5 * 100 * 100 / 2;
+			}
+
+			// + ou - 20%
+
+			int minGoldBase = (int)goldBase-((int)goldBase*20)/100;
+			if ( minGoldBase < 0 )
+			{
+				minGoldBase = 0;
+			}
+
+			m_gold = uint32(urand(      minGoldBase      ,  goldBase+(goldBase*20)/100  )  );
+
+
+			BASIC_LOG("RICHAR: add coin on COFFRE ITEM - base=%d  -  entre %d et %d --> %d  ",
+			goldBase,
+			minGoldBase ,
+			goldBase+(goldBase*20)/100,
+			m_gold
+			);
+		}
+
 		int aa=0;
 	}
 	else
@@ -1965,6 +2055,15 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			strcpy(typeMobChar, "tooEasy");
 			scoreToReach = 0.0f;
 		}
+
+
+		// c'est ICI que je vais mettre les exception de mob qui ne loot PAS de youhaicoin
+		if ( creatureLooting->GetEntry() == 10475 ) // execption : Etudiant de scholomance, car on les a simplifié
+		{
+			scoreToReach = 0.0f;
+		}
+
+
 
 		// a propos du changement du 9 dec 2018 :
 		// je prefere ne plus trop differencier les elites des normaux.

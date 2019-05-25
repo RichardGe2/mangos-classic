@@ -404,11 +404,12 @@ void PetAI::UpdateAI(const uint32 diff)
 
 
 				// RICHARD :  je rajoute ce else, pour etre sur que le voidWalker me suit tout le temps
+				// je le retire, car normallement on m'a dit que c'est maintenant corrigé depuis 15 June 2018 .... a voir...
 				//  cmangos/issues/issues/1579
-				else
-				{
-					 m_unit->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
-				}
+				//else
+				//{
+				//	 m_unit->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+				//}
 
 
 

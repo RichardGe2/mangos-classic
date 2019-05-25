@@ -1202,7 +1202,6 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
 
 
-
     float damageMulti = cinfo->DamageMultiplier * damageMod;
     bool usedDamageMulti = false;
 
@@ -1413,7 +1412,7 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 // sinon pour les mob d'instance, c'est simplement le nombre de joueur prévu dans l'instance.
 //
 //
-float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner,   float* donjonLevel, int* out_nbPlayerOriginal, float* difficultyHealth  )
+float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::string& mobName, const Unit* richaOwner,   float* donjonLevel, int* out_nbPlayerOriginal, float* difficultyHealth)
 {
 	int out_nbPlayerOriginal__ = 1;
 
@@ -1512,9 +1511,11 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	const float coeffDiffLowlevel_HEALTH = 1.0; // a voir si 1.0 pour la vie, c'est bien ...
 
 
-	if ( cPosRicha == "Eastern Kingdoms" || cPosRicha == "Royaumes de l'est")	{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f;  out_nbPlayerOriginal__=1; }
+	if ( cPosRicha == "Eastern Kingdoms" || cPosRicha == "Royaumes de l'est")	{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
 	else if ( cPosRicha == "Kalimdor" )											{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
-	else if ( cPosRicha == "Deeprun Tram" )										{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1;  }
+	else if ( cPosRicha == "Norfendre" )										{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
+	else if ( cPosRicha == "Outreterre" )										{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
+	else if ( cPosRicha == "Deeprun Tram" )										{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
 	else if ( cPosRicha == "Alliance PVP Barracks" )							{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
 	else if ( cPosRicha == "Horde PVP Barracks" )								{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; } // j'ai donné le nom au hasard, faudra verifier que c'est bien ca
 
@@ -1546,6 +1547,8 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 	// le cas de  Blackrock Spire  est spécial : 
 	// il y a lower et upper.  5 joueur pour lower  10 pour upper  -  
+
+	/*
 	else if ( cPosRicha == "Blackrock Spire" )		
 	{ 
 		bool mobLower = false;
@@ -1653,7 +1656,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		// UPPER Spire - mob names list
 		if ( 
 			   mobName == "xxxxxxxxxxxxxxxxxxxxxxxxxxxXXX"
-			|| mobName == "Blackhand Dreadweaver"
+			|| mobName == "Blackhand Dreadweaver" || mobName == "Tisseur d'effroi main-noire"
 			|| mobName == "Blackhand Summoner"
 			|| mobName == "Blackhand Veteran"
 			|| mobName == "Rage Talon Dragonspawn"
@@ -1736,7 +1739,7 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		if ( mobLower )
 		{
 			out_nbPlayerOriginal__=5;
-			outNumber =  1.1f;     
+			outNumber =  1.1f;   
 			outDifficulteHeath = 1.1f;  
 			donjonLevel_out = 999.0f;
 		}
@@ -1748,9 +1751,56 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 			donjonLevel_out = 999.0f;
 		}
 
+		
+		if (this__ && !blackRockPrefixExist )
+		{
+			if ( mobLower )
+			{
+				this__->SetName(  std::string(  std::string("-") + mobName )  );
+			}
+			else
+			{
+				this__->SetName(  std::string(  std::string("+") + mobName )  );
+			}
+		}
 	}      
+	*/
 	
+
 	
+	else if ( cPosRicha == "Blackrock Spire" )		
+	{ 
+		/*
+
+		// TODO : dès qu'avec Diane on aura termine le donjon, je pourrai terminer le code proprement
+
+		bool mobLower = false;
+		if ( mobName.size() > 2 && mobName[0] == '-' && mobName[1] == ' ' )
+		{
+			mobLower = true;
+		}
+		else if ( mobName.size() > 2 &&  mobName[0] == '+' && mobName[1] == ' ' )
+		{
+			mobLower = false;
+		}
+		else
+		{
+			sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown BlackrockSpire Mob - NI UP NI DOWN: '%s'" ,  mobName.c_str()  );
+			//dans le doute on va dire qu'il sont lower
+			mobLower = true;
+		}
+		*/
+
+
+		// pour l'instant on va deja considere qu'on est que dans blackrock inferieur
+		out_nbPlayerOriginal__=5;
+		outNumber =  1.96f;
+		outDifficulteHeath = 4.20f;
+		donjonLevel_out = 28.0f; // paragon 28
+	}
+
+
+
 
 	// pour des details concerant l'equilibrage des donjons / choix des coeffs  et nos feeling de joueurs quand on a fait le donjon, voir wowServ\_DOC\____richard_ALL.txt
 	//
@@ -1765,7 +1815,17 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	//
 	else if ( cPosRicha == "Dire Maul" )			{ outNumber =  1.000f;   outDifficulteHeath = 1.000f;  donjonLevel_out = 11.0f; out_nbPlayerOriginal__=5; } // apres tests : on confirme que pour difficulté=1.0 - pour 2 joueurs - ce donjon est fait pour paragon 11  
 	else if ( cPosRicha == "Stratholme" )			{ outNumber =  1.100f;   outDifficulteHeath = 1.100f;  donjonLevel_out = 13.0f; out_nbPlayerOriginal__=5; }    
-	else if ( cPosRicha == "Scholomance" )			{ outNumber =  1.400f;   outDifficulteHeath = 3.000f;  donjonLevel_out = 20.0f; out_nbPlayerOriginal__=5; }    
+	else if ( cPosRicha == "Scholomance" )			
+	{
+		if ( mobName == "Etudiant de la Scholomance" ) // petite exception pour les  npc=10475  on trouvais ca vraiment ennuyeux de les tuer 1 a 1 - ca met 1000 ans, et c'est sans interet.  par contre en contre partie il ne vont pas looter de youhaicoin
+		{
+			outNumber =  1.400f;   outDifficulteHeath = 0.500f;  donjonLevel_out = 20.0f; out_nbPlayerOriginal__=5; 
+		}
+		else
+		{
+			outNumber =  1.400f;   outDifficulteHeath = 3.000f;  donjonLevel_out = 20.0f; out_nbPlayerOriginal__=5; 
+		}
+	}    
 	//else if ( cPosRicha == "Blackrock Spire" )	{ outNumber =  1.0f;     outDifficulteHeath = 1.0f;    donjonLevel_out = 999.0f;  } // je le mets a la limite de difficulté entre 5 et 10 joueurs.  comme ca c'est easy pour moi
 	else if ( cPosRicha == "Zul'Gurub" )			{ outNumber =  1.0f;     outDifficulteHeath = 1.0f;    donjonLevel_out = 999.0f; out_nbPlayerOriginal__=20; }	
 	else if ( cPosRicha == "Molten Core" )			{ outNumber =  0.5f;     outDifficulteHeath = 0.5f;    donjonLevel_out = 999.0f; out_nbPlayerOriginal__=40; }	
@@ -1823,6 +1883,9 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 	if (    cPosRicha != "Eastern Kingdoms"
 		&&  cPosRicha != "Kalimdor"
+		&&  cPosRicha != "Royaumes de l'est" // WOTLK server a les regions en FR
+		&&  cPosRicha != "Norfendre" 
+		&&  cPosRicha != "Outreterre"
 		&& !messageSaidDungeaon) 
 	{ 
 		messageSaidDungeaon=true;  

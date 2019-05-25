@@ -50,6 +50,7 @@
 
 #include <math.h>
 #include <array>
+#include <fstream>
 
 float baseMoveSpeed[MAX_MOVE_TYPE] =
 {
@@ -1555,6 +1556,27 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 			BASIC_LOG("RICHAR INFO - %s - %d  1" , thisPLayer->GetName(), Victime_entry   );
 			thisPLayer->m_richa_NpcKilled.push_back( Player::RICHA_NPC_KILLED_STAT(Victime_entry , 1) );
 		}
+
+
+		// code temporaire pour lister tous les mob de blackrock  et trier inferieur / superieur
+		// on va considere dans un premier temps qu on ne va tuer QUE les mob de blackrock inferieur
+		//pour executer le fichier, ajouter : 
+		//UPDATE creature_template SET NAME = CASE 
+		// .... le fichier
+		//ELSE name
+		//END;
+		if ( victim->m_richar_lieuOrigin == "Blackrock Spire" )
+		{
+			if ( victim->GetName()[0] != '+' && victim->GetName()[0] != '-' )
+			{
+				std::ofstream outfile;
+				outfile.open("C:/Mangos/run/RICHAR_BLAKCROCK_INF.txt", std::ios_base::app);
+				outfile << "WHEN entry = '"<< Victime_entry <<"' THEN '"<< "- " << victim->GetName() <<"'\n"; 
+				outfile.close();
+			}
+		}
+
+
 		
 
 	}//si l'attaquant / tueur  est un joueur

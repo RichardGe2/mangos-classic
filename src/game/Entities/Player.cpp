@@ -909,8 +909,12 @@ void Player::richa_importFrom_richaracter_(uint64 guid__,
 		// donc il n'y a aucune raison de ne pas pouvroi ouvrir ce fichier
 		// et donc c'est une errur tres grave 
 
+
+		char NPath[1024];
+		GetCurrentDirectoryA(1024, NPath);
 		BASIC_LOG("RICHAR WARNING GRAVE 85XC2 : Can't find save file for guid = %d : !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" , (int32_t)guid__ );
-		
+		BASIC_LOG("                           : working dir = %s" ,NPath);
+
 
 		// je prefere bloquer le serveur plutot que charger n'importe quoi ou prendre le risque d'effacer des data
 		for(int i=0; ;i++)
@@ -15418,7 +15422,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 	bool questIsEscort = questType & QUEST_TYPE_ESCORT;
 	uint32 questID = pQuest->GetQuestId();
 	bool questIsHarder = questIsDungeon | questIsElite | questIsRaid | questIsLegendary | questIsEscort;
-
+	bool questIsRepeatable = pQuest->IsRepeatable();
 
 
 	//si c'est = a true, ca veut dire qu'une quete verte ou grises donnera des youhaicoi comme si c'etait une quete jaune
@@ -15690,6 +15694,10 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 
 		// les quetes du vendeur youhainy
 		questID < 20000 
+
+		// je pense que c'est mieux d'enlever toutes les quete repetable.
+		// je pense par exemple a toutes les quete du  style Bone Fragments pour gagner des insigna of the crusade.
+		&& !questIsRepeatable 
 
 		//je retire les 5 quetes d'ouverture de cadeaux de noel.
 		//on a deja plein de youhaicoin dans les cadeaux qu'on ouvre !
