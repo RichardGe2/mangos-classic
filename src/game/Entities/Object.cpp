@@ -202,6 +202,22 @@ void Object::BuildValuesUpdateBlockForPlayer(UpdateData* data, Player* target) c
     data->AddUpdateBlock(buf);
 }
 
+void Object::BuildForcedValuesUpdateBlockForPlayer(UpdateData* data, Player* target) const
+{
+    ByteBuffer buf(500);
+
+    buf << uint8(UPDATETYPE_VALUES);
+    buf << GetPackGUID();
+
+    UpdateMask updateMask;
+    updateMask.SetCount(m_valuesCount);
+
+    _SetCreateBits(&updateMask, target);
+    BuildValuesUpdate(UPDATETYPE_VALUES, &buf, &updateMask, target);
+
+    data->AddUpdateBlock(buf);
+}
+
 void Object::BuildOutOfRangeUpdateBlock(UpdateData* data) const
 {
     data->AddOutOfRangeGUID(GetObjectGuid());
@@ -401,25 +417,33 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                 {
                     *data << uint32(m_floatValues[index]);
                 }
-
-                // Fog of War: replace absolute health values with percentages for non-allied units according to settings
-                else if ((index == UNIT_FIELD_HEALTH || index == UNIT_FIELD_MAXHEALTH) &&
-                         !(static_cast<const Unit*>(this))->IsFogOfWarVisibleHealth(target))
+                else if (index == UNIT_FIELD_HEALTH || index == UNIT_FIELD_MAXHEALTH)
                 {
-                    *data << uint32(index == UNIT_FIELD_MAXHEALTH ? 100 : ceil(100.0 * m_uint32Values[UNIT_FIELD_HEALTH] / m_uint32Values[UNIT_FIELD_MAXHEALTH]));
-                }
+                    uint32 value = m_uint32Values[index];
 
+                    // Fog of War: replace absolute health values with percentages for non-allied units according to settings
+                    if (!static_cast<const Unit*>(this)->IsFogOfWarVisibleHealth(target))
+                    {
+                        switch (index)
+                        {
+                            case UNIT_FIELD_HEALTH:     value = uint32(ceil((100.0 * value) / m_uint32Values[UNIT_FIELD_MAXHEALTH]));   break;
+                            case UNIT_FIELD_MAXHEALTH:  value = 100;                                                                    break;
+                        }
+                    }
+
+                    *data << value;
+                }
                 // Fog of War: hide stat values for non-allied units according to settings
                 else if ((index == UNIT_FIELD_RANGEDATTACKTIME ||
                           index == UNIT_FIELD_MINDAMAGE || index == UNIT_FIELD_MAXDAMAGE ||
                           index == UNIT_FIELD_MINOFFHANDDAMAGE || index == UNIT_FIELD_MAXOFFHANDDAMAGE ||
-                          index == UNIT_FIELD_MINOFFHANDDAMAGE || (index >= UNIT_FIELD_STAT0 && index < UNIT_FIELD_BASE_MANA) ||
+                          (index >= UNIT_FIELD_STAT0 && index < UNIT_FIELD_BASE_MANA) ||
                           index == UNIT_FIELD_BASE_HEALTH || index == UNIT_FIELD_ATTACK_POWER ||
                           index == UNIT_FIELD_ATTACK_POWER_MODS || index == UNIT_FIELD_ATTACK_POWER_MULTIPLIER ||
                           index == UNIT_FIELD_RANGED_ATTACK_POWER || index == UNIT_FIELD_RANGED_ATTACK_POWER_MODS ||
                           index == UNIT_FIELD_RANGED_ATTACK_POWER_MULTIPLIER || index == UNIT_FIELD_MINRANGEDDAMAGE ||
                           index == UNIT_FIELD_MAXRANGEDDAMAGE || (index >= UNIT_FIELD_POWER_COST_MODIFIER && index <= UNIT_FIELD_POWER_COST_MULTIPLIER_06)) &&
-                          !(static_cast<const Unit*>(this))->IsFogOfWarVisibleStats(target))
+                          !static_cast<const Unit*>(this)->IsFogOfWarVisibleStats(target))
                 {
                     *data << uint32(0);
                 }
@@ -499,6 +523,28 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                     }
 
                     *data << dynflagsValue;
+                }
+                else if (index == UNIT_FIELD_FACTIONTEMPLATE)
+                {
+                    uint32 value = m_uint32Values[index];
+
+                    // [XFACTION]: Alter faction if detected crossfaction group interaction when updating faction field:
+                    if (this != target && GetTypeId() == TYPEID_PLAYER && sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GROUP))
+                    {
+                        Player const* thisPlayer = static_cast<Player const*>(this);
+                        const uint32 targetTeam = target->GetTeam();
+
+                        if (thisPlayer->GetTeam() != targetTeam && !thisPlayer->HasCharmer() && target->IsInGroup(thisPlayer))
+                        {
+                            switch (targetTeam)
+                            {
+                                case ALLIANCE:  value = 1054;   break;  // "Alliance Generic"
+                                case HORDE:     value = 1495;   break;  // "Horde Generic"
+                            }
+                        }
+                    }
+
+                    *data << value;
                 }
                 else                                        // Unhandled index, just send
                 {
@@ -895,7 +941,7 @@ void Object::MarkForClientUpdate()
     }
 }
 
-void Object::ForceValuesUpdateAtIndex(uint32 index)
+void Object::ForceValuesUpdateAtIndex(uint16 index)
 {
     m_changedValues[index] = true;
     if (m_inWorld && !m_objectUpdated)
@@ -1264,22 +1310,22 @@ bool WorldObject::IsFacingTargetsFront(const WorldObject* target, float arc /*= 
 
 bool WorldObject::isInFrontInMap(WorldObject const* target, float distance,  float arc /*= M_PI_F*/) const
 {
-    return IsWithinDistInMap(target, distance) && HasInArc(target, arc);
+    return IsInMap(target) && isInFront(target, distance, arc);
 }
 
 bool WorldObject::isInBackInMap(WorldObject const* target, float distance, float arc /*= M_PI_F*/) const
 {
-    return IsWithinDistInMap(target, distance) && !HasInArc(target, 2 * M_PI_F - arc);
+    return IsInMap(target) && isInBack(target, distance, arc);
 }
 
 bool WorldObject::isInFront(WorldObject const* target, float distance,  float arc /*= M_PI_F*/) const
 {
-    return target->IsWithinDist3d(GetPositionX(), GetPositionY(), GetPositionZ(), distance) && HasInArc(target, arc);
+    return target->GetDistance(GetPositionX(), GetPositionY(), GetPositionZ(), DIST_CALC_COMBAT_REACH) <= distance && HasInArc(target, arc);
 }
 
 bool WorldObject::isInBack(WorldObject const* target, float distance, float arc /*= M_PI_F*/) const
 {
-    return target->IsWithinDist3d(GetPositionX(), GetPositionY(), GetPositionZ(), distance) && !HasInArc(target, 2 * M_PI_F - arc);
+    return target->GetDistance(GetPositionX(), GetPositionY(), GetPositionZ(), DIST_CALC_COMBAT_REACH) <= distance && !HasInArc(target, 2 * M_PI_F - arc);
 }
 
 void WorldObject::GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z, float minDist /*=0.0f*/, float const* ori /*=nullptr*/) const
@@ -1661,10 +1707,6 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
 
     TemporarySpawn* pCreature = new TemporarySpawn(GetObjectGuid());
 
-    Team team = TEAM_NONE;
-    if (GetTypeId() == TYPEID_PLAYER)
-        team = ((Player*)this)->GetTeam();
-
     CreatureCreatePos pos(GetMap(), x, y, z, ang);
 
     if (x == 0.0f && y == 0.0f && z == 0.0f)
@@ -1673,7 +1715,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
         pos = CreatureCreatePos(this, GetOrientation(), dist, ang);
     }
 
-    if (!pCreature->Create(GetMap()->GenerateLocalLowGuid(cinfo->GetHighGuid()), pos, cinfo, team))
+    if (!pCreature->Create(GetMap()->GenerateLocalLowGuid(cinfo->GetHighGuid()), pos, cinfo))
     {
         delete pCreature;
         return nullptr;
@@ -1693,7 +1735,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
     if (spawnCounting)
         pCreature->SetSpawnCounting(true);
 
-    pCreature->GetMotionMaster()->SetPathId(pathId);
+    pCreature->GetMotionMaster()->SetDefaultPathId(pathId);
 
     pCreature->Summon(spwtype, despwtime);                  // Also initializes the AI and MMGen
 

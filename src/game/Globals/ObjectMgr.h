@@ -441,7 +441,7 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial);
 #define MAX_PET_NAME             12                         // max allowed by client name length
 #define MAX_CHARTER_NAME         24                         // max allowed by client name length
 
-bool normalizePlayerName(std::string& name);
+bool normalizePlayerName(std::string& name, size_t max_len = MAX_INTERNAL_PLAYER_NAME);
 
 struct LanguageDesc
 {
@@ -741,6 +741,8 @@ class ObjectMgr
 
         void LoadPointsOfInterest();
 
+        void LoadSpellTemplate();
+        void CheckSpellCones();
         void LoadCreatureTemplateSpells();
 
         void LoadGameTele();
@@ -755,7 +757,6 @@ class ObjectMgr
         void LoadVendors() { LoadVendors("npc_vendor", false); }
         void LoadTrainerTemplates();
         void LoadTrainers() { LoadTrainers("npc_trainer", false); }
-        void LoadSpellTemplate();
 
         /// @param _map Map* of the map for which to load active entities. If nullptr active entities on continents are loaded
         void LoadActiveEntities(Map* _map);

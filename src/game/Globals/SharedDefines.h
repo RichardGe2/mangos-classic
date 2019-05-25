@@ -290,7 +290,7 @@ enum SpellAttributes
     SPELL_ATTR_CASTABLE_WHILE_DEAD             = 0x00800000,// 23 castable while dead TODO: Implement
     SPELL_ATTR_CASTABLE_WHILE_MOUNTED          = 0x01000000,// 24 castable while mounted
     SPELL_ATTR_DISABLED_WHILE_ACTIVE           = 0x02000000,// 25 Activate and start cooldown after aura fade or remove summoned creature or go
-    SPELL_ATTR_NEGATIVE                        = 0x04000000,// 26 Almost all negative spell have it
+    SPELL_ATTR_AURA_IS_DEBUFF                  = 0x04000000,// 26
     SPELL_ATTR_CASTABLE_WHILE_SITTING          = 0x08000000,// 27 castable while sitting
     SPELL_ATTR_CANT_USED_IN_COMBAT             = 0x10000000,// 28 Cannot be used in combat
     SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY   = 0x20000000,// 29 unaffected by invulnerability (hmm possible not...)
@@ -352,8 +352,8 @@ enum SpellAttributesEx2
     SPELL_ATTR_EX2_UNK13                       = 0x00002000,// 13
     SPELL_ATTR_EX2_UNK14                       = 0x00004000,// 14
     SPELL_ATTR_EX2_UNK15                       = 0x00008000,// 15 not set in 2.4.2
-    SPELL_ATTR_EX2_UNK16                       = 0x00010000,// 16
-    SPELL_ATTR_EX2_UNK17                       = 0x00020000,// 17 suspend weapon timer instead of resetting it, (?Hunters Shot and Stings only have this flag?)
+    SPELL_ATTR_EX2_TAME_BEAST                  = 0x00010000,// 16
+    SPELL_ATTR_EX2_NOT_RESET_AUTO_ACTIONS      = 0x00020000,// 17 suspend weapon timer instead of resetting it, (?Hunters Shot and Stings only have this flag?)
     SPELL_ATTR_EX2_REQ_DEAD_PET                = 0x00040000,// 18 Only Revive pet - possible req dead pet
     SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT         = 0x00080000,// 19 does not necessarly need shapeshift
     SPELL_ATTR_EX2_FACING_TARGETS_BACK         = 0x00100000,// 20 TODO: CONFIRM!
@@ -2030,8 +2030,8 @@ enum ChatMsg
     CHAT_MSG_BG_SYSTEM_HORDE        = 0x54,
     CHAT_MSG_RAID_LEADER            = 0x57,
     CHAT_MSG_RAID_WARNING           = 0x58,
-    CHAT_MSG_RAID_BOSS_EMOTE        = 0x59,
-    CHAT_MSG_RAID_BOSS_WHISPER      = 0x5A,
+    CHAT_MSG_RAID_BOSS_WHISPER      = 0x59,
+    CHAT_MSG_RAID_BOSS_EMOTE        = 0x5A,
     CHAT_MSG_BATTLEGROUND           = 0x5C,
     CHAT_MSG_BATTLEGROUND_LEADER    = 0x5D,
 
@@ -2550,6 +2550,8 @@ enum LootType
     LOOT_INSIGNIA       = 22,
     LOOT_MAIL           = 23,
     LOOT_SPELL          = 24,
+
+    LOOT_DEBUG          = 100
 };
 
 #endif

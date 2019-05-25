@@ -1964,13 +1964,10 @@ bool ChatHandler::HandleNpcFactionIdCommand(char* args)
 
     // update in memory
     if (CreatureInfo const* cinfo = pCreature->GetCreatureInfo())
-    {
-        const_cast<CreatureInfo*>(cinfo)->FactionAlliance = factionId;
-        const_cast<CreatureInfo*>(cinfo)->FactionHorde = factionId;
-    }
+        const_cast<CreatureInfo*>(cinfo)->Faction = factionId;
 
     // and DB
-    WorldDatabase.PExecuteLog("UPDATE creature_template SET FactionAlliance = '%u', FactionHorde = '%u' WHERE entry = '%u'", factionId, factionId, pCreature->GetEntry());
+    WorldDatabase.PExecuteLog("UPDATE creature_template SET Faction = '%u', WHERE entry = '%u'", factionId, pCreature->GetEntry());
 
     return true;
 }
@@ -4119,7 +4116,7 @@ bool ChatHandler::HandleLearnAllRecipesCommand(char* args)
 
     HandleLearnSkillRecipesHelper(target, targetSkillInfo->id);
 
-    uint16 maxLevel = target->GetPureMaxSkillValue(targetSkillInfo->id);
+    uint16 maxLevel = target->GetSkillMaxPure(targetSkillInfo->id);
     target->SetSkill(targetSkillInfo->id, maxLevel, maxLevel);
     PSendSysMessage(LANG_COMMAND_LEARN_ALL_RECIPES, name.c_str());
     return true;
@@ -4795,11 +4792,11 @@ bool ChatHandler::HandleMmapLocCommand(char* /*args*/)
     // grid tile location
     Player* player = m_session->GetPlayer();
 
-    int32 gx = 32 - player->GetPositionX() / SIZE_OF_GRIDS;
-    int32 gy = 32 - player->GetPositionY() / SIZE_OF_GRIDS;
+    int32 gx = 32 - player->GetPositionY() / SIZE_OF_GRIDS; // flipped X and Y for visual correctness
+    int32 gy = 32 - player->GetPositionX() / SIZE_OF_GRIDS;
 
     PSendSysMessage("%03u%02i%02i.mmtile", player->GetMapId(), gy, gx);
-    PSendSysMessage("gridloc [%i,%i]", gx, gy);
+    PSendSysMessage("gridloc [%i,%i]", gy, gx);
 
     // calculate navmesh tile location
     const dtNavMesh* navmesh = MMAP::MMapFactory::createOrGetMMapManager()->GetNavMesh(player->GetMapId());

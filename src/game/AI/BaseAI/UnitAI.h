@@ -50,6 +50,7 @@ enum CanCastResult
     CAST_FAIL_TARGET_AURA       = 7,
     CAST_FAIL_NOT_IN_LOS        = 8,
     CAST_FAIL_COOLDOWN          = 9,
+    CAST_FAIL_EVADE             = 10,
 };
 
 enum CastFlags
@@ -115,6 +116,7 @@ enum AIOrders
     ORDER_NONE,
     ORDER_DISTANCING,
     ORDER_FLEEING,
+    ORDER_EVADE,
     ORDER_CUSTOM,
 };
 
@@ -328,10 +330,6 @@ class UnitAI
         /// Check if this AI can be replaced in possess case
         // virtual bool IsControllable() const { return false; }
 
-        // Called when victim entered water and creature can not enter water
-        // TODO: rather unused
-        virtual bool canReachByRangeAttack(Unit*) { return false; }
-
         ///== Helper functions =============================
 
         /// This function is used to do the actual melee damage (if possible)
@@ -421,8 +419,8 @@ class UnitAI
         // TODO: Implement proper casterAI in EAI and remove this from Leotheras script
         void SetMoveChaseParams(float dist, float angle, bool moveFurther) { m_attackDistance = dist; m_attackAngle = angle; m_moveFurther = moveFurther; }
 
-        // Returns friendly unit with the most amount of hp missing from max hp
-        Unit* DoSelectLowestHpFriendly(float range, float minMissing = 1.f, bool percent = false);
+        // Returns friendly unit with the most amount of hp missing from max hp - ignoreSelf - some spells cant target self
+        Unit* DoSelectLowestHpFriendly(float range, float minMissing = 1.f, bool percent = false, bool ignoreSelf = false);
 
         // Start movement toward victim
         void DoStartMovement(Unit* victim);
@@ -449,6 +447,9 @@ class UnitAI
         virtual void JustRootedTarget(SpellEntry const* spellInfo, Unit* victim) { JustStoppedMovementOfTarget(spellInfo, victim); }
         virtual void JustStunnedTarget(SpellEntry const* spellInfo, Unit* victim) { JustStoppedMovementOfTarget(spellInfo, victim); }
         virtual void JustStoppedMovementOfTarget(SpellEntry const* spellInfo, Unit* victim) {}
+
+        // AI selection - works in connection with IsPossessCharmType
+        virtual bool CanHandleCharm() { return false; }
 
     protected:
         virtual std::string GetAIName() { return "UnitAI"; }

@@ -294,6 +294,7 @@ class Loot
     public:
         friend struct LootItem;
         friend class GroupLootRoll;
+        friend class LootMgr;
 
         Loot(Player* player, Creature* creature, LootType type);
         Loot(Player* player, GameObject* gameObject, LootType type);
@@ -301,6 +302,7 @@ class Loot
         Loot(Player* player, Item* item, LootType type);
         Loot(Player* player, uint32 id, LootType type);
         Loot(Unit* unit, Item* item);
+        Loot(LootType type);
 
         ~Loot();
 
@@ -328,6 +330,7 @@ class Loot
         ObjectGuid const& GetLootGuid() const { return m_guidTarget; }
         ObjectGuid const& GetMasterLootGuid() const { return m_masterOwnerGuid; }
         GuidSet const& GetOwnerSet() const { return m_ownerSet; }
+        TimePoint const& GetCreateTime() const { return m_createTime; }
 
     private:
         Loot(): m_lootTarget(nullptr), m_itemTarget(nullptr), m_gold(0), m_maxSlot(0), m_lootType(),
@@ -345,7 +348,6 @@ class Loot
         void NotifyItemRemoved(uint32 lootIndex);
         void NotifyItemRemoved(Player* player, uint32 lootIndex) const;
         void GroupCheck();
-        void CheckIfRollIsNeeded(Player const* plr);
         void SetGroupLootRight(Player* player);
         void GenerateMoneyLoot(uint32 minAmount, uint32 maxAmount);
         bool FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, bool personal, bool noEmptyError = false);
@@ -390,6 +392,8 @@ class Loot
 
         GuidSet          m_playersOpened;                 // players that have released the corpse
 
+        TimePoint        m_createTime;                    // create time (used to refill loot if need)
+
 };
 
 extern LootStore LootTemplates_Creature;
@@ -431,6 +435,7 @@ class LootMgr
     public:
         void PlayerVote(Player* player, ObjectGuid const& lootTargetGuid, uint32 itemSlot, RollVote vote);
         Loot* GetLoot(Player* player, ObjectGuid const& targetGuid = ObjectGuid()) const;
+        void CheckDropStats(ChatHandler& chat, uint32 amountOfCheck, uint32 lootId, std::string lootStore) const;
 };
 
 #define sLootMgr MaNGOS::Singleton<LootMgr>::Instance()

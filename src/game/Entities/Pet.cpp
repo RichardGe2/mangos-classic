@@ -51,7 +51,7 @@ Pet::Pet(PetType type) :
     Creature(CREATURE_SUBTYPE_PET),
     m_TrainingPoints(0), m_resetTalentsCost(0), m_resetTalentsTime(0),
     m_removed(false), m_happinessTimer(7500), m_loyaltyTimer(12000), m_petType(type), m_duration(0),
-    m_loyaltyPoints(0), m_bonusdamage(0), m_auraUpdateMask(0), m_loading(false),
+    m_loyaltyPoints(0), m_bonusdamage(0), m_loading(false),
     m_xpRequiredForNextLoyaltyLevel(0),
     m_petModeFlags(PET_MODE_DEFAULT), m_originalCharminfo(nullptr)
 {
@@ -352,7 +352,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry /*= 0*/, uint32 petnumber
     LearnPetPassives();
     CastPetAuras(current);
     CastOwnerTalentAuras();
-    InitTamedPetPassives(owner);
     UpdateAllStats();
 
     // The following call was moved here to fix health is not full after pet invocation (before, they where placed after map->Add())
@@ -660,7 +659,7 @@ void Pet::Update(const uint32 diff)
     {
         case CORPSE:
         {
-            if (m_corpseDecayTimer <= diff)
+            if (IsCorpseExpired())
             {
                 // pet is dead so it doesn't have to be shown at character login
                 Unsummon(PET_SAVE_NOT_IN_SLOT);
@@ -713,7 +712,7 @@ void Pet::RegenerateAll(uint32 update_diff)
     // regenerate focus
     if (m_regenTimer <= update_diff)
     {
-        if (!isInCombat() || IsPolymorphed())
+        if (!isInCombat())
             RegenerateHealth();
 
         RegeneratePower();
@@ -943,7 +942,7 @@ int32 Pet::GetTPForSpell(uint32 spellid) const
 {
     uint32 basetrainp = 0;
 
-    SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBounds(spellid);
+    SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBoundsBySpellId(spellid);
 
     for (SkillLineAbilityMap::const_iterator _spell_idx = bounds.first; _spell_idx != bounds.second; ++_spell_idx)
     {
@@ -964,7 +963,7 @@ int32 Pet::GetTPForSpell(uint32 spellid) const
 
         if (sSpellMgr.GetFirstSpellInChain(itr->first) == chainstart)
         {
-            SkillLineAbilityMapBounds _bounds = sSpellMgr.GetSkillLineAbilityMapBounds(itr->first);
+            SkillLineAbilityMapBounds _bounds = sSpellMgr.GetSkillLineAbilityMapBoundsBySpellId(itr->first);
 
             for (SkillLineAbilityMap::const_iterator _spell_idx2 = _bounds.first; _spell_idx2 != _bounds.second; ++_spell_idx2)
             {
@@ -1211,8 +1210,6 @@ void Pet::InitStatsForLevel(uint32 petlevel)
 
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0);
 
-    int32 createResistance[MAX_SPELL_SCHOOL] = {0, 0, 0, 0, 0, 0, 0};
-
     SetAttackTime(BASE_ATTACK, cInfo->MeleeBaseAttackTime);
     SetAttackTime(OFF_ATTACK, cInfo->MeleeBaseAttackTime);
     SetAttackTime(RANGED_ATTACK, cInfo->RangedBaseAttackTime);
@@ -1223,16 +1220,13 @@ void Pet::InitStatsForLevel(uint32 petlevel)
     {
         SetMeleeDamageSchool(SpellSchools(cInfo->DamageSchool));
 
-        createResistance[SPELL_SCHOOL_HOLY]   = cInfo->ResistanceHoly;
-        createResistance[SPELL_SCHOOL_FIRE]   = cInfo->ResistanceFire;
-        createResistance[SPELL_SCHOOL_NATURE] = cInfo->ResistanceNature;
-        createResistance[SPELL_SCHOOL_FROST]  = cInfo->ResistanceFrost;
-        createResistance[SPELL_SCHOOL_SHADOW] = cInfo->ResistanceShadow;
-        createResistance[SPELL_SCHOOL_ARCANE] = cInfo->ResistanceArcane;
+        SetCreateResistance(SPELL_SCHOOL_HOLY, cInfo->ResistanceHoly);
+        SetCreateResistance(SPELL_SCHOOL_FIRE, cInfo->ResistanceFire);
+        SetCreateResistance(SPELL_SCHOOL_NATURE, cInfo->ResistanceNature);
+        SetCreateResistance(SPELL_SCHOOL_FROST, cInfo->ResistanceFrost);
+        SetCreateResistance(SPELL_SCHOOL_SHADOW, cInfo->ResistanceShadow);
+        SetCreateResistance(SPELL_SCHOOL_ARCANE, cInfo->ResistanceArcane);
     }
-
-    for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
-        SetModifierValue(UnitMods(UNIT_MOD_RESISTANCE_START + i), BASE_VALUE, float(createResistance[i]));
 
     float health = 0.f;
     float mana = 0.f;
@@ -1317,9 +1311,7 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                 mana = pInfo->mana;
                 armor = pInfo->armor;
 
-                // TODO: Remove cinfo->ArmorMultiplier test workaround to disable classlevelstats when DB is ready
-                CreatureClassLvlStats const* cCLS = sObjectMgr.GetCreatureClassLvlStats(petlevel, cInfo->UnitClass);
-                if (cInfo->ArmorMultiplier && cCLS) // Info found in ClassLevelStats
+                if (CreatureClassLvlStats const* cCLS = sObjectMgr.GetCreatureClassLvlStats(petlevel, cInfo->UnitClass)) // Info found in ClassLevelStats
                 {
                     float minDmg = (cCLS->BaseDamage * cInfo->DamageVariance + (cCLS->BaseMeleeAttackPower / 14) * (cInfo->MeleeBaseAttackTime / 1000)) * cInfo->DamageMultiplier;
 
@@ -1331,7 +1323,7 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                 }
                 else
                 {
-                    sLog.outErrorDb("SUMMON_PET creature_template not finished on creature %s! (entry: %u)", GetGuidStr().c_str(), cInfo->Entry);
+                    sLog.outErrorDb("SUMMON_PET creature_template_ClassLevelStats missing in DB for UnitClass %u and level %u! Calculating pet damage based on creature_template values instead.", cInfo->UnitClass, petlevel);
 
                     float dMinLevel = cInfo->MinMeleeDmg / cInfo->MinLevel;
                     float dMaxLevel = cInfo->MaxMeleeDmg / cInfo->MaxLevel;
@@ -1457,7 +1449,7 @@ void Pet::InitStatsForLevel(uint32 petlevel)
     SetCreateHealth(health);
     SetCreateMana(mana);
     // Set base Armor
-    SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, armor);
+    SetCreateResistance(SPELL_SCHOOL_NORMAL, int32(armor));
 
     // Need to update stats - calculates max health/mana etc
     UpdateAllStats();
@@ -1911,7 +1903,7 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
     if (active == ACT_DECIDE)                               // active was not used before, so we save it's autocast/passive state here
     {
         if (IsAutocastable(spellInfo))
-            newspell.active = ACT_DISABLED;
+            newspell.active = ACT_ENABLED;
         else
             newspell.active = ACT_PASSIVE;
     }
@@ -2315,42 +2307,6 @@ void Pet::SetModeFlags(PetModeFlags mode)
     data << GetObjectGuid();
     data << uint32(m_petModeFlags);
     ((Player*)owner)->GetSession()->SendPacket(data);
-}
-
-void Pet::InitTamedPetPassives(Unit* player)
-{
-    switch (player->getClass())
-    {
-        case CLASS_HUNTER:
-        {
-            // case 13481: Tame Beast
-            player->CastSpell(this, 8875, TRIGGERED_OLD_TRIGGERED);
-            break;
-        }
-        case CLASS_WARLOCK:
-        {
-            switch (GetUInt32Value(UNIT_CREATED_BY_SPELL))
-            {
-                case 688: // imp
-                    player->CastSpell(this, 18728, TRIGGERED_OLD_TRIGGERED);
-                    break;
-                case 691: // felhunter
-                    player->CastSpell(this, 18730, TRIGGERED_OLD_TRIGGERED);
-                    break;
-                case 697: // voidwalker
-                    player->CastSpell(this, 18727, TRIGGERED_OLD_TRIGGERED);
-                    break;
-                case 712: // succubus
-                    player->CastSpell(this, 18729, TRIGGERED_OLD_TRIGGERED);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        default:
-            break;
-    }
 }
 
 void Pet::RegenerateHealth()

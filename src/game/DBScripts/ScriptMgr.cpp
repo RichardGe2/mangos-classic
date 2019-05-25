@@ -725,11 +725,6 @@ void ScriptMgr::LoadScripts(ScriptMapMapName& scripts, const char* tablename)
                     sLog.outErrorDb("Table `%s` uses nonexistent creature entry %u in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u.", tablename, tmp.updateTemplate.newTemplate, tmp.id);
                     continue;
                 }
-                if (tmp.updateTemplate.newFactionTeam != 0 && tmp.updateTemplate.newFactionTeam != 1)
-                {
-                    sLog.outErrorDb("Table `%s` uses nonexistent faction team %u in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u.", tablename, tmp.updateTemplate.newFactionTeam, tmp.id);
-                    continue;
-                }
                 break;
             }
             case SCRIPT_COMMAND_START_RELAY_SCRIPT:         // 45
@@ -1046,7 +1041,7 @@ void ScriptMgr::CheckScriptTexts(ScriptMapMapName const& scripts, std::set<int32
                     for (auto& data : vector)
                     {
                         if (!sObjectMgr.GetMangosStringLocale(data.first))
-                            sLog.outErrorDb("Table `dbscript_string` is missing string id %u, used in database script template table dbscript_string_template id %u.", data.first, itrM->second.talk.stringTemplateId);
+                            sLog.outErrorDb("Table `dbscript_string` is missing string id %d, used in database script template table dbscript_string_template id %u.", data.first, itrM->second.talk.stringTemplateId);
                     }
                 }
             }
@@ -1121,7 +1116,7 @@ bool ScriptAction::GetScriptProcessTargets(WorldObject* pOrigSource, WorldObject
                 CreatureInfo const* cinfo = ObjectMgr::GetCreatureTemplate(m_script->buddyEntry);
                 pBuddy = m_map->GetCreature(cinfo->GetObjectGuid(m_script->searchRadiusOrGuid));
 
-                if (pBuddy && !((Creature*)pBuddy)->isAlive())
+                if (pBuddy && ((Creature*)pBuddy)->isAlive() == m_script->IsDeadOrDespawnedBuddy())
                 {
                     sLog.outError(" DB-SCRIPTS: Process table `%s` id %u, command %u has buddy %u by guid %u but buddy is dead, skipping.", m_table, m_script->id, m_script->command, m_script->buddyEntry, m_script->searchRadiusOrGuid);
                     return false;
@@ -1150,7 +1145,7 @@ bool ScriptAction::GetScriptProcessTargets(WorldObject* pOrigSource, WorldObject
                     CreatureData const* cData = sObjectMgr.GetCreatureData(objItr.guid);
                     if (Creature* buddy = m_map->GetCreature(cData->GetObjectGuid(objItr.guid)))
                     {
-                        if (buddy->isAlive())
+                        if (buddy->isAlive() != m_script->IsDeadOrDespawnedBuddy())
                         {
                             pBuddy = buddy;
                             break;
@@ -1166,7 +1161,7 @@ bool ScriptAction::GetScriptProcessTargets(WorldObject* pOrigSource, WorldObject
                         CreatureData const* cData = sObjectMgr.GetCreatureData(objItr.guid);
                         if (Creature* buddy = m_map->GetCreature(cData->GetObjectGuid(objItr.guid)))
                         {
-                            if (buddy->isAlive())
+                            if (buddy->isAlive() != m_script->IsDeadOrDespawnedBuddy())
                             {
                                 pBuddy = buddy;
                                 break;
@@ -1199,7 +1194,7 @@ bool ScriptAction::GetScriptProcessTargets(WorldObject* pOrigSource, WorldObject
             {
                 Creature* pCreatureBuddy = nullptr;
 
-                if (m_script->data_flags & SCRIPT_FLAG_BUDDY_IS_DESPAWNED)
+                if (m_script->IsDeadOrDespawnedBuddy())
                 {
                     MaNGOS::AllCreaturesOfEntryInRangeCheck u_check(pSearcher, m_script->buddyEntry, m_script->searchRadiusOrGuid);
                     MaNGOS::CreatureLastSearcher<MaNGOS::AllCreaturesOfEntryInRangeCheck> searcher(pCreatureBuddy, u_check);
@@ -2243,7 +2238,11 @@ bool ScriptAction::HandleScriptStep()
                 break;
 
             // ToDo: Change this to pGo->ForcedDespawn() when function is implemented!
-            ((GameObject*)pTarget)->SetLootState(GO_JUST_DEACTIVATED);
+            if (((GameObject*)pTarget)->GetSpellId())
+                ((GameObject*)pTarget)->Delete();
+            else
+                ((GameObject*)pTarget)->SetLootState(GO_JUST_DEACTIVATED);
+
             break;
         }
         case SCRIPT_COMMAND_RESPAWN:                        // 41
@@ -2306,7 +2305,7 @@ bool ScriptAction::HandleScriptStep()
             Creature* pCSource = static_cast<Creature*>(pSource);
 
             if (pCSource->GetEntry() != m_script->updateTemplate.newTemplate)
-                pCSource->UpdateEntry(m_script->updateTemplate.newTemplate, m_script->updateTemplate.newFactionTeam ? HORDE : ALLIANCE);
+                pCSource->UpdateEntry(m_script->updateTemplate.newTemplate);
             else
                 sLog.outErrorDb(" DB-SCRIPTS: Process table `%s` id %u, command %u failed. Source already has specified creature entry.", m_table, m_script->id, m_script->command);
             break;

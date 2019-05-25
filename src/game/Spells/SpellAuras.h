@@ -159,14 +159,7 @@ class SpellAuraHolder
         uint8 GetAuraLevel() const { return m_auraLevel; }
         void SetAuraLevel(uint8 level) { m_auraLevel = level; }
         uint32 GetAuraCharges() const { return m_procCharges; }
-        void SetAuraCharges(uint32 charges)
-        {
-            if (m_procCharges == charges)
-                return;
-            m_procCharges = charges;
-
-            UpdateAuraApplication();
-        }
+        void SetAuraCharges(uint32 charges, bool update = true);
 
         bool DropAuraCharge();                               // return true if last charge dropped
 
@@ -329,6 +322,7 @@ class Aura
         void HandleModCastingSpeed(bool apply, bool Real);
         void HandleAuraMounted(bool apply, bool Real);
         void HandleWaterBreathing(bool Apply, bool Real);
+        void HandleModWaterBreathing(bool apply, bool Real);
         void HandleModBaseResistance(bool apply, bool Real);
         void HandleModRegen(bool apply, bool Real);
         void HandleModPowerRegen(bool apply, bool Real);
@@ -350,7 +344,7 @@ class Aura
         void HandleModPercentStat(bool apply, bool Real);
         void HandleAurasVisible(bool apply, bool Real);
         void HandleModResistancePercent(bool apply, bool Real);
-        void HandleAuraModBaseResistancePCT(bool apply, bool Real);
+        void HandleAuraModBaseResistancePercent(bool apply, bool Real);
         void HandleAuraTrackStealthed(bool apply, bool Real);
         void HandleForceReaction(bool apply, bool Real);
         void HandleAuraModRangedHaste(bool apply, bool Real);
