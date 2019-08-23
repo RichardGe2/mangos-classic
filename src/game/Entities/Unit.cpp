@@ -1548,6 +1548,9 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 
 		// code temporaire pour lister tous les mob de blackrock  et trier inferieur / superieur
 		// on va considere dans un premier temps qu on ne va tuer QUE les mob de blackrock inferieur
+		//
+		// UPDATE : on vient de finir blackrock INF, donc a partir de maintenant je switch sur le '+'
+		//
 		//pour executer le fichier, ajouter : 
 		//UPDATE creature_template SET NAME = CASE 
 		// .... le fichier
@@ -1559,7 +1562,7 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 			{
 				std::ofstream outfile;
 				outfile.open("C:/Mangos/run/RICHAR_BLAKCROCK_INF.txt", std::ios_base::app);
-				outfile << "WHEN entry = '"<< Victime_entry <<"' THEN '"<< "- " << victim->GetName() <<"'\n"; 
+				outfile << "WHEN entry = '"<< Victime_entry <<"' THEN '"<< "+ " << victim->GetName() <<"'\n"; 
 				outfile.close();
 			}
 		}

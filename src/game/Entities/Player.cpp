@@ -9383,12 +9383,35 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize)
 
     if (uVictim->GetTypeId() == TYPEID_UNIT)
     {
+
         Creature* cVictim = (Creature*)uVictim;
+
+		
+		// RICHARD : les civiles ne font plus de victoire déshonorantes
+		/*
         if (cVictim->IsCivilianForTarget(this))
         {
             AddHonorCP(MaNGOS::Honor::DishonorableKillPoints(getLevel()), DISHONORABLE, cVictim);
             return true;
         }
+		*/
+
+
+
+
+		///////////////////////////////////////////////////////////////
+		// RICHARD : les gardes et civils font des victoires honnorantes
+		if (cVictim->IsGuard() || cVictim->IsCivilianForTarget(this))
+        {
+			// je mets 50 je sais pas trop a quoi ca correspond... peut etre au grade du mec que je tue ?
+            AddHonorCP(50.0, HONORABLE, cVictim);
+            return true;
+        }
+		///////////////////////////////////////////////////////////////
+
+
+
+
 
         if (cVictim->IsRacialLeader())
         {
@@ -16227,14 +16250,18 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 
 				if ( !pProto )
 				{
-					//si on arrive la, il faut surement crer un nouveau item paragon
+					//si on arrive la, il faut surement creer des nouveau template item /spell paragon
+
+					// si j'ai cette erreur, il faudra donner manuellement l'item paragon au joueur
+					// normallement ses YCP auront deja été déduie, et son ancien item paragon deja detruit
+
 					char messageOut[2048];
 					sprintf(messageOut, "ERREUR 48 - ne plus toucher a rien et en parler a Richard");
 
 					if ( quesGiverUnit )
 						quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
 
-					sLog.outBasic("RICHAR ERROR : item %d pas trouve ---------------------------------------------------------------" , newItemId );
+					sLog.outBasic("RICHAR ERROR : item %d (item paragon %d) pas trouve ---------------------------------------------------------------" , newItemId , currentParagonLvl+1 );
 				}
 				else
 				{
@@ -16249,6 +16276,13 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 
 						char messageOut[2048];
 						sprintf(messageOut, "Vous passez Paragon %d !",currentParagonLvl+1);
+
+						// petit warning quand on arrive a la limite, ca fait pas de mal
+						if ( ObjectMgr::GetItemPrototype(newItemId + 5)  == nullptr )
+						{
+							strcat(messageOut," -- ATTENTION on arrive bientot a la limite !!!! ");
+						}
+
 
 						if ( quesGiverUnit )
 						{
@@ -16267,60 +16301,47 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
 						//on retire le spell du paragon precedent pour pas que le joueur stack les paragon
 						RemoveAurasDueToSpellByCancel(spellParagonIDBase + currentParagonLvl);
 
-
-
-						
-						
-
-
-
 					}
 					else
 					{
 						//ca ne devrait pas arriver car en principe on retire l'item precedent, ce qui libere une place
 
 						char messageOut[2048];
-						sprintf(messageOut, "ERREUR 47 - inventaire plein - ne plus toucher a rien et en parler a Richard");
+						sprintf(messageOut, "ERREUR 47A - inventaire plein - ne plus toucher a rien et en parler a Richard");
 						
 						if ( quesGiverUnit )
 							quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
 
-						sLog.outBasic("RICHAR ERROR 47 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
+						sLog.outBasic("RICHAR ERROR 47B : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
 					}
-
-
-
-
-
-
-					//comme c'est 4.5 youhaicon paragon par level, a tous les niveau pair, on doit donner un YCP au joueur
-					if ( currentParagonLvl % 2 == 0 )
-					{
-						ItemPosCountVec dest;
-						int nbCoinToReceiveReally = 1;
-						const int newItemreceived = coinItemID1;
-						if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
-						{
-							Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
-							SendNewItem(item, nbCoinToReceiveReally, true, false);
-						}
-						else
-						{
-							char messageOut[2048];
-							sprintf(messageOut, "ERREUR 147 - inventaire plein - ne plus toucher a rien et en parler a Richard");
-						
-							if ( quesGiverUnit )
-								quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
-
-							sLog.outBasic("RICHAR ERROR 147 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemId );
-						}
-					}
-
-
-
 
 
 				}
+
+				//comme c'est 4.5 youhaicon paragon par level, a tous les niveau pair, on doit donner un YCP au joueur
+				if ( currentParagonLvl % 2 == 0 )
+				{
+					ItemPosCountVec dest;
+					int nbCoinToReceiveReally = 1;
+					const int newItemreceived = coinItemID1;
+					if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newItemreceived, nbCoinToReceiveReally) == EQUIP_ERR_OK)
+					{
+						Item* item = StoreNewItem(dest, newItemreceived, true, Item::GenerateItemRandomPropertyId(newItemreceived));
+						SendNewItem(item, nbCoinToReceiveReally, true, false);
+					}
+					else
+					{
+						char messageOut[2048];
+						sprintf(messageOut, "ERREUR 147 - inventaire plein - ne plus toucher a rien et en parler a Richard");
+						
+						if ( quesGiverUnit )
+							quesGiverUnit->MonsterSay(messageOut, LANG_UNIVERSAL);
+
+						sLog.outBasic("RICHAR ERROR 149 : item %d pas donne car inventaire full ---------------------------------------------------------------" , newItemreceived );
+					}
+				}
+
+
 
 				//paragonPasse = true;
 				//break;

@@ -1030,6 +1030,9 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 			{
 				//ce bug arrive tres rarement mais il peut arriver !
 				//je sais pas trop comlment le provoquer, c'est peut etre une histoire de deco reco
+				//
+				// ce bug est arrive une deuxieme fois : Diane avait été déco ( a cause d'une coupure internet )
+				//
 				BASIC_LOG("RICHAR - BUGGGGGGGGGGGGGGGGGGGGGGGGGGG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				bugEtrangeDetecte = true;
 			}
@@ -1604,6 +1607,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 					||  strcmp(nameGo , "Locked Chest" ) == 0				||  strcmp(nameGo , "Coffre verrouill\xc3\xa9" ) == 0 
 					||  strcmp(nameGo , "Large Solid Chest" ) == 0			||  strcmp(nameGo , "Grand coffre solide" ) == 0 
 					||  strcmp(nameGo , "Large Mithril Bound Chest" ) == 0  ||  strcmp(nameGo , "Grand coffre cercl\xc3\xa9 de mithril" ) == 0 
+					||  strcmp(nameGo , "Large Iron Bound Chest" ) == 0     ||  strcmp(nameGo , "Grand coffre cercl\xc3\xa9 de fer" ) == 0
 					||  strcmp(nameGo , "Ancient Treasure" ) == 0			||  strcmp(nameGo , "Tr\xc3\xa9sor ancien" ) == 0 
 					||  strcmp(nameGo , "Witch Doctor\'s Chest" ) == 0		||  strcmp(nameGo , "Coffre du sorcier-docteur" ) == 0 
 					||  strcmp(nameGo , "Large Battered Chest" ) == 0		||  strcmp(nameGo , "Grand coffre endommag\xc3\xa9" ) == 0 
@@ -2072,6 +2076,19 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* lootOwner, b
 		// je pense aussi surtout au perso 60 qui vont passer leur temps dans les donjons a tuer que de l'elite.
 		// ca fausse donc les stats. quand j'ai fait ca a la base, c'etait dans l'idée qu'un elite est rare, et compliqué a tuer.
 		// je vais quand meme laisser un petit +1% pour augmenter legerement le loot en donjon, mais il doit rester relativement rare
+
+
+
+		// dans tous les cas, un mob non elite de donjon, je pense que ca doit looter 0% de youhaicoin.
+		// ceci est pour eviter de dropper facilement des youhaicoin sur des mob facile de donjon.
+		// typiquement, on rencontre souvent des groupes de plein de petit mob qui sont en groupé masse dans les donjon et qui sont individuellement super facile a tuer.
+		if ( difficultyDonjon >= 1.0f // si c'est un mob de donjon
+			&& !cadavreElite  // et qu'il n'est pas elite
+			)
+		{
+			scoreToReach = 0.0f;
+		}
+
 
 
 		//on va ajuster le score to reach en fonction du paragon

@@ -1378,24 +1378,16 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 //           difficultyHealth  va retourner la difficulté HEATH
 //
 //
-//  donjonLevel [OUT - optional, can be nullptr] 
+//  donjonLevel
 //  correspond a un niveau de Paragon
 //  c'est un indice indicatif, permettant d'estimer la difficulté du mob en fonction de sa provenance de donjon.
 //  ce nombre est utilisé uniquement pour ajuster le probabilité de drop de youhaicoin .
 //  pour eviter qu'un 60 paragon 30  farme des petit level 60 elite de Scholomance, et loot plein de youhaicoin.
 //  ce nombre sera donc utilisé uniquement pour les mob lvl 60
-//
-// ANCIEN system :
-// 0 : exterieur
-// 1 : donjon low level
-// 2 : premier donjon HL
-// ...etc...
-//
-//nouveau system :
-//représente grosso modo le niveau de paragon qu'il faut etre pour etre du meme niveau que le mob.
-//essayer d'estimer au mieux.
-// 0.0 ou 1.0 correspond a la meme chose  -  puisque   paragon 1 :  + 00 %           coeff : x 1
-// cependant je vais quand meme mettre une difference :  0.0 correspondra a un mob "d'exterieur"  et 1.0 correspondra a un mob de donjon LowLevel
+//    représente grosso modo le niveau de paragon qu'il faut etre pour etre du meme niveau que le mob.
+//    essayer d'estimer au mieux.
+//    0.0 ou 1.0 correspond a la meme chose  -  puisque   paragon 1 :  + 00 %           coeff : x 1
+//    cependant je vais quand meme mettre une difference :  0.0 correspondra a un mob "d'exterieur"  et 1.0 correspondra a un mob de donjon LowLevel
 //
 //
 //
@@ -1786,11 +1778,31 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		*/
 
 
+
+
+
+
+
+
+
+		/*
+		// bouillot paragon 28 - boulette paragon 24
+		// on a trouve que c'etait tres bien avec cette difficulete pour LOWER
+
 		// pour l'instant on va deja considere qu'on est que dans blackrock inferieur
 		out_nbPlayerOriginal__=5;
 		outNumber =  1.96f;
 		outDifficulteHeath = 4.20f;
 		donjonLevel_out = 28.0f; // paragon 28
+		*/
+
+		// on essaye ca pour UPPER :
+		out_nbPlayerOriginal__=10;
+		outNumber =  1.96f;
+		outDifficulteHeath = 4.20f;
+		donjonLevel_out = 28.0f; // paragon 28
+
+
 	}
 
 
