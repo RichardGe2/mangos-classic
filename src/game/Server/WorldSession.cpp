@@ -571,7 +571,6 @@ void WorldSession::LogoutPlayer(bool save)
 
 
 
-		_player->richard_saveToLog();
 
 
         ///- empty buyback items and save the player in the database

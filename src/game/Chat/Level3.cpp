@@ -4185,11 +4185,22 @@ bool ChatHandler::Richar_need(char* arg)
 						return false;
 					}
 					
-					for (uint32 id = 0; id < sItemStorage.GetMaxEntry(); ++id)
+					const int nbMaxItemEmptyInARow = 50000; // si on detecte une plage vide de 50000, on considere que c'est la fin de la database. c'est tres moche mais ca devrait bien marcher
+                    int countNotxistItem = 0;
+					for (uint32 id = 0; ; ++id)
 					{
 						ItemPrototype const* pProto = sItemStorage.LookupEntry<ItemPrototype>(id);
+						
 						if (!pProto)
-							continue;
+                        {
+                            countNotxistItem++;
+
+                            if ( countNotxistItem >= nbMaxItemEmptyInARow )
+                                break;
+
+                            continue;
+                        }
+                        countNotxistItem = 0;
 
 						if (pProto->ItemSet == setID)
 						{

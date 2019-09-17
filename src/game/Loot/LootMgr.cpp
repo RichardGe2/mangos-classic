@@ -2892,6 +2892,58 @@ void Loot::ShowContentTo(Player* plr)
         m_lootTarget->InspectingLoot();
 
     plr->SendDirectMessage(data);
+
+
+
+
+
+
+
+
+
+	//////////////////////////////////////////////////////
+	// RICHARD AUTOLOOT , des qu'on montre le loot au joueur
+	// feature spécifique a Vanilla, pusique l'autoloot peut etre coché dans l'interface a partir de Burnung Crusade ( je crois )
+    {
+		Loot* loot = this;
+
+		WorldPacket newPack1(0);
+		plr->GetSession()->HandleLootMoneyOpcode(newPack1);
+
+		int iSlott=0;
+		for( ; ; iSlott++)
+		{
+			LootItem* li = loot->GetLootItemInSlot(iSlott);
+			if ( li )
+			{
+
+				if (li->isBlocked || li->GetSlotTypeForSharedLoot(plr, loot) == MAX_LOOT_SLOT_TYPE)
+				{ 
+					// ici on reproduit le check qui est fait dans   HandleAutostoreLootItemOpcode
+					// mais c'est mieux de le faire en amont, avant que  HandleAutostoreLootItemOpcode s'en rende compte que item pas bon, sinon la fentre de loot reste ouvert, et l'autoloot se stop
+					// example de  GetSlotTypeForSharedLoot qui fail :  le joueur a pas la quete pour un item de quete qui est dans le loot
+				}
+				else
+				{
+					WorldPacket newPack(264);
+					uint8 itemSlot = iSlott;
+					newPack.append(&itemSlot,sizeof(uint8));
+					plr->GetSession()->HandleAutostoreLootItemOpcode(newPack);
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+		sLog.outBasic("RICHA AUTOLOOT %d items", iSlott );
+	}
+	//////////////////////////////////////////////////////
+
+
+
+
+
 }
 
 void Loot::GroupCheck()

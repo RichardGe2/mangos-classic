@@ -929,7 +929,6 @@ class Player : public Unit
         explicit Player(WorldSession* session);
         ~Player();
 
-		void richard_saveToLog();
 		void richard_importVariables_START(uint64 guid__);
 		void richard_importVariables_END(uint64 guid__);
 		

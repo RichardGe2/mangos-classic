@@ -1478,36 +1478,6 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
 
 					uint32 groupMember_account = sObjectMgr.GetPlayerAccountIdByGUID(groupMembers[i]->GetGUID());
 
-					/*
-					// #LISTE_ACCOUNT_HERE
-					// ce hashtag repere tous les endroit que je dois updater quand je rajoute un nouveau compte - ou perso important
-					if ( 			
-						//seul un non-maitre du jeu a le droit d'officiellement ajouter cette creature a la liste des découvert
-						//
-						groupMember_account == 5 ||  // richard
-						groupMember_account == 10  || // richard2
-						groupMember_account == 6 || // diane
-						groupMember_account == 9 // diane2 
-					)
-					{
-						if ( !pushedDone )
-						{
-							groupMembers[i]->m_richa_StatALL__elitGrisKilled.push_back(Victime_entry);
-							pushedDone = true;
-						}
-
-						char messageOut[2048];
-						sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d !",nbpo,nbpa,nbpc);
-						groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
-					}
-					else
-					{
-						char messageOut[2048];
-						sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d ! - mais PAS ajoute a la liste.",nbpo,nbpa,nbpc);
-						groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
-					}
-					*/
-					
 					char messageOut[2048];
 					sprintf(messageOut, "Elite gris decouvert ! + %d-%d-%d !",nbpo,nbpa,nbpc);
 					groupMembers[i]->Say(messageOut, LANG_UNIVERSAL);
