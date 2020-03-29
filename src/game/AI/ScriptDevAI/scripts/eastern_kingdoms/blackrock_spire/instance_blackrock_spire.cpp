@@ -682,7 +682,7 @@ void instance_blackrock_spire::DoSendNextFlamewreathWave()
     if (m_uiFlamewreathWaveCount < 6)                       // Send two adds (6 waves, then boss)
     {
         Creature* pSummoned = nullptr;
-        for (uint8 i = 0; i < 2; ++i)
+        for (uint8 i = 0; i < 1; ++i) // RICHARD je passe de 2 par 2  a 1 par 1.  sinon pour 2 joueurs c'est vraiment chaud
         {
             float fX, fY, fZ;
             pSummoner->GetRandomPoint(rookeryEventSpawnPos[0], rookeryEventSpawnPos[1], rookeryEventSpawnPos[2], 2.5f, fX, fY, fZ);

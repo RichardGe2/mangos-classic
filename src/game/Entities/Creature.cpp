@@ -1497,7 +1497,15 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	const float coeffDiffLowlevel_HEALTH = 1.0; // a voir si 1.0 pour la vie, c'est bien ...
 
 
-	if ( cPosRicha == "Eastern Kingdoms" || cPosRicha == "Royaumes de l'est")	{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
+
+	if (  mobName == "Brandeguerre" ) // exception pour ce dragon : on lui mets plein de vie car si on vient l'attaquer alors
+									  // qu'on est paragon 33~38  ( Paragon pour pic blackrock inferieur )
+									  // on lui fait trop mal et on arrive pas a forger la clef
+	{
+		outNumber =  1.0;  outDifficulteHeath = 10.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1;
+	}
+
+	else if ( cPosRicha == "Eastern Kingdoms" || cPosRicha == "Royaumes de l'est")	{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
 	else if ( cPosRicha == "Kalimdor" )											{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
 	else if ( cPosRicha == "Norfendre" )										{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
 	else if ( cPosRicha == "Outreterre" )										{ outNumber =  1.0;  outDifficulteHeath = 1.0;  donjonLevel_out = 0.0f; out_nbPlayerOriginal__=1; }
@@ -1756,9 +1764,9 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 	
 	else if ( cPosRicha == "Blackrock Spire" )		
 	{ 
-		/*
+		
 
-		// TODO : dès qu'avec Diane on aura termine le donjon, je pourrai terminer le code proprement
+		// TODO : dès qu'avec Diane on aura terminé le donjon, je pourrai terminer le code proprement
 
 		bool mobLower = false;
 		if ( mobName.size() > 2 && mobName[0] == '-' && mobName[1] == ' ' )
@@ -1771,11 +1779,11 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 		}
 		else
 		{
-			sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown BlackrockSpire Mob - NI UP NI DOWN: '%s'" ,  mobName.c_str()  );
-			//dans le doute on va dire qu'il sont lower
-			mobLower = true;
+			//sLog.outBasic("RICHAR: --------------- WARNING ------------- unknown BlackrockSpire Mob - NI UP NI DOWN: '%s'" ,  mobName.c_str()  );
+			//dans le doute on va dire qu'il sont UPPER ( puisque la on est en train de faire le UPPER avec Diane )
+			mobLower = false;
 		}
-		*/
+		
 
 
 
@@ -1783,25 +1791,24 @@ float Creature::GetRichardModForMap(const std::string& cPosRicha, const std::str
 
 
 
-
-
-		/*
-		// bouillot paragon 28 - boulette paragon 24
-		// on a trouve que c'etait tres bien avec cette difficulete pour LOWER
-
-		// pour l'instant on va deja considere qu'on est que dans blackrock inferieur
-		out_nbPlayerOriginal__=5;
-		outNumber =  1.96f;
-		outDifficulteHeath = 4.20f;
-		donjonLevel_out = 28.0f; // paragon 28
-		*/
-
-		// on essaye ca pour UPPER :
-		out_nbPlayerOriginal__=10;
-		outNumber =  1.96f;
-		outDifficulteHeath = 4.20f;
-		donjonLevel_out = 28.0f; // paragon 28
-
+		if ( mobLower )
+		{
+			// bouillot paragon 28 - boulette paragon 24
+			// on a trouve que c'etait tres bien avec cette difficulete pour LOWER
+			out_nbPlayerOriginal__=5;
+			outNumber =  1.96f;
+			outDifficulteHeath = 4.20f;
+			donjonLevel_out = 28.0f; // paragon 28
+		}
+		else
+		{
+			// bouillot paragon 38 - boulette paragon 33
+			// 
+			out_nbPlayerOriginal__=10;
+			outNumber =  2.10f;
+			outDifficulteHeath = 8.0f;
+			donjonLevel_out = 38.0f; // paragon 28
+		}
 
 	}
 

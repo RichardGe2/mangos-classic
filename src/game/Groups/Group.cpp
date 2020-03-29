@@ -287,6 +287,33 @@ bool Group::AddMember(ObjectGuid guid, const char* name)
     if (!_addMember(guid, name))
         return false;
 
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// RICHARD : on passe en FREE FOR ALL par defaut
+	if ( GetLootMethod() != FREE_FOR_ALL )
+	{
+		SetLootMethod(FREE_FOR_ALL);
+
+		Player* leader = ObjectAccessor::FindPlayer(GetLeaderGuid());
+		if ( leader )
+		{
+			leader->Say("On passe en Free for all.",LANG_UNIVERSAL);
+		}
+		else
+		{
+			int a=0;
+		}
+	}
+	////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
     SendUpdate();
 
     if (Player* player = sObjectMgr.GetPlayer(guid))
